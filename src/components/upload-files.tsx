@@ -1,68 +1,82 @@
 'use client'
+import { uploadFiles } from "@/actions";
 import { Button } from "@/components/ui/button"
-import { useRef, useState } from "react"
+import { useRef, useState, useActionState } from "react"
+import { useFormStatus } from "react-dom";
 
 export function UploadFiles() {
   const [files, setFiles] = useState<{ file: File, id: string }[]>([])
+
   return (
     <div className="grid gap-6 max-w-xl mx-auto">
-      <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-lg border-primary hover:border-primary-foreground transition-colors">
-        <CloudUploadIcon className="w-10 h-10 text-primary" />
-        <h3 className="text-2xl font-bold">Upload Files</h3>
-        <p className="text-muted-foreground">Drag and drop files here or click to select</p>
-        <input
-          onChange={e => {
+      <form action={uploadFiles}>
+        <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-lg border-primary hover:border-primary-foreground transition-colors">
+          <CloudUploadIcon className="w-10 h-10 text-primary" />
+          <h3 className="text-2xl font-bold">Upload Files</h3>
+          <p className="text-muted-foreground">Drag and drop files here or click to select</p>
 
-            if (e.currentTarget.files) {
-              const files: { file: File, id: string }[] = []
-              for (const file of e?.currentTarget?.files) {
-                files.push({ id: crypto.randomUUID(), file })
+          <input
+            onChange={e => {
+
+              if (e.currentTarget.files) {
+                const files: { file: File, id: string }[] = []
+                for (const file of e?.currentTarget?.files) {
+                  files.push({ id: crypto.randomUUID(), file })
+                }
+                setFiles(files)
               }
-              setFiles(files)
             }
-          }
-          }
-          type="file"
-          multiple
-          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 w-full"
-        />
-      </div>
-      <div className="grid gap-4">
-        <div className="grid grid-cols-[1fr_auto] items-center gap-4">
-          <h4 className="text-lg font-medium">Uploaded Files</h4>
-          <Button variant="outline">
-            <TrashIcon className="w-4 h-4 mr-2" />
-            Clear All
-          </Button>
+            }
+            type="file"
+            multiple
+            name="files"
+            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 w-full"
+          />
         </div>
-        <div className="grid gap-2">
-          {files.map(({ file, id }) => {
-            return <div className="flex items-center justify-between bg-muted p-4 rounded-md">
-              <div className="flex items-center gap-4">
-                <FileIcon className="w-6 h-6 text-muted-foreground" />
-                <div>
-                  <div className="font-medium">{file.name}</div>
-                  <div className="text-sm text-muted-foreground">{file.size}</div>
+        <div className="grid gap-4">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-4">
+            <h4 className="text-lg font-medium">Uploaded Files</h4>
+            <Button type="button" variant="outline">
+              <TrashIcon className="w-4 h-4 mr-2" />
+              Clear All
+            </Button>
+          </div>
+          <div className="grid gap-2">
+            {files.map(({ file, id }) => {
+              return <div className="flex items-center justify-between bg-muted p-4 rounded-md">
+                <div className="flex items-center gap-4">
+                  <FileIcon className="w-6 h-6 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">{file.name}</div>
+                    <div className="text-sm text-muted-foreground">{file.size}</div>
+                  </div>
                 </div>
+                <Button type="button" onClick={() => {
+                  const filetedItems = files.filter((file) => file.id !== id)
+                  setFiles(filetedItems)
+                }} variant="ghost" size="icon">
+                  <XIcon className="w-4 h-4" />
+                  <span className="sr-only">Remove</span>
+                </Button>
               </div>
-              <Button onClick={() => {
-                const filetedItems = files.filter((file) => file.id !== id)
-                setFiles(filetedItems)
-              }} variant="ghost" size="icon">
-                <XIcon className="w-4 h-4" />
-                <span className="sr-only">Remove</span>
-              </Button>
-            </div>
-          })}
+            })}
 
+          </div>
         </div>
-      </div>
-      <Button className="justify-center">
-        <UploadIcon className="w-4 h-4 mr-2" />
-        Upload Files
-      </Button>
+        <UploadButton />
+      </form>
     </div>
   )
+}
+
+
+function UploadButton() {
+  const status = useFormStatus();
+
+  return <Button disabled={status.pending} type="submit" className="justify-center">
+    <UploadIcon className="w-4 h-4 mr-2" />
+    {status.pending ? "please wait ..." : "Upload Files"}
+  </Button>
 }
 
 function CloudUploadIcon(props: React.SVGProps<SVGSVGElement>) {
