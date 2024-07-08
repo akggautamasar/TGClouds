@@ -14,8 +14,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { UploadFiles } from "./upload-files"
+import { cookies } from "next/headers"
+import { tgClient } from "@/lib/tgClient"
 
-export default function DisplayFiles({children} : {children : React.ReactNode}) {
+export default async function DisplayFiles({children} : {children : React.ReactNode}) {
+  const sessionString = cookies().get('tgSession')
+    const client = tgClient(sessionString?.value as string)
+
+    await client.connect()
+
+    const me = await client.getMe()
+
+
+
+
   return (
     <div className="grid min-h-screen w-full grid-cols-[240px_1fr] bg-background">
       <div className="flex flex-col border-r bg-muted/40 px-4 py-6">
@@ -71,8 +83,8 @@ export default function DisplayFiles({children} : {children : React.ReactNode}) 
             <AvatarFallback>YO</AvatarFallback>
           </Avatar>
           <div className="grid gap-0.5 text-sm">
-            <div className="font-medium">John Doe</div>
-            <div className="text-muted-foreground">john@example.com</div>
+            <div className="font-medium">{`${me.firstName} ${me?.lastName ?? " "}`}</div>
+            <div className="text-muted-foreground">{me?.username}</div>
           </div>
         </div>
       </div>

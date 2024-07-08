@@ -13,7 +13,7 @@ export function UploadFiles() {
         <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-lg border-primary hover:border-primary-foreground transition-colors">
           <CloudUploadIcon className="w-10 h-10 text-primary" />
           <h3 className="text-2xl font-bold">Upload Files</h3>
-          <p className="text-muted-foreground">Drag and drop files here or click to select</p>
+          <p className="text-muted-foreground">Drag and drop files here or click to sFilesDataelect</p>
 
           <input
             onChange={e => {
