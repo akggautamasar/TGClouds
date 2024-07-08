@@ -1,22 +1,31 @@
-import Link from "next/link"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import React from "react"
 
-export default function Files() {
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { UploadFiles } from "./upload-files"
+
+export default function DisplayFiles({children} : {children : React.ReactNode}) {
   return (
     <div className="grid min-h-screen w-full grid-cols-[240px_1fr] bg-background">
       <div className="flex flex-col border-r bg-muted/40 px-4 py-6">
-        <Link href="#" className="flex items-center gap-2 font-semibold" prefetch={false}>
+        <Link href="/" className="flex items-center gap-2 font-semibold" prefetch={false}>
           <CloudIcon className="h-6 w-6" />
           <span>Cloud Storage</span>
         </Link>
         <nav className="mt-8 flex flex-col gap-4">
           <Link
-            href="#"
+            href="/images"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -24,7 +33,7 @@ export default function Files() {
             Images
           </Link>
           <Link
-            href="#"
+            href="/videos"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -32,7 +41,7 @@ export default function Files() {
             Videos
           </Link>
           <Link
-            href="#"
+            href="/documents"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -40,7 +49,7 @@ export default function Files() {
             Documents
           </Link>
           <Link
-            href="#"
+            href="/audios"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -48,7 +57,7 @@ export default function Files() {
             Audio
           </Link>
           <Link
-            href="#"
+            href="/folders"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -91,213 +100,21 @@ export default function Files() {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="sm" variant="outline" className="h-8 gap-1">
+          <div className="h-8 gap-1 flex border-gray-400 items-center justify-center">
             <UploadIcon className="h-4 w-4" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Upload</span>
-          </Button>
+            <Upload>Upload</Upload>
+          </div>
         </header>
         <main className="flex-1 overflow-auto p-6">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Image 1.jpg</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    JPG
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 2.3 MB</div>
-                  <div>Modified: 2023-05-12</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Video 1.mp4</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    MP4
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 45.6 MB</div>
-                  <div>Modified: 2023-04-28</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Document 1.pdf</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    PDF
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 5.1 MB</div>
-                  <div>Modified: 2023-03-15</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Audio 1.mp3</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    MP3
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 12.8 MB</div>
-                  <div>Modified: 2023-02-22</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Folder 1</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    Folder
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 125.3 MB</div>
-                  <div>Modified: 2023-01-18</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Image 2.jpg</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    JPG
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 3.1 MB</div>
-                  <div>Modified: 2023-06-01</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Video 2.mp4</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    MP4
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 65.2 MB</div>
-                  <div>Modified: 2023-05-20</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-              <Link href="#" className="absolute inset-0 z-10" prefetch={false}>
-                <span className="sr-only">View file</span>
-              </Link>
-              <img
-                src="/placeholder.svg"
-                alt="File thumbnail"
-                width={300}
-                height={200}
-                className="h-40 w-full object-cover transition-opacity group-hover:opacity-50"
-              />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="truncate font-medium">Document 2.pdf</div>
-                  <Badge variant="outline" className="rounded-full px-2 py-1 text-xs">
-                    PDF
-                  </Badge>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div>Size: 7.8 MB</div>
-                  <div>Modified: 2023-04-10</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+           {children}
         </main>
       </div>
     </div>
   )
 }
 
-function CloudIcon(props) {
+export function CloudIcon(props :React.SVGProps<SVGSVGElement>
+) {
   return (
     <svg
       {...props}
@@ -317,7 +134,7 @@ function CloudIcon(props) {
 }
 
 
-function FileTextIcon(props) {
+export function FileTextIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -341,7 +158,7 @@ function FileTextIcon(props) {
 }
 
 
-function FilterIcon(props) {
+export function FilterIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -361,7 +178,7 @@ function FilterIcon(props) {
 }
 
 
-function FolderIcon(props) {
+export function FolderIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -381,7 +198,7 @@ function FolderIcon(props) {
 }
 
 
-function ImageIcon(props) {
+export function ImageIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -403,7 +220,7 @@ function ImageIcon(props) {
 }
 
 
-function Music2Icon(props) {
+export function Music2Icon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -424,7 +241,7 @@ function Music2Icon(props) {
 }
 
 
-function SearchIcon(props) {
+ export function SearchIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -445,7 +262,7 @@ function SearchIcon(props) {
 }
 
 
-function UploadIcon(props) {
+export function UploadIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -467,7 +284,7 @@ function UploadIcon(props) {
 }
 
 
-function VideoIcon(props) {
+ export function VideoIcon(props :React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -485,4 +302,16 @@ function VideoIcon(props) {
       <rect x="2" y="6" width="14" height="12" rx="2" />
     </svg>
   )
+}
+
+
+
+function Upload(){
+  return <Dialog>
+  <DialogTrigger>Upload</DialogTrigger>
+  <DialogContent className = "min-w-[600px] max-h-[700px] overflow-auto min-h-[600px]">
+     <UploadFiles />
+  </DialogContent>
+</Dialog>
+
 }
