@@ -27,7 +27,7 @@ export const getAllFiles = async (channelUsername: string) => {
 
   if (!sessionString) {
     console.log('No session string found, redirecting to login');
-    return redirect('/login');
+    return redirect('/auth/login');
   }
 
   try {
