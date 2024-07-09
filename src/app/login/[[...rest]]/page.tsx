@@ -25,7 +25,7 @@ export default function Component() {
           </div>
         </div>
         <div className="w-full max-w-md">
-          <SignIn fallbackRedirectUrl="/" />
+          <SignIn fallbackRedirectUrl="/connect-telegram" />
         </div>
       </div>
     </section>

@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { env } from "@/env";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,8 +23,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <ClerkProvider publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}>
-            {children}
+          <ClerkProvider
+            afterSignOutUrl={"/login"}
+            publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
+          >
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
           </ClerkProvider>
         </Providers>
       </body>
