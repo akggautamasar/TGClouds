@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { tgClient } from "./lib/tgClient";
 import { revalidatePath } from "next/cache";
+import { db } from "./db";
 
 export async function uploadFiles(formData: FormData) {
     const sessionString = cookies().get('tgSession')
@@ -10,7 +11,6 @@ export async function uploadFiles(formData: FormData) {
     await client.connect()
 
     const files = formData.getAll('files') as File[]
-    console.log('files', files)
     try {
 
         for (const file of files) {
@@ -18,14 +18,14 @@ export async function uploadFiles(formData: FormData) {
 
             const result = await client.sendFile("kuneDrive", {
                 file: toUpload,
-                forceDocument:true
+                forceDocument: true
             });
             console.log('File uploaded successfully:', result);
             revalidatePath('/')
 
         }
     } catch (err) {
-        if(err instanceof Error){
+        if (err instanceof Error) {
             throw new Error(err.message)
         }
         throw new Error('there was an error')
@@ -35,24 +35,28 @@ export async function uploadFiles(formData: FormData) {
 
 }
 
-export async function delelteItem(postId : number | string){
-  console.log('channel', postId)
+export async function delelteItem(postId: number | string) {
+    console.log('channel', postId)
 
 
-  const sessionString = cookies().get('tgSession')
-  const client = tgClient(sessionString?.value as string)
-  await client.connect()
+    const sessionString = cookies().get('tgSession')
+    const client = tgClient(sessionString?.value as string)
+    await client.connect()
 
-  try {
-    await client.deleteMessages('kuneDrive', [Number(postId)], {revoke : true})
-    revalidatePath('/')
-  } catch (err) {
-    if(err instanceof Error){
-        throw new Error(err.message)
+    try {
+        await client.deleteMessages('kuneDrive', [Number(postId)], { revoke: true })
+        revalidatePath('/')
+    } catch (err) {
+        if (err instanceof Error) {
+            throw new Error(err.message)
+        }
+        throw new Error('there was an error')
+    } finally {
+        await client.disconnect()
     }
-    throw new Error('there was an error')
-  } finally {
-      await client.disconnect()
-  }
 }
 
+export async function saveTelegramSession(session: string) {
+    if (!session) throw new Error('session is needed please provide session')
+    cookies().set('tgSession', session)
+}
