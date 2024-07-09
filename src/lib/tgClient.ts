@@ -1,6 +1,6 @@
 import { StringSession } from 'telegram/sessions'
 import { TelegramClient } from "telegram"
-import env from "./env"
+import { env } from "@/env";
 
 export function tgClient(telegramSession: string) {
     const session = new StringSession(telegramSession);

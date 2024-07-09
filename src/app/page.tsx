@@ -5,46 +5,65 @@ import { formatBytes } from '@/lib/utils';
 import { cookies } from "next/headers";
 import { Api, TelegramClient } from "telegram";
 import { TotalList } from "telegram/Helpers";
-export type FilesData =  {
-    title: string;
-    type: string;
-    size: string;
-    src: string;
-    name:string,
-    buffer:Buffer | null
-    id:string | number
-}
 
+export type FilesData = {
+  title: string;
+  type: string;
+  size: string;
+  src: string;
+  name: string;
+  bufferString: string;
+  id: string | number;
+};
 
 export const getAllFiles = async (channelUsername: string) => {
-    const sessionString = cookies().get('tgSession')
-    const client = tgClient(sessionString?.value as string)
-    await client.connect()
-    const limit = 100; 
-    let offsetId = 0; 
+  let client: TelegramClient | undefined;
+  try {
+    const sessionString = cookies().get("tgSession");
+    client = tgClient(sessionString?.value as string);
+    await client.connect();
+    const limit = 100;
+    let offsetId = 0;
 
     let allMessages: TotalList<Api.Message> = [];
     let hasMore = true;
 
     while (hasMore) {
-        const result = await client.getMessages(channelUsername, {
-            limit: limit,
-            offsetId: offsetId
-        });
+      const result = await client.getMessages(channelUsername, {
+        limit: limit,
+        offsetId: offsetId,
+      });
 
-        allMessages = allMessages.concat(result);
-        if (result.length < limit) {
-            hasMore = false;
-        } else {
-            offsetId = result[result.length - 1].id;
-        }
+      allMessages = allMessages.concat(result);
+      if (result.length < limit) {
+        hasMore = false;
+      } else {
+        offsetId = result[result.length - 1].id;
+      }
     }
-    client.disconnect()
-    return allMessages.filter((messges) => messges.file).map(({file, id}) => {
+    return allMessages
+      .filter((messges) => messges.file)
+      .map(({ file, id }) => {
         //@ts-ignore
-      const buffer = file?.media?.fileReference as Buffer | null
-      return {title : file?.title, name:file?.name, size : formatBytes(file?.size as number), src : crypto.randomUUID(), type:file?.mimeType as string, buffer, id} satisfies FilesData
-    })
+        const bufferString = JSON.stringify(file?.media?.fileReference);
+        return {
+          title: file?.title,
+          name: file?.name,
+          size: formatBytes(file?.size as number),
+          src: crypto.randomUUID(),
+          type: file?.mimeType as string,
+          bufferString,
+          id,
+        } satisfies FilesData;
+      });
+  } catch (err) {
+    if (err instanceof Error) {
+      throw new Error(err.message);
+    }
+    throw new Error("There Was an Error While getting Messages");
+  } finally {
+    client?.disconnect();
+  }
 };
 
 export default async function Home() {

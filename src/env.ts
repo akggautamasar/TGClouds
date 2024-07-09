@@ -1,0 +1,19 @@
+import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod";
+
+export const env = createEnv({
+  server: {
+    TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
+    TELEGRAM_API_HASH: z.string(),
+    DATABASE_URL: z.string(),
+  },
+  client: {
+    NEXT_PUBLIC_PUBLISHABLE_KEY: z.string().min(1),
+  },
+  runtimeEnv: {
+    TELEGRAM_API_ID: process.env.TELEGRAM_API_ID,
+    TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH,
+    DATABASE_URL: process.env.DATABASE_URL,
+    NEXT_PUBLIC_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_PUBLISHABLE_KEY,
+  },
+});

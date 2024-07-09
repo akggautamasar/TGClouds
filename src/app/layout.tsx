@@ -1,11 +1,10 @@
+import Providers from "@/lib/progressBarContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { cookies } from 'next/headers'
-import { redirect } from "next/navigation";
-import { tgClient } from "@/lib/tgClient";
-import Providers from "@/lib/progressBarContext";
 
+import { ClerkProvider } from "@clerk/nextjs";
+import { env } from "@/env";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +22,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          {children}
+          <ClerkProvider publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}>
+            {children}
+          </ClerkProvider>
         </Providers>
       </body>
     </html>

@@ -4,6 +4,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadio
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import React from "react"
+import { UserProfile, UserButton } from "@clerk/nextjs";
+
 
 import {
   Dialog,
@@ -31,7 +33,11 @@ export default async function DisplayFiles({children} : {children : React.ReactN
   return (
     <div className="grid min-h-screen w-full grid-cols-[240px_1fr] bg-background">
       <div className="flex flex-col border-r bg-muted/40 px-4 py-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold" prefetch={false}>
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-semibold"
+          prefetch={false}
+        >
           <CloudIcon className="h-6 w-6" />
           <span>Cloud Storage</span>
         </Link>
@@ -78,12 +84,12 @@ export default async function DisplayFiles({children} : {children : React.ReactN
           </Link>
         </nav>
         <div className="mt-auto flex items-center gap-2">
-          <Avatar className="h-8 w-8 border">
-            <AvatarImage src="/placeholder-user.jpg" />
-            <AvatarFallback>YO</AvatarFallback>
-          </Avatar>
+          <UserButton />
+
           <div className="grid gap-0.5 text-sm">
-            <div className="font-medium">{`${me.firstName} ${me?.lastName ?? " "}`}</div>
+            <div className="font-medium">{`${me.firstName} ${
+              me?.lastName ?? " "
+            }`}</div>
             <div className="text-muted-foreground">{me?.username}</div>
           </div>
         </div>
@@ -92,11 +98,19 @@ export default async function DisplayFiles({children} : {children : React.ReactN
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-6 shadow-sm">
           <div className="relative flex-1">
             <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search files..." className="w-full rounded-lg bg-muted pl-8" />
+            <Input
+              type="search"
+              placeholder="Search files..."
+              className="w-full rounded-lg bg-muted pl-8"
+            />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+              >
                 <FilterIcon className="h-4 w-4" />
                 <span className="sr-only">Filter</span>
               </Button>
@@ -117,12 +131,10 @@ export default async function DisplayFiles({children} : {children : React.ReactN
             <Upload>Upload</Upload>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6">
-           {children}
-        </main>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }
 
 export function CloudIcon(props :React.SVGProps<SVGSVGElement>
