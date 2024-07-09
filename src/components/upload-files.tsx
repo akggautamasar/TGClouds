@@ -43,7 +43,7 @@ export function UploadFiles() {
           </div>
           <div className="grid gap-2">
             {files.map(({ file, id }) => {
-              return <div className="flex items-center justify-between bg-muted p-4 rounded-md">
+              return <div key={id} className="flex items-center justify-between bg-muted p-4 rounded-md">
                 <div className="flex items-center gap-4">
                   <FileIcon className="w-6 h-6 text-muted-foreground" />
                   <div>
