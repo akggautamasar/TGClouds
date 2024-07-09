@@ -41,6 +41,8 @@ export const getAllFiles = async (channelUsername: string) => {
       throw new Error('There was an error connecting to Telegram');
     }
 
+
+
     const limit = 100;
     let offsetId = 0;
     let allMessages: Api.Message[] = [];
@@ -85,7 +87,7 @@ export const getAllFiles = async (channelUsername: string) => {
     throw new Error("There was an error while getting messages");
   } finally {
     try {
-      await client?.disconnect();
+      // await client?.disconnect();
       console.log('Disconnected from Telegram client');
     } catch (disconnectError) {
       console.error('Error disconnecting:', disconnectError);

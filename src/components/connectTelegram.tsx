@@ -45,7 +45,7 @@ async function getPassword() {
 export default function Component() {
     const cookies = useCookies()
 
-    const [channelDeteails, setChannelDetails] = useState<string>()
+    const [channelDeteails, setChannelDetails] = useState<string | null>(null)
 
     const { isSignedIn, user } = useUser()
     const [isLoading, setIsLoading] = useState<boolean>()
@@ -106,8 +106,7 @@ export default function Component() {
 
     }
 
-
-    if (channelDeteails) return <div>{channelDeteails}</div>
+    // if (channelDeteails) return <div>{channelDeteails}</div>
 
     return (
         <div className="w-full bg-white py-20 md:py-32 lg:py-40">

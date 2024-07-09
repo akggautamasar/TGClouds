@@ -41,7 +41,7 @@ export function HomePage() {
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Secure and Reliable Storage</h2>
                 <p className="text-lg mb-8">
                   Your data is protected with end-to-end encryption, ensuring your files are safe and secure. Our
-                  service is built on Telegram's robust infrastructure, providing reliable and fast access to your cloud
+                  service is built on Telegram&apos;s robust infrastructure, providing reliable and fast access to your cloud
                   storage.
                 </p>
                 <div>

@@ -8,7 +8,10 @@ export function tgClient(telegramSession: string) {
     session,
     env.TELEGRAM_API_ID,
     env.TELEGRAM_API_HASH,
-    { connectionRetries: 3, autoReconnect: false }
+    {
+      connectionRetries: 3,
+      useWSS:true
+    }
   );
   return client
 }
