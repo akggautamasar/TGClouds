@@ -1,4 +1,4 @@
-import { SignIn, SignInButton } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export default async function Component() {
   const user = await currentUser()
 
-  if(user) return redirect('/connect-telegram')
+  if (user) return redirect('/connect-telegram')
 
   return (
     <section className="w-full bg-white py-20 md:py-32 lg:py-40">
@@ -32,7 +32,7 @@ export default async function Component() {
           </div>
         </div>
         <div className="w-full max-w-md">
-          <SignInButton forceRedirectUrl="/connect-telegram" />
+          <SignIn forceRedirectUrl="/connect-telegram" />
         </div>
       </div>
     </section>
