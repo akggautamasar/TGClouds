@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 import { tgClient } from "./lib/tgClient";
 import { revalidatePath } from "next/cache";
 import { db } from "./db";
+import { usersTable } from "./db/schema";
+import { currentUser } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 
 export async function uploadFiles(formData: FormData) {
     const sessionString = cookies().get('tgSession')
@@ -36,9 +39,6 @@ export async function uploadFiles(formData: FormData) {
 }
 
 export async function delelteItem(postId: number | string) {
-    console.log('channel', postId)
-
-
     const sessionString = cookies().get('tgSession')
     const client = tgClient(sessionString?.value as string)
     await client.connect()
@@ -56,7 +56,25 @@ export async function delelteItem(postId: number | string) {
     }
 }
 
-export async function saveTelegramSession(session: string) {
-    if (!session) throw new Error('session is needed please provide session')
-    cookies().set('tgSession', session)
+
+
+export async function saveTelegramSession(channelId: string) {
+    if (!channelId) throw new Error('session is needed please provide session');
+
+    const user = await currentUser();
+
+
+    if (!user) {
+        throw new Error('User email is required');
+    }
+
+    const email = user?.emailAddresses?.[0].emailAddress;
+
+
+    const result = await db
+        .select()
+        .from(usersTable)
+        .where(({ email: userEmail }) => eq(userEmail, email));
+
+    console.log(result)
 }

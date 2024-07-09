@@ -1,6 +1,6 @@
 'use client'
 import { delelteItem } from "@/actions";
-import { FilesData } from "@/app/page";
+import { FilesData } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
