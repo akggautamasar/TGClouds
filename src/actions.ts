@@ -54,6 +54,5 @@ export async function delelteItem(postId : number | string){
   } finally {
       await client.disconnect()
   }
-
-
 }
+

@@ -9,11 +9,15 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_PUBLISHABLE_KEY: z.string().min(1),
+    NEXT_PUBLIC_TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
+    NEXT_PUBLIC_TELEGRAM_API_HASH: z.string(),
   },
   runtimeEnv: {
     TELEGRAM_API_ID: process.env.TELEGRAM_API_ID,
     TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH,
     DATABASE_URL: process.env.DATABASE_URL,
     NEXT_PUBLIC_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_TELEGRAM_API_ID: process.env.NEXT_PUBLIC_TELEGRAM_API_ID,
+    NEXT_PUBLIC_TELEGRAM_API_HASH: process.env.NEXT_PUBLIC_TELEGRAM_API_HASH
   },
 });

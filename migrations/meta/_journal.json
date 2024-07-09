@@ -8,6 +8,13 @@
       "when": 1720518868630,
       "tag": "0000_lame_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1720524613610,
+      "tag": "0001_dusty_gauntlet",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,65 @@
+'use client'
+
 import { Button } from "@/components/ui/button";
+import { env } from "@/env";
 import Image from "next/image";
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
+import Swal from 'sweetalert2';
+import { SVGProps } from "react";
+
+async function getPhoneNumber() {
+  return await Swal.fire({
+    title: 'Enter your phone number',
+    input: 'text',
+    inputLabel: 'Phone Number',
+    inputPlaceholder: 'Please Input Your Phone Number',
+    showCancelButton: true
+  }).then(result => result.value as number);
+}
+
+
+
+async function getCode() {
+  return await Swal.fire({
+    title: 'Enter the verification code',
+    input: 'text',
+    inputLabel: 'Verification Code',
+    inputPlaceholder: 'Please Input the code',
+    showCancelButton: true
+  }).then(result => result.value as number);
+}
+
+
+async function getPassword() {
+  return await Swal.fire({
+    title: 'Enter Your Password',
+    input: 'text',
+    inputLabel: 'Password',
+    inputPlaceholder: 'Please Enter Your password',
+    showCancelButton: true
+  }).then(result => result.value as number);
+}
+
+const SESSION = new StringSession('')
 
 export default function Component() {
+  
+  async function connectTelegram() {
+    const client = new TelegramClient(SESSION, env.NEXT_PUBLIC_TELEGRAM_API_ID, env.NEXT_PUBLIC_TELEGRAM_API_HASH, { connectionRetries: 5 })
+
+    await client.start({
+      phoneNumber: async () => await getPhoneNumber() as unknown as string,
+      password: async () => await getPassword() as unknown as string,
+      phoneCode: async () => await getCode() as unknown as string,
+      onError: (err) => console.log(err),
+    });
+    console.log("You should now be connected.", client.session);
+    console.log(client.session.save());
+  }
+
+
+
   return (
     <div className="w-full bg-white py-20 md:py-32 lg:py-40">
       <div className="container flex flex-col items-center justify-between gap-10 px-4 md:flex-row md:gap-16">
@@ -14,7 +72,7 @@ export default function Component() {
             file storage and sharing.
           </p>
           <div className="flex flex-col items-center gap-4 md:flex-row">
-            <Button className="w-full md:w-auto">
+            <Button onClick={() => connectTelegram()} className="w-full md:w-auto">
               <TextIcon className="mr-2 h-5 w-5" />
               Connect Telegram
             </Button>
@@ -34,7 +92,7 @@ export default function Component() {
   );
 }
 
-function TextIcon(props) {
+function TextIcon(props : SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -54,3 +112,16 @@ function TextIcon(props) {
     </svg>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
