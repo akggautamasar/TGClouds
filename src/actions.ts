@@ -58,23 +58,35 @@ export async function delelteItem(postId: number | string) {
 
 
 
-export async function saveTelegramSession(channelId: string) {
-    if (!channelId) throw new Error('session is needed please provide session');
+export async function saveTelegramCredentials(channelId: string, session: string) {
+    if (!channelId || !session) throw new Error('session is needed please provide channelId');
 
     const user = await currentUser();
 
-
     if (!user) {
-        throw new Error('User email is required');
+        throw new Error('User needs to be loggedIn');
+    }
+    const email = user?.emailAddresses?.[0].emailAddress;
+    const result = await getUser(email)
+
+    if (!result) {
+        const name = user?.fullName ?? `${user.firstName} ${user.lastName}`
+        const newUser = await db.insert(usersTable).values({ email, name, id: user.id, channelId, telegramSession: session })
+        return newUser
     }
 
-    const email = user?.emailAddresses?.[0].emailAddress;
+    const updatedUser = await db.update(usersTable).set({ channelId, telegramSession: session }).where(eq(usersTable.email, result?.email!))
+    return updatedUser
+
+}
 
 
-    const result = await db
-        .select()
-        .from(usersTable)
-        .where(({ email: userEmail }) => eq(userEmail, email));
+export async function getUser(email: string) {
+    const result = await db.query.usersTable.findFirst({
+        where(fields, { eq }) {
+            return eq(fields.email, email)
+        },
+    })
 
-    console.log(result)
+    return result
 }

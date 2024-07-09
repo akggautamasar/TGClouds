@@ -13,32 +13,47 @@ export type FilesData = {
   size: string;
   src: string;
   name: string;
-  bufferString: string;
   id: string | number;
 };
 
+
+
 export const getAllFiles = async (channelUsername: string) => {
+
+
   let client: TelegramClient | undefined;
   const sessionString = cookies().get("tgSession");
-  console.log(sessionString)
-  if (!sessionString) return redirect('/login')
+  console.log('Session String:', sessionString);
+
+  if (!sessionString) {
+    console.log('No session string found, redirecting to login');
+    return redirect('/login');
+  }
+
   try {
+    client = tgClient(sessionString.value as string);
+    console.log('Connecting to Telegram client...');
 
-    client = tgClient(sessionString?.value as string);
-    const isConnected = await client.connect()
+    const isConnected = await client.connect();
+    console.log('Is connected:', isConnected);
 
-    if (!isConnected) throw Error('there was an error connecting telegram')
+    if (!isConnected) {
+      throw new Error('There was an error connecting to Telegram');
+    }
+
     const limit = 100;
     let offsetId = 0;
-
-    let allMessages: TotalList<Api.Message> = [];
+    let allMessages: Api.Message[] = [];
     let hasMore = true;
 
     while (hasMore) {
+      console.log(`Fetching messages with offsetId: ${offsetId}`);
       const result = await client.getMessages(channelUsername, {
         limit: limit,
         offsetId: offsetId,
       });
+
+      console.log(`Fetched ${result.length} messages`);
 
       allMessages = allMessages.concat(result);
       if (result.length < limit) {
@@ -47,33 +62,41 @@ export const getAllFiles = async (channelUsername: string) => {
         offsetId = result[result.length - 1].id;
       }
     }
+
+    console.log('All messages fetched:', allMessages.length);
     return allMessages
-      .filter((messges) => messges.file)
+      .filter((message) => message.file)
       .map(({ file, id }) => {
-        //@ts-ignore
-        const bufferString = JSON.stringify(file?.media?.fileReference);
         return {
           title: file?.title,
           name: file?.name,
           size: formatBytes(file?.size as number),
           src: crypto.randomUUID(),
           type: file?.mimeType as string,
-          bufferString,
           id,
         } satisfies FilesData;
       });
   } catch (err) {
     if (err instanceof Error) {
+      console.error('Error:', err.message);
       throw new Error(err.message);
     }
-    throw new Error("There Was an Error While getting Messages");
+    console.error('Unknown error occurred while getting messages');
+    throw new Error("There was an error while getting messages");
   } finally {
-    // client?.disconnect();
+    try {
+      await client?.disconnect();
+      console.log('Disconnected from Telegram client');
+    } catch (disconnectError) {
+      console.error('Error disconnecting:', disconnectError);
+    }
   }
 };
 
+
+
 export default async function Home() {
-  const allFiles = await getAllFiles("kuneDrive")
+  const allFiles = await getAllFiles('kuneDrive')
 
   return (
     <DisplayFiles>

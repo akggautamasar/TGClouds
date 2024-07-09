@@ -24,13 +24,6 @@ export default async function DisplayFiles({
 }: {
   children: React.ReactNode;
 }) {
-  const sessionString = cookies().get("tgSession");
-  const client = tgClient(sessionString?.value as string);
-
-  await client.connect();
-
-  const me = await client.getMe();
-
   return (
     <div className="grid min-h-screen w-full grid-cols-[240px_1fr] bg-background">
       <div className="flex flex-col border-r bg-muted/40 px-4 py-6">
@@ -85,7 +78,7 @@ export default async function DisplayFiles({
           </Link>
         </nav>
         <div className="mt-auto flex items-center gap-2">
-          <UserButton showName = {true} />
+          <UserButton showName={true} />
         </div>
       </div>
       <div className="flex flex-col">
@@ -99,7 +92,7 @@ export default async function DisplayFiles({
             />
           </div>
           <div>
-            <ModeToggle/>
+            <ModeToggle />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

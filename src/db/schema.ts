@@ -5,7 +5,7 @@ export const usersTable = pgTable("users_table", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   telegramSession: text('telegramSession'),
-  channelName:text('channelName')
+  channelId: text('channelName')
 });
 
 export const sessionTable = pgTable("session", {
