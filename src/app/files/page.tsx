@@ -1,6 +1,6 @@
 import { getUser } from "@/actions";
 import DisplayFiles from "@/components/files";
-import Files, { User } from "@/layouts/files";
+import Files, { User } from "@/components/FilesRender";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";

@@ -14,6 +14,11 @@ const nextConfig = {
       },
     ],
   },
+  compiler: {
+    removeConsole: {
+      exclude: ["error", "warn"],
+    },
+  },
 
   webpack: (config, { isServer }) => {
     if (isServer) {

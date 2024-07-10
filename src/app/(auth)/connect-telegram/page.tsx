@@ -5,6 +5,7 @@ import { getUser } from '@/actions'
 import { redirect } from 'next/navigation'
 import { db } from "@/db";
 import { usersTable } from "@/db/schema";
+import { User } from "@/components/FilesRender";
 
 async function Page() {
   console.log("user clekr");
@@ -28,7 +29,7 @@ async function Page() {
 
   return (
     <div>
-      <ConnectTelegram user={user} />
+      <ConnectTelegram user={user as User} />
     </div>
   );
 }

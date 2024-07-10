@@ -1,6 +1,6 @@
 
-import Footer from "@/layouts/footer"
-import Header from "@/layouts/Header"
+import Footer from "@/components/footer";
+import Header from "@/components/Header";
 import Image from "next/image";
 import Link from "next/link"
 

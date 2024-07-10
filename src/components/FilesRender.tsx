@@ -1,16 +1,16 @@
-'use client'
-import { delelteItem } from "@/actions";
+"use client";
 import { FilesData } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { tgClient } from "@/lib/tgClient";
-import { formatBytes } from "@/lib/utils";
+import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { Api, TelegramClient } from "telegram";
 import { cache } from "react";
+import { Delete } from "./Icons/icons";
 
 export type User = {
   id: string;
@@ -20,21 +20,23 @@ export type User = {
   channelId: string;
 };
 
-
 const getAllFiles = async (client: TelegramClient, user: User) => {
-
-  console.log("Connecting to Telegram client...");
-
-  await client.connect();
-
-  console.log("Connection status", client.connected);
-
   const limit = 100;
   let offsetId = 0;
   let allMessages: Api.Message[] = [];
   let hasMore = true;
 
   try {
+    console.log("Connecting to Telegram client...");
+
+    await client.connect();
+
+    console.log("Connection status", client.connected);
+
+    if (!client.connected) {
+      throw new Error("Client is not connected");
+    }
+
     while (hasMore) {
       console.log(`Fetching messages with offsetId: ${offsetId}`);
 
@@ -70,29 +72,27 @@ const getAllFiles = async (client: TelegramClient, user: User) => {
       console.log(err?.message);
     }
   }
-}
+};
 
-function Files({ user, mimeType }: { user?: User, mimeType?: string }) {
+function Files({ user, mimeType }: { user?: User; mimeType?: string }) {
   const [allFiles, setAllFiles] = useState<FilesData[]>();
   const client = tgClient(user?.telegramSession as string);
 
   // const ff = use(getAllFiles(client, user!))
 
   useEffect(() => {
-    console.log('user', user)
+    console.log("user", user);
     if (user) {
-      console.log('user', user)
-      getAllFiles(client, user).then(setAllFiles)
+      console.log("user", user);
+      getAllFiles(client, user).then(setAllFiles);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-
-
-  const filesToDisplay = mimeType ? allFiles?.filter(({ type }) => type.startsWith(mimeType)) : allFiles
-
-
+  const filesToDisplay = mimeType
+    ? allFiles?.filter(({ type }) => type.startsWith(mimeType))
+    : allFiles;
 
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -132,7 +132,8 @@ function Files({ user, mimeType }: { user?: User, mimeType?: string }) {
             <div className="absolute z-50 right-2 bottom-2">
               <Button
                 onClick={async () => {
-                  await delelteItem(file.id);
+                  if (!user) return alert("Please login to delete files");
+                  await delelteItem(user, file.id);
                 }}
                 variant={"destructive"}
               >
@@ -147,7 +148,3 @@ function Files({ user, mimeType }: { user?: User, mimeType?: string }) {
 }
 
 export default Files;
-
-function Delete() {
-  return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
-}

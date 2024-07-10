@@ -1,13 +1,13 @@
-import DisplayFiles from '@/components/files';
-import Files from "@/layouts/files";
-import { useUserPotected } from '../page';
+import DisplayFiles from "@/components/files";
+import { useUserPotected } from "../page";
+import Files from "@/components/FilesRender";
 
 export default async function Home() {
-  const user = await useUserPotected()
+  const user = await useUserPotected();
 
   return (
     <DisplayFiles>
-      <Files user={user} mimeType='audio/' />
+      <Files user={user} mimeType="audio/" />
     </DisplayFiles>
   );
 }
