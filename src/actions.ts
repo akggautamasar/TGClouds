@@ -69,6 +69,8 @@ export async function saveTelegramCredentials(channelId: string, session: string
     const email = user?.emailAddresses?.[0].emailAddress;
     const result = await getUser(email)
 
+    cookies().set('tgChannelId', channelId)
+
     if (!result) {
         const name = user?.fullName ?? `${user.firstName} ${user.lastName}`
         const newUser = await db.insert(usersTable).values({ email, name, id: user.id, channelId, telegramSession: session })

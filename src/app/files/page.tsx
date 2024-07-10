@@ -1,7 +1,9 @@
+import { getUser } from '@/actions';
 import DisplayFiles from '@/components/files';
 import Files from "@/layouts/files";
 import { tgClient } from "@/lib/tgClient";
 import { formatBytes } from '@/lib/utils';
+import { currentUser } from '@clerk/nextjs/server';
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
 import { Api, TelegramClient } from "telegram";
@@ -18,12 +20,19 @@ export type FilesData = {
 
 
 
-export const getAllFiles = async (channelUsername: string) => {
+export const getAllFiles = async () => {
+  const userClerk = await currentUser()
 
+  if (!userClerk) return redirect('/auth/login')
+
+
+  const user = await getUser(userClerk?.emailAddresses[0].emailAddress)
 
   let client: TelegramClient | undefined;
-  const sessionString = cookies().get("tgSession");
+  const sessionString = cookies().get("tgSession") ?? user?.telegramSession
   console.log('Session String:', sessionString);
+  const channelId = cookies().get('tgChannelId')?.value ?? user?.channelId
+
 
   if (!sessionString) {
     console.log('No session string found, redirecting to login');
@@ -31,7 +40,7 @@ export const getAllFiles = async (channelUsername: string) => {
   }
 
   try {
-    client = tgClient(sessionString.value as string);
+    client = tgClient(sessionString as string);
     console.log('Connecting to Telegram client...');
 
     const isConnected = await client.connect();
@@ -50,7 +59,7 @@ export const getAllFiles = async (channelUsername: string) => {
 
     while (hasMore) {
       console.log(`Fetching messages with offsetId: ${offsetId}`);
-      const result = await client.getMessages(channelUsername, {
+      const result = await client.getMessages(channelId, {
         limit: limit,
         offsetId: offsetId,
       });
@@ -98,7 +107,7 @@ export const getAllFiles = async (channelUsername: string) => {
 
 
 export default async function Home() {
-  const allFiles = await getAllFiles('kuneDrive')
+  const allFiles = await getAllFiles()
 
   return (
     <DisplayFiles>

@@ -100,7 +100,7 @@ export default function Component() {
 
         const saveTelegramResult = await saveTelegramCredentials(channel.id.value, session!)
 
-        console.log(channel)
+    
 
         setChannelDetails(JSON.stringify(saveTelegramResult))
 
