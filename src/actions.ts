@@ -15,7 +15,6 @@ export async function uploadFiles(formData: FormData) {
   if (!clerkUser) redirect("/auth");
 
   const user = await getUser(clerkUser?.emailAddresses[0].emailAddress);
-
   const sessionString = user?.telegramSession;
   const client = tgClient(sessionString as string);
   await client.connect();
@@ -77,33 +76,38 @@ export async function saveTelegramCredentials(
 
   const user = await currentUser();
 
+
+  console.log(arguments, 'arugments')
+
   if (!user) {
     throw new Error("User needs to be loggedIn");
   }
   const email = user?.emailAddresses?.[0].emailAddress;
-   
+
 
   try {
     const result = await getUser(email);
     if (!result) {
       const name = user?.fullName ?? `${user.firstName} ${user.lastName}`;
-      const newUser = await db.insert(usersTable).values({
+      await db.insert(usersTable).values({
         email,
         name,
         id: user.id,
         channelId,
         telegramSession: session,
       });
-      return newUser;
     }
-     const updatedUser = await db
-       .update(usersTable)
-       .set({ channelId, telegramSession: session })
-       .where(eq(usersTable.email, result?.email!));
-     return updatedUser;
-  } catch(err) {
+    const r = await db
+      .update(usersTable)
+      .set({ channelId, telegramSession: session })
+      .where(eq(usersTable.email, result?.email!));
+  } catch (err) {
     console.error(err)
     throw new Error("There was an error while saving Telegram Credentials");
+  }
+   console.log('oops')
+  if (channelId && session) {
+    redirect('/files')
   }
 }
 
@@ -115,10 +119,8 @@ export async function getUser(email: string) {
       },
     });
 
-    console.log("result", result);
     return result;
   } catch (err) {
-    console.error(err);
     throw new Error("There was an error while getting Files");
   }
 }

@@ -14,10 +14,8 @@ import Link from "next/link";
 import React from "react";
 
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { tgClient } from "@/lib/tgClient";
-import { cookies } from "next/headers";
-import { UploadFiles } from "./upload-files";
 import { ModeToggle } from "./darkmodeToggle";
+import { UploadFiles } from "./upload-files";
 
 export default async function DisplayFiles({
   children,
@@ -37,7 +35,7 @@ export default async function DisplayFiles({
         </Link>
         <nav className="mt-8 flex flex-col gap-4">
           <Link
-            href="/images"
+            href="/files/images"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -45,7 +43,7 @@ export default async function DisplayFiles({
             Images
           </Link>
           <Link
-            href="/videos"
+            href="/files/videos"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -53,7 +51,7 @@ export default async function DisplayFiles({
             Videos
           </Link>
           <Link
-            href="/documents"
+            href="/files/documents"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -61,7 +59,7 @@ export default async function DisplayFiles({
             Documents
           </Link>
           <Link
-            href="/audios"
+            href="/files/audios"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >
@@ -69,7 +67,7 @@ export default async function DisplayFiles({
             Audio
           </Link>
           <Link
-            href="/folders"
+            href="/files/folders"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted"
             prefetch={false}
           >

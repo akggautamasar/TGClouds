@@ -4,7 +4,6 @@ import { saveTelegramCredentials } from "@/actions";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { tgClient } from "@/lib/tgClient";
-import { useCookies } from "next-client-cookies";
 import Image from "next/image";
 import { SVGProps, useState } from "react";
 import Swal from "sweetalert2";
@@ -38,12 +37,24 @@ async function getPassword() {
   }).then((result) => result.value as number);
 }
 
+
+interface ChannelDetails {
+  title: string;
+  username: string;
+  channelId: number | string;
+  accessHash: number | string;
+  isCreator: boolean;
+  isBroadcast: boolean;
+}
+
+
+
+
 export default function Component({
   user,
 }: {
   user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
 }) {
-  const cookies = useCookies();
 
   const [channelDeteails, setChannelDetails] = useState<{
     session?: string | null;
@@ -82,7 +93,6 @@ export default function Component({
       }
       setClient(client);
       if (!client.connected) await client.connect();
-      //   await createChannel(client);
     } catch (err) {
       console.error(err);
     } finally {
@@ -91,43 +101,18 @@ export default function Component({
     }
   }
 
-  //   async function createChannel(client: TelegramClient) {
-  //     if (!user) throw new Error("failed to create channel");
-
-  //     const channleName = `${user.name}Drive`;
-  //     const result = (await client.invoke(
-  //       new Api.channels.CreateChannel({
-  //         title: channleName,
-  //         about: "some string here",
-  //         broadcast: true,
-  //       })
-  //     )) as { chats: Array<any> };
-
-  //     const channel = result?.chats?.[0];
-
-  //     await client.sendMessage(channel.id.value, { message: "hellow" });
-  //     const session = cookies.get("tgSession");
-
-  //     const saveTelegramResult = await saveTelegramCredentials(
-  //       channel.id.value,
-  //       session!
-  //     );
-
-  //     setChannelDetails(JSON.stringify(saveTelegramResult));
-  //   }
 
   async function getChannelDetails(client: TelegramClient, username: string) {
     if (!client?.connected) {
       await client.connect();
     }
 
-    const entity = await client.getEntity(username);
+    const entity = await client.getEntity(username) as unknown as ChannelDetails & { id: { value: string }, broadcast: boolean, creator: any }
 
-    const channelDetails = {
+    const channelDetails: Partial<ChannelDetails> = {
       title: entity.title,
       username: entity.username,
       channelId: entity.id.value,
-      accessHash: entity.accessHash.value,
       isCreator: entity.creator,
       isBroadcast: entity.broadcast,
     };
@@ -150,78 +135,12 @@ export default function Component({
       const isConfirmed = await showChannelUsernamePrompt(channelDetails);
 
       if (isConfirmed) {
-       const data =  await saveTelegramCredentials(username, user.telegramSession!);
-       console.log(data)
-        redirect('/files')
-        console.log("saved telegram credentials");
+        console.log("what is going on", await saveTelegramCredentials(username, user.telegramSession!));
       }
     } catch (err) {
       console.error(err);
     }
   }
-
-  //   async function connectChannel(username: string) {
-  //     if (client && client.connected) {
-  //       const entity = await client.getEntity(username);
-  //       console.log(entity);
-  //       return;
-  //     }
-
-  //     if (client && !client.connected) {
-  //       await client.connect();
-  //       const entity = await client.getEntity(username);
-  //       console.log(entity);
-  //       return;
-  //     }
-
-  //     const client2 = tgClient(user.telegramSession!);
-
-  //     await client2.connect();
-  //     const entity = await client2.getEntity(username);
-
-  //     const channelDetails = {
-  //       title: entity.title,
-  //       username: entity.username,
-  //       channelId: entity.id.value,
-  //       accessHash: entity.accessHash.value,
-  //       isCreator: entity.creator,
-  //       isBroadcast: entity.broadcast,
-  //     };
-  //     console.log(entity);
-
-  //     //     const channelUsername = Swal.fire({
-  //     //       title: "<strong>Create Your Telegram Channel</strong>",
-  //     //       icon: "info",
-  //     //       html: `
-  //     //     Please create a channel on Telegram and paste the channel username in the input box below.
-  //     //     <br><br>
-  //     //     <input type="text" id="channelUsername" class="swal2-input" placeholder="Channel Username">
-  //     //   `,
-  //     //       showCloseButton: true,
-  //     //       showCancelButton: true,
-  //     //       focusConfirm: false,
-  //     //       confirmButtonText: `
-  //     //     <i class="fa fa-thumbs-up"></i> Submit
-  //     //   `,
-  //     //       confirmButtonAriaLabel: "Submit",
-  //     //       cancelButtonText: `
-  //     //     <i class="fa fa-thumbs-down"></i> Cancel
-  //     //   `,
-  //     //       cancelButtonAriaLabel: "Cancel",
-  //     //       preConfirm: () => {
-  //     //         const channelUsernameInput = Swal.getPopup()?.querySelector(
-  //     //           "#channelUsername"
-  //     //         ) as HTMLInputElement;
-  //     //         const channelUsername = channelUsernameInput.value;
-  //     //         if (!channelUsername) {
-  //     //           Swal.showValidationMessage(`Please enter the channel username`);
-  //     //         }
-  //     //         return { channelUsername: channelUsername };
-  //     //       },
-  //     //     });
-
-  //     // console.log(channelUsername);
-  //   }
 
   if (channelDeteails.session) return <Component2 onSubmit={connectChannel} />;
 
@@ -285,15 +204,13 @@ function TextIcon(props: SVGProps<SVGSVGElement>) {
 
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
-  CardFooter,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { redirect } from "next/navigation";
 
 function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
   return (
@@ -360,7 +277,7 @@ function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
                     />
                   </div>
                   <div>
-                    <Button className="w-full">Connect</Button>
+                    <Button className="w-full my-4 p-2">Connect</Button>
                   </div>
                 </form>
               </div>
@@ -372,7 +289,7 @@ function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
   );
 }
 
-function CheckIcon(props) {
+function CheckIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -395,12 +312,11 @@ async function showChannelUsernamePrompt(channelDetails: any) {
   const result = await Swal.fire({
     title: "Channel Details",
     html: `
-            <strong>Title:</strong> ${channelDetails.title}<br>
-            <strong>Username:</strong> ${channelDetails.username}<br>
+            <strong>Channel Name:</strong> ${channelDetails.title}<br>
+            <strong>Channel Username:</strong> ${channelDetails.username}<br>
             <strong>Channel ID:</strong> ${channelDetails.channelId}<br>
-            <strong>Access Hash:</strong> ${channelDetails.accessHash}<br>
             <strong>Creator:</strong> ${channelDetails.isCreator}<br>
-            <strong>Broadcast:</strong> ${channelDetails.isBroadcast}<br>
+            <strong>Group or Channel:</strong> ${channelDetails.isBroadcast ? "Channel" : "Group"}<br>
         `,
     icon: "info",
     showCloseButton: true,

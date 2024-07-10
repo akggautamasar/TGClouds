@@ -1,15 +1,65 @@
 'use client'
-import { uploadFiles } from "@/actions";
+import { getUser } from "@/actions";
 import { Button } from "@/components/ui/button"
+import { User } from "@/layouts/files";
+import { tgClient } from "@/lib/tgClient";
+import { useUser } from "@clerk/nextjs";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { useRef, useState, useActionState } from "react"
 import { useFormStatus } from "react-dom";
+
+
+export async function uploadFiles(formData: FormData, user: User) {
+
+
+  console.log('user', user)
+
+  const sessionString = user?.telegramSession;
+  const client = tgClient(sessionString as string);
+  await client.connect();
+
+  const files = formData.getAll("files") as File[];
+  try {
+    for (const file of files) {
+      const toUpload = await client.uploadFile({ file, workers: 1 });
+
+      const result = await client.sendFile(user?.channelId, {
+        file: toUpload,
+        forceDocument: true,
+      });
+      console.log("File uploaded successfully:", result);
+      revalidatePath("/");
+    }
+  } catch (err) {
+    if (err instanceof Error) {
+      throw new Error(err.message);
+    }
+    throw new Error("there was an error");
+  } finally {
+    await client.disconnect();
+  }
+}
+
+
+
+
 
 export function UploadFiles() {
   const [files, setFiles] = useState<{ file: File, id: string }[]>([])
 
+  const { isLoaded, isSignedIn, user: clerUser } = useUser()
+
   return (
     <div className="grid gap-6 max-w-xl mx-auto">
-      <form action={uploadFiles}>
+      <form action={async (formData) => {
+        if (!isSignedIn) redirect('/auth')
+        const email = clerUser?.emailAddresses?.[0].emailAddress
+        const user = await getUser(email)
+        if (!user?.telegramSession || !user.channelId) return redirect('/connect-telegram')
+
+        uploadFiles(formData, user as User)
+      }}>
         <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-lg border-primary hover:border-primary-foreground transition-colors">
           <CloudUploadIcon className="w-10 h-10 text-primary" />
           <h3 className="text-2xl font-bold">Upload Files</h3>

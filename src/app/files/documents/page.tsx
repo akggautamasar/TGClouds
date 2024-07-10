@@ -1,13 +1,13 @@
-import Image from "next/image";
-import DisplayFiles from '@/components/files'
+import DisplayFiles from '@/components/files';
 import Files from "@/layouts/files";
-import { getAllFiles } from "../page";
+import { useUserPotected } from '../page';
 export default async function Home() {
-    const documentsData =  (await getAllFiles()).filter(({type}) => type.startsWith('application/'))
+
+  const user = await useUserPotected()
 
   return (
-      <DisplayFiles>
-        <Files files={documentsData}/>
-      </DisplayFiles>
+    <DisplayFiles>
+      <Files user={user} mimeType='application/' />
+    </DisplayFiles>
   );
 }
