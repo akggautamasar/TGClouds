@@ -1,11 +1,14 @@
-import { getUser } from '@/actions';
-import DisplayFiles from '@/components/files';
+import { getUser } from "@/actions";
+import DisplayFiles from "@/components/files";
+import { db } from "@/db";
+import { usersTable } from "@/db/schema";
 import Files from "@/layouts/files";
 import { tgClient } from "@/lib/tgClient";
-import { formatBytes } from '@/lib/utils';
-import { currentUser } from '@clerk/nextjs/server';
+import { formatBytes } from "@/lib/utils";
+import { currentUser } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 import { Api, TelegramClient } from "telegram";
 
 export type FilesData = {
@@ -17,40 +20,35 @@ export type FilesData = {
   id: string | number;
 };
 
-
-
 export const getAllFiles = async () => {
-  const userClerk = await currentUser()
+  const userClerk = await currentUser();
 
-  if (!userClerk) return redirect('/auth/login')
+  if (!userClerk) return redirect("/auth/login");
 
-
-  const user = await getUser(userClerk?.emailAddresses[0].emailAddress)
+  const user = await getUser(userClerk?.emailAddresses[0].emailAddress);
 
   let client: TelegramClient | undefined;
-  const sessionString = cookies().get("tgSession") ?? user?.telegramSession
-  console.log('Session String:', sessionString);
-  const channelId = cookies().get('tgChannelId')?.value ?? user?.channelId
-
+  const sessionString = user?.telegramSession;
+  console.log("Session String:", sessionString);
+  const channelId = user?.channelId;
 
   if (!sessionString) {
-    console.log('No session string found, redirecting to login');
-    return redirect('/auth/login');
+    console.log("No session string found, redirecting to login");
+    return redirect("/auth/login");
   }
 
   if (!channelId) {
-    redirect('/connect-telegram')
+    redirect("/connect-telegram");
   }
-
 
   try {
     client = tgClient(sessionString as string);
-    console.log('Connecting to Telegram client...');
+    console.log("Connecting to Telegram client...");
 
-    await client.connect()
+    // await client.connect();
 
     if (!client.connected) {
-      throw new Error('There was an error connecting to Telegram');
+      throw new Error("There was an error connecting to Telegram");
     }
 
     const limit = 100;
@@ -75,7 +73,7 @@ export const getAllFiles = async () => {
       }
     }
 
-    console.log('All messages fetched:', allMessages.length);
+    console.log("All messages fetched:", allMessages.length);
     return allMessages
       .filter((message) => message.file)
       .map(({ file, id }) => {
@@ -90,25 +88,36 @@ export const getAllFiles = async () => {
       });
   } catch (err) {
     if (err instanceof Error) {
-      console.error('Error:', err.message);
+      console.error("Error:", err.message);
     }
     throw new Error("There was an error while getting Files");
   } finally {
     try {
-      await client?.disconnect();
-      console.log('Disconnected from Telegram client');
+      // await client?.disconnect();
+      console.log("Disconnected from Telegram client");
     } catch (disconnectError) {
-      console.error('Error disconnecting:', disconnectError);
+      console.error("Error disconnecting:", disconnectError);
     }
   }
 };
 
 export default async function Home() {
-  const allFiles = await getAllFiles()
+  // const allFiles = await getAllFiles();
+
+  const userClerk = await currentUser();
+
+  if (!userClerk) return redirect("/auth/login");
+
+  const user = await getUser(userClerk?.emailAddresses[0].emailAddress);
+
+  if (!user?.channelId || !user?.telegramSession) {
+    return redirect("/connect-telegram");
+  }
 
   return (
     <DisplayFiles>
-      <Files files={allFiles} />
+      {/* @ts-ignore */}
+      <Files user={user} />
     </DisplayFiles>
   );
 }

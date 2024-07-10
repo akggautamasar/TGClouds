@@ -7,6 +7,11 @@ const nextConfig = {
         hostname: "via.placeholder.com",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "img.freepik.com",
+        port: "",
+      },
     ],
   },
 
@@ -17,8 +22,7 @@ const nextConfig = {
 
     config.resolve.fallback = { fs: false, net: false, async_hooks: false };
     return config;
-  }
-
+  },
 };
 
 export default nextConfig;

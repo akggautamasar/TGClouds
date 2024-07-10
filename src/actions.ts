@@ -1,4 +1,4 @@
-'use server'
+"use server";
 
 import { cookies } from "next/headers";
 import { tgClient } from "./lib/tgClient";
@@ -7,98 +7,118 @@ import { db } from "./db";
 import { usersTable } from "./db/schema";
 import { currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
 export async function uploadFiles(formData: FormData) {
-    const sessionString = cookies().get('tgSession')
-    const client = tgClient(sessionString?.value as string)
-    await client.connect()
+  const clerkUser = await currentUser();
 
-    const files = formData.getAll('files') as File[]
-    try {
+  if (!clerkUser) redirect("/auth");
 
-        for (const file of files) {
-            const toUpload = await client.uploadFile({ file, workers: 1 })
+  const user = await getUser(clerkUser?.emailAddresses[0].emailAddress);
 
-            const result = await client.sendFile("kuneDrive", {
-                file: toUpload,
-                forceDocument: true
-            });
-            console.log('File uploaded successfully:', result);
-            revalidatePath('/')
+  const sessionString = user?.telegramSession;
+  const client = tgClient(sessionString as string);
+  await client.connect();
 
-        }
-    } catch (err) {
-        if (err instanceof Error) {
-            throw new Error(err.message)
-        }
-        throw new Error('there was an error')
-    } finally {
-        await client.disconnect()
+  const files = formData.getAll("files") as File[];
+  try {
+    for (const file of files) {
+      const toUpload = await client.uploadFile({ file, workers: 1 });
+
+      const result = await client.sendFile(user?.channelId, {
+        file: toUpload,
+        forceDocument: true,
+      });
+      console.log("File uploaded successfully:", result);
+      revalidatePath("/");
     }
-
+  } catch (err) {
+    if (err instanceof Error) {
+      throw new Error(err.message);
+    }
+    throw new Error("there was an error");
+  } finally {
+    await client.disconnect();
+  }
 }
 
 export async function delelteItem(postId: number | string) {
-    const sessionString = cookies().get('tgSession')
-    const client = tgClient(sessionString?.value as string)
-    await client.connect()
+  const clerkUser = await currentUser();
 
-    try {
-        await client.deleteMessages('kuneDrive', [Number(postId)], { revoke: true })
-        revalidatePath('/')
-    } catch (err) {
-        if (err instanceof Error) {
-            throw new Error(err.message)
-        }
-        throw new Error('there was an error')
-    } finally {
-        await client.disconnect()
+  if (!clerkUser) redirect("/auth");
+
+  const user = await getUser(clerkUser?.emailAddresses[0].emailAddress);
+
+  const sessionString = user?.telegramSession;
+  const client = tgClient(sessionString as string);
+  await client.connect();
+
+  try {
+    await client.deleteMessages(user?.channelId, [Number(postId)], {
+      revoke: true,
+    });
+    revalidatePath("/");
+  } catch (err) {
+    if (err instanceof Error) {
+      throw new Error(err.message);
     }
+    throw new Error("there was an error");
+  } finally {
+    await client.disconnect();
+  }
 }
 
+export async function saveTelegramCredentials(
+  channelId: string | null,
+  session: string
+) {
+  if (!session)
+    throw new Error("session is needed please provide channelId");
 
+  const user = await currentUser();
 
-export async function saveTelegramCredentials(channelId: string, session: string) {
-    if (!channelId || !session) throw new Error('session is needed please provide channelId');
+  if (!user) {
+    throw new Error("User needs to be loggedIn");
+  }
+  const email = user?.emailAddresses?.[0].emailAddress;
+   
 
-    const user = await currentUser();
-
-    if (!user) {
-        throw new Error('User needs to be loggedIn');
-    }
-    const email = user?.emailAddresses?.[0].emailAddress;
-    const result = await getUser(email)
-
-    cookies().set('tgChannelId', channelId)
-
+  try {
+    const result = await getUser(email);
     if (!result) {
-        const name = user?.fullName ?? `${user.firstName} ${user.lastName}`
-        const newUser = await db.insert(usersTable).values({ email, name, id: user.id, channelId, telegramSession: session })
-        return newUser
+      const name = user?.fullName ?? `${user.firstName} ${user.lastName}`;
+      const newUser = await db.insert(usersTable).values({
+        email,
+        name,
+        id: user.id,
+        channelId,
+        telegramSession: session,
+      });
+      return newUser;
     }
-
-    const updatedUser = await db.update(usersTable).set({ channelId, telegramSession: session }).where(eq(usersTable.email, result?.email!))
-    return updatedUser
-
+     const updatedUser = await db
+       .update(usersTable)
+       .set({ channelId, telegramSession: session })
+       .where(eq(usersTable.email, result?.email!));
+     return updatedUser;
+  } catch(err) {
+    console.error(err)
+    throw new Error("There was an error while saving Telegram Credentials");
+  }
 }
-
 
 export async function getUser(email: string) {
-    console.log('email get user', email)
-    try {
+  try {
+    const result = await db.query.usersTable.findFirst({
+      where(fields, { eq }) {
+        return eq(fields.email, email);
+      },
+    });
 
-        const result = await db.query.usersTable.findFirst({
-            where(fields, { eq }) {
-                return eq(fields.email, email)
-            },
-        })
-
-        console.log('result', result)
-        return result
-    } catch (err) {
-        console.error(err)
-        throw new Error("There was an error while getting Files");
-
-    }
-
+    console.log("result", result);
+    return result;
+  } catch (err) {
+    console.error(err);
+    throw new Error("There was an error while getting Files");
+  }
 }

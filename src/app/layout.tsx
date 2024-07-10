@@ -31,8 +31,8 @@ export default function RootLayout({
           <ClerkProvider
             afterSignOutUrl={"/auth/login"}
             publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
-            signUpForceRedirectUrl={'/connect-telegram'}
-            signInForceRedirectUrl={'/connect-telegram'}
+            signUpForceRedirectUrl={"/connect-telegram"}
+            signInForceRedirectUrl={"/connect-telegram"}
           >
             <ThemeProvider
               attribute="class"
@@ -40,9 +40,7 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <CookiesProvider>
-                {children}
-              </CookiesProvider>
+              <CookiesProvider>{children}</CookiesProvider>
             </ThemeProvider>
           </ClerkProvider>
         </Providers>

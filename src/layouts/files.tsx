@@ -6,11 +6,81 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { tgClient } from "@/lib/tgClient";
+import { Api } from "telegram";
+import { formatBytes } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
-function Files({ files }: { files: FilesData[] }) {
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  telegramSession: string;
+  channelId: string;
+};
+
+function Files({ files, user }: { files?: FilesData[]; user?: User }) {
+  const [allFiles, setAllFiles] = useState<FilesData[]>();
+
+  useEffect(() => {
+    const client = tgClient(user?.telegramSession as string);
+
+    console.log("Connecting to Telegram client...");
+
+    (async () => {
+      await client.connect();
+
+      console.log("Connection status", client.connected);
+
+      const limit = 100;
+      let offsetId = 0;
+      let allMessages: Api.Message[] = [];
+      let hasMore = true;
+
+      try {
+        while (hasMore) {
+          console.log(`Fetching messages with offsetId: ${offsetId}`);
+
+          const result = await client.getMessages(user?.channelId, {
+            limit: limit,
+            offsetId: offsetId,
+          });
+
+          console.log(`Fetched ${result.length} messages`);
+
+          allMessages = allMessages.concat(result);
+          if (result.length < limit) {
+            hasMore = false;
+          } else {
+            offsetId = result[result.length - 1].id;
+          }
+        }
+
+        console.log("All messages fetched:", allMessages.length);
+        return allMessages
+          .filter((message) => message.file)
+          .map(({ file, id }) => {
+            return {
+              title: file?.title,
+              name: file?.name,
+              size: formatBytes(file?.size as number),
+              src: crypto.randomUUID(),
+              type: file?.mimeType as string,
+              id,
+            } satisfies FilesData;
+          });
+      } catch (err) {
+        console.log(err.message);
+      }
+    })().then((res) => setAllFiles(res));
+  }, [user]);
+
+  const filesToDisplay = files ?? allFiles;
+
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      {files.map((file, index) => (
+      {filesToDisplay?.map((file, index) => (
         <Card
           key={index}
           className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
