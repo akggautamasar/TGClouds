@@ -6,11 +6,10 @@ export function tgClient(telegramSession: string) {
   const session = new StringSession(telegramSession);
   const client = new TelegramClient(
     session,
-    env.TELEGRAM_API_ID,
-    env.TELEGRAM_API_HASH,
+    env.NEXT_PUBLIC_TELEGRAM_API_ID,
+    env.NEXT_PUBLIC_TELEGRAM_API_HASH,
     {
-      connectionRetries: 3,
-      useWSS:true
+      connectionRetries: 5,
     }
   );
   return client

@@ -1,12 +1,21 @@
 'use client'
 
 import React from 'react'
+import { Error } from '@/components/error'
+import Footer from '@/layouts/footer'
+import Header from '@/layouts/Header'
 
-function Error(props: {error:{message:string}}) {
-    const errorMessage = props?.error?.message
+function FilesError(props: { error: { message: string } }) {
     return (
-        <div>{errorMessage ?? "Oops There was an Error occred "}</div>
+        <>
+            < Header />
+
+            <Error />
+            < Footer />
+
+        </>
     )
 }
 
-export default Error
+export default FilesError
+

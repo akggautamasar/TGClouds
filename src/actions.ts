@@ -84,11 +84,21 @@ export async function saveTelegramCredentials(channelId: string, session: string
 
 
 export async function getUser(email: string) {
-    const result = await db.query.usersTable.findFirst({
-        where(fields, { eq }) {
-            return eq(fields.email, email)
-        },
-    })
+    console.log('email get user', email)
+    try {
 
-    return result
+        const result = await db.query.usersTable.findFirst({
+            where(fields, { eq }) {
+                return eq(fields.email, email)
+            },
+        })
+
+        console.log('result', result)
+        return result
+    } catch (err) {
+        console.error(err)
+        throw new Error("There was an error while getting Files");
+
+    }
+
 }

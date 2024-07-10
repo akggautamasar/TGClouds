@@ -2,15 +2,14 @@
 
 import { saveTelegramCredentials } from "@/actions";
 import { Button } from "@/components/ui/button";
-import { env } from "@/env";
+import { tgClient } from "@/lib/tgClient";
 import { useUser } from '@clerk/nextjs';
+import { useCookies } from 'next-client-cookies';
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { SVGProps, useEffect, useState } from "react";
+import { SVGProps, useState } from "react";
 import Swal from 'sweetalert2';
 import { Api, TelegramClient } from 'telegram';
-import { StringSession } from 'telegram/sessions';
-import { useCookies } from 'next-client-cookies';
 
 
 async function getPhoneNumber() {
@@ -52,13 +51,18 @@ export default function Component() {
     async function connectTelegram() {
         if (!isSignedIn) return redirect('/auth/login')
         const session = cookies.get('tgSession')
-        const SESSION = new StringSession(session ?? '')
+        const SESSION = session ?? ""
         let client: TelegramClient | undefined
         try {
             setIsLoading(true)
-            client = new TelegramClient(SESSION, env.NEXT_PUBLIC_TELEGRAM_API_ID, env.NEXT_PUBLIC_TELEGRAM_API_HASH, { connectionRetries: 5 })
+
+            client = tgClient(SESSION)
+
+
+            console.log('client', client)
 
             if (!session) {
+                console.log('session no session so creating new')
                 await client.start({
                     phoneNumber: async () => await getPhoneNumber() as unknown as string,
                     password: async () => await getPassword() as unknown as string,
@@ -100,13 +104,12 @@ export default function Component() {
 
         const saveTelegramResult = await saveTelegramCredentials(channel.id.value, session!)
 
-    
+
 
         setChannelDetails(JSON.stringify(saveTelegramResult))
 
     }
-
-    // if (channelDeteails) return <div>{channelDeteails}</div>
+    if (channelDeteails) return <div>{channelDeteails}</div>
 
     return (
         <div className="w-full bg-white py-20 md:py-32 lg:py-40">

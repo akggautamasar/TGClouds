@@ -7,7 +7,6 @@ import { currentUser } from '@clerk/nextjs/server';
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
 import { Api, TelegramClient } from "telegram";
-import { TotalList } from "telegram/Helpers";
 
 export type FilesData = {
   title: string;
@@ -53,8 +52,6 @@ export const getAllFiles = async () => {
     if (!client.connected) {
       throw new Error('There was an error connecting to Telegram');
     }
-
-
 
     const limit = 100;
     let offsetId = 0;
@@ -105,8 +102,6 @@ export const getAllFiles = async () => {
     }
   }
 };
-
-
 
 export default async function Home() {
   const allFiles = await getAllFiles()

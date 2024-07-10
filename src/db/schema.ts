@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users_table", {
   id: text("id").primaryKey(),
@@ -6,7 +6,9 @@ export const usersTable = pgTable("users_table", {
   email: text("email").notNull().unique(),
   telegramSession: text('telegramSession'),
   channelId: text('channelName')
-});
+}, (table) => ({
+  emailIdx: uniqueIndex("email_idx").on(table.email),
+}));
 
 export const sessionTable = pgTable("session", {
   id: text("id").primaryKey(),

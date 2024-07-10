@@ -1,11 +1,10 @@
-import { loadEnvConfig } from "@next/env";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { sessionTable, usersTable } from "./schema";
 
-import { Client } from "pg";
 import { env } from "@/env";
+import { Pool } from "pg";
 
-const client = new Client({
+const client = new Pool({
   connectionString: env.DATABASE_URL,
 });
 
