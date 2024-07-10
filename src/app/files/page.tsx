@@ -39,12 +39,18 @@ export const getAllFiles = async () => {
     return redirect('/auth/login');
   }
 
+  if (!channelId) {
+    redirect('/connect-telegram')
+  }
+
+
   try {
     client = tgClient(sessionString as string);
     console.log('Connecting to Telegram client...');
 
-    const isConnected = await client.connect();
-    console.log('Is connected:', isConnected);
+
+
+    const isConnected = await client.connect()
 
     if (!isConnected) {
       throw new Error('There was an error connecting to Telegram');
@@ -90,13 +96,11 @@ export const getAllFiles = async () => {
   } catch (err) {
     if (err instanceof Error) {
       console.error('Error:', err.message);
-      throw new Error(err.message);
     }
-    console.error('Unknown error occurred while getting messages');
-    throw new Error("There was an error while getting messages");
+    throw new Error("There was an error while getting Files");
   } finally {
     try {
-      // await client?.disconnect();
+      await client?.disconnect();
       console.log('Disconnected from Telegram client');
     } catch (disconnectError) {
       console.error('Error disconnecting:', disconnectError);

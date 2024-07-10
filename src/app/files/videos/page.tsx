@@ -4,7 +4,7 @@ import Files from "@/layouts/files";
 import { getAllFiles } from "../page";
 
 export default async function Home() {
-    const videosData = (await getAllFiles('kuneDrive')).filter(({ type }) => type.startsWith('video/'))
+    const videosData = (await getAllFiles()).filter(({ type }) => type.startsWith('video/'))
     return (
         <DisplayFiles>
             <Files files={videosData} />

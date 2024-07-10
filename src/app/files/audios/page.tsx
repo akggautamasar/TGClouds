@@ -4,7 +4,7 @@ import Files from "@/layouts/files";
 import { getAllFiles } from "../page";
 
 export default async function Home() {
-  const audioFiles = (await getAllFiles('kuneDrive')).filter(({ type }) => type.startsWith('audio/'))
+  const audioFiles = (await getAllFiles()).filter(({ type }) => type.startsWith('audio/'))
 
   return (
     <DisplayFiles>
