@@ -9,9 +9,7 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config) => {
 
-  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       return config;
