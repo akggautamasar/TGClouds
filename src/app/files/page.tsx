@@ -48,11 +48,9 @@ export const getAllFiles = async () => {
     client = tgClient(sessionString as string);
     console.log('Connecting to Telegram client...');
 
+    await client.connect()
 
-
-    const isConnected = await client.connect()
-
-    if (!isConnected) {
+    if (!client.connected) {
       throw new Error('There was an error connecting to Telegram');
     }
 
