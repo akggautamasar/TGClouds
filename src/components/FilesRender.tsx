@@ -8,7 +8,7 @@ import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState, useTransition } from "react";
+import { cache, use, useEffect, useState, useTransition } from "react";
 import { Api, TelegramClient } from "telegram";
 
 import {
@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { resolve } from "path";
 
 export type User = {
   id: string;
@@ -36,8 +37,7 @@ export type User = {
   channelId: string;
 };
 
-
-const getAllFiles = async (client: TelegramClient, user: User) => {
+const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   const limit = 8;
   let offsetId = 0;
   let allMessages: Api.Message[] = [];
@@ -89,43 +89,27 @@ const getAllFiles = async (client: TelegramClient, user: User) => {
       console.log(err?.message);
     }
   }
-};
+});
 
 function Files({ user, mimeType }: { user: User; mimeType?: string }) {
-  const [allFiles, setAllFiles] = useState<FilesData[]>();
-  const [isPending, setTransition] = useTransition()
+  const data = use<FilesData[] | undefined>(
+    new Promise((resolve) =>
+      setTimeout(() => {
+        const client = tgClient(user?.telegramSession as string);
+        const data = getAllFiles(client, user);
+        resolve(data);
+      }, 0)
+    )
+  );
+
   const router = useRouter();
 
-  useEffect(() => {
-    // alert('kfjklkljkl')
-    console.log('kkfklfkl')
-    const client = tgClient(user?.telegramSession as string);
-
-    setTransition(() => {
-      getAllFiles(client, user).then(setAllFiles)
-    })
-    return () => {
-      client?.disconnect()
-    }
-  }, [])
-
-
-
-
-
   const filesToDisplay = mimeType
-    ? allFiles?.filter(({ type }) => type.startsWith(mimeType))
-    : allFiles;
-
-
-  console.log(filesToDisplay)
-
-
-
-  if (isPending) return <div className="text-white">wait......</div>
+    ? data?.filter(({ type }) => type.startsWith(mimeType))
+    : data;
 
   return (
-    <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       {filesToDisplay?.map((file, index) => (
         <Card
           key={index}

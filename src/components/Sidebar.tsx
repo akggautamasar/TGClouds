@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
 import {
   CloudIcon,
   FileTextIcon,
@@ -16,7 +16,7 @@ async function Sidebar() {
   const user = await useUserPotected();
 
   return (
-    <div className="flex flex-col border-r bg-muted/40 px-4 py-6">
+    <div className="sm:flex flex-col border-r bg-muted/40 px-4 py-6 hidden">
       <Link
         href="/files"
         className="flex items-center gap-2 font-semibold"
@@ -69,7 +69,9 @@ async function Sidebar() {
       </nav>
       <div className="mt-auto flex items-center flex-col gap-2">
         <div>
-          <UserTelegramDetails user={user} />
+          <Suspense fallback={"loading..."}>
+            <UserTelegramDetails user={user} />
+          </Suspense>
         </div>
         <div>
           <UserButton showName={true} />
