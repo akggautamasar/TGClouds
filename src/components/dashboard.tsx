@@ -33,8 +33,7 @@ import {
   UploadIcon,
   VideoIcon,
 } from "./Icons/icons";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
-import { UploadFiles } from "./upload-files";
+import Upload from "./uploadWrapper";
 import UserTelegramDetails from "./UserTelegramDetails";
 
 export function Dashboard({
@@ -252,16 +251,5 @@ export function Dashboard({
         </main>
       </div>
     </div>
-  );
-}
-
-function Upload() {
-  return (
-    <Dialog>
-      <DialogTrigger>Upload</DialogTrigger>
-      <DialogContent className="min-w-[600px] max-h-[700px] overflow-auto min-h-[600px]">
-        <UploadFiles />
-      </DialogContent>
-    </Dialog>
   );
 }

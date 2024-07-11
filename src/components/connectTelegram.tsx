@@ -89,6 +89,8 @@ export default function Component({
 
   async function connectChannel(username: string) {
     try {
+      setIsLoading(true);
+
       if (client) {
         const channelDetails = await getChannelDetails(client, username);
         showChannelUsernamePrompt(channelDetails);
@@ -98,16 +100,19 @@ export default function Component({
 
       const client2 = getTgClient(user.telegramSession!);
       const channelDetails = await getChannelDetails(client2, username);
+      if (!channelDetails.isCreator) {
+        alert("you are not the creator of the channel");
+        return;
+      }
       const isConfirmed = await showChannelUsernamePrompt(channelDetails);
 
       if (isConfirmed) {
-        console.log(
-          "what is going on",
-          await saveTelegramCredentials(username, user.telegramSession!)
-        );
+        await saveTelegramCredentials(username, user.telegramSession!);
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -286,7 +291,9 @@ async function showChannelUsernamePrompt(channelDetails: any) {
             <strong>Channel Username:</strong> ${channelDetails.username}<br>
             <strong>Channel ID:</strong> ${channelDetails.channelId}<br>
             <strong>Creator:</strong> ${channelDetails.isCreator}<br>
-            <strong>Group or Channel:</strong> ${channelDetails.isBroadcast ? "Channel" : "Group"}<br>
+            <strong>Group or Channel:</strong> ${
+              channelDetails.isBroadcast ? "Channel" : "Group"
+            }<br>
         `,
     icon: "info",
     showCloseButton: true,
@@ -301,6 +308,5 @@ async function showChannelUsernamePrompt(channelDetails: any) {
         `,
     cancelButtonAriaLabel: "Cancel",
   });
-  console.log(result);
   return result.isConfirmed;
 }

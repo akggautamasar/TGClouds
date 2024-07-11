@@ -29,6 +29,9 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { UploadIcon } from "./Icons/icons";
+import { Dialog } from "@radix-ui/react-dialog";
+import { DialogContent, DialogTrigger } from "./ui/dialog";
+import { UploadFiles } from "./upload-files";
 
 export type User = {
   id: string;
@@ -109,34 +112,32 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
     : data;
 
   if (!filesToDisplay?.length)
-    <>
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">No files found</h2>
-          <p className="text-muted-foreground">
-            You haven
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="text-center space-y-4">
-                <h2 className="text-2xl font-bold">No files found</h2>
-                <p className="text-muted-foreground">
-                  You haven&apos;t uploaded any files yet. Click the button
-                  below to get started.
-                </p>
-                <Button size="lg" variant="outline">
-                  <UploadIcon className="h-4 w-4 mr-2" />
-                  Upload Files
-                </Button>
-              </div>
-            </div>
-            t uploaded any files yet. Click the button below to get started.
-          </p>
-          <Button size="lg" variant="outline">
-            <UploadIcon className="h-4 w-4 mr-2" />
-            Upload Files
-          </Button>
+    return (
+      <>
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">No files found</h2>
+            <p className="text-muted-foreground">
+              You haven&apos;t uploaded any files yet. Click the button below to
+              get started.
+            </p>
+            <Button size="lg" variant="outline">
+              <Dialog>
+                <DialogTrigger>
+                  <div className="flex items-center space-x-2">
+                    <UploadIcon className="h-4 w-4 mr-2" />
+                    <span>Upload Files</span>
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="min-w-[600px] max-h-[700px] overflow-auto min-h-[600px]">
+                  <UploadFiles user={user} />
+                </DialogContent>
+              </Dialog>
+            </Button>
+          </div>
         </div>
-      </div>
-    </>;
+      </>
+    );
 
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">

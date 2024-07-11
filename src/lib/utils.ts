@@ -40,10 +40,7 @@ export async function uploadFiles(
     alert("Failed to initialize Telegram client");
     throw new Error("Failed to initialize Telegram client");
   }
-  if (client?.connected) await client.connect();
-
-  console.log("contingn upload");
-
+  if (!client?.connected) await client.connect();
   const files = formData.getAll("files") as File[];
   try {
     for (let index = 0; index < files.length; index++) {

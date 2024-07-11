@@ -1,19 +1,16 @@
 'use client'
-import { getUser } from "@/actions";
 import { Button } from "@/components/ui/button";
+import { getTgClient } from "@/lib/getTgClient";
 import { uploadFiles } from "@/lib/utils";
-import { useUser } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { User } from "./FilesRender";
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from "./Icons/icons";
-import { useRouter } from "next/navigation";
 import { useToast } from "./ui/use-toast";
-import { useAtom } from "jotai";
-import { getTgClient } from "@/lib/getTgClient";
 
-export function UploadFiles() {
+
+export function UploadFiles({ user }: { user: User }) {
   const [files, setFiles] = useState<{ file: File; id: string }[]>([]);
 
   const router = useRouter();
@@ -24,8 +21,6 @@ export function UploadFiles() {
     itemIndex: number;
     progress: number;
   }>();
-
-  const { isLoaded, isSignedIn, user: clerUser } = useUser();
 
   return (
     <>
@@ -54,9 +49,6 @@ export function UploadFiles() {
       <div className="grid gap-6 max-w-xl mx-auto">
         <form
           action={async (formData) => {
-            if (!isSignedIn) redirect("/login");
-            const email = clerUser?.emailAddresses?.[0].emailAddress;
-            const user = await getUser(email);
             if (!user?.telegramSession || !user.channelId)
               return router.replace("/connect-telegram");
 
