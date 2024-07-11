@@ -93,12 +93,28 @@ export function Dashboard({
               </Link>
             </nav>
           </div>
-          <Suspense
-            fallback={<div className="w-full text-center">Please wait...</div>}
-          >
-            <UserTelegramDetails user={user} />
-          </Suspense>
-          <div className="mt-auto">
+          <div className="mt-auto p-4">
+            <div className="mt-auto">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Channel</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button size="sm" className="w-full">
+                    <Link
+                      target="_blank"
+                      href={"https://t.me/" + user.channelId}
+                      className="text-muted-foreground font-bold no-underline"
+                    >
+                      View in Telegram
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="mt-auto p-2">
             <Card x-chunk="dashboard-02-chunk-0">
               <CardHeader className="p-2 pt-0 md:p-4">
                 <CardTitle>Upgrade to Pro</CardTitle>
@@ -174,13 +190,24 @@ export function Dashboard({
                   Audio
                 </Link>
               </nav>
-              <Suspense
-                fallback={
-                  <div className="w-full text-center">Please wait...</div>
-                }
-              >
-                <UserTelegramDetails user={user} />
-              </Suspense>
+              <div className="mt-auto">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Channel</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button size="sm" className="w-full">
+                      <Link
+                        target="_blank"
+                        href={"https://t.me/" + user.channelId}
+                        className="text-muted-foreground font-bold no-underline"
+                      >
+                        View in Telegram
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
 
               <div className="mt-auto">
                 <Card>
