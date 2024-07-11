@@ -8,7 +8,7 @@ import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { use, useEffect, useState, useTransition } from "react";
 import { Api, TelegramClient } from "telegram";
 
 import {
@@ -36,7 +36,6 @@ export type User = {
   channelId: string;
 };
 
-import { createFetchStore } from "react-suspense-fetch";
 
 const getAllFiles = async (client: TelegramClient, user: User) => {
   const limit = 8;
@@ -92,24 +91,38 @@ const getAllFiles = async (client: TelegramClient, user: User) => {
   }
 };
 
-const store = createFetchStore(
-  async (arg: { client: TelegramClient; user: User }) => {
-    return getAllFiles(arg.client, arg.user);
-  }
-);
-
 function Files({ user, mimeType }: { user: User; mimeType?: string }) {
   const [allFiles, setAllFiles] = useState<FilesData[]>();
-  const client = tgClient(user?.telegramSession as string);
-
+  const [isPending, setTransition] = useTransition()
   const router = useRouter();
 
-  store.prefetch({ client, user });
-  const result = user ? store.get({ client, user }) : undefined;
+  useEffect(() => {
+    // alert('kfjklkljkl')
+    console.log('kkfklfkl')
+    const client = tgClient(user?.telegramSession as string);
+
+    setTransition(() => {
+      getAllFiles(client, user).then(setAllFiles)
+    })
+    return () => {
+      client?.disconnect()
+    }
+  }, [])
+
+
+
+
 
   const filesToDisplay = mimeType
-    ? result?.filter(({ type }) => type.startsWith(mimeType))
-    : result;
+    ? allFiles?.filter(({ type }) => type.startsWith(mimeType))
+    : allFiles;
+
+
+  console.log(filesToDisplay)
+
+
+
+  if (isPending) return <div className="text-white">wait......</div>
 
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

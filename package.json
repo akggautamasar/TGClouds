@@ -38,7 +38,6 @@
     "postgres": "^3.4.4",
     "react": "^18.3.1",
     "react-dom": "^18",
-    "react-suspense-fetch": "^0.6.0",
     "sweetalert2": "^11.12.2",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
