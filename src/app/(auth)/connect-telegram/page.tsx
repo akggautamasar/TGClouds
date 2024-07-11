@@ -11,7 +11,7 @@ async function Page() {
   console.log("user clekr");
   const userClerk = await currentUser();
 
-  if (!userClerk) return redirect("/auth/login");
+  if (!userClerk) return redirect("/login");
 
   console.log("get user from db");
 

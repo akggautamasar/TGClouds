@@ -38,14 +38,6 @@ async function getPassword() {
 }
 
 
-interface ChannelDetails {
-  title: string;
-  username: string;
-  channelId: number | string;
-  accessHash: number | string;
-  isCreator: boolean;
-  isBroadcast: boolean;
-}
 
 
 
@@ -55,7 +47,6 @@ export default function Component({
 }: {
   user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
 }) {
-
   const [channelDeteails, setChannelDetails] = useState<{
     session?: string | null;
     channleId?: string | null;
@@ -101,26 +92,6 @@ export default function Component({
     }
   }
 
-
-  async function getChannelDetails(client: TelegramClient, username: string) {
-    if (!client?.connected) {
-      await client.connect();
-    }
-
-    const entity = await client.getEntity(username) as unknown as ChannelDetails & { id: { value: string }, broadcast: boolean, creator: any }
-
-    const channelDetails: Partial<ChannelDetails> = {
-      title: entity.title,
-      username: entity.username,
-      channelId: entity.id.value,
-      isCreator: entity.creator,
-      isBroadcast: entity.broadcast,
-    };
-
-    console.log(entity);
-    return channelDetails;
-  }
-
   async function connectChannel(username: string) {
     try {
       if (client) {
@@ -135,7 +106,10 @@ export default function Component({
       const isConfirmed = await showChannelUsernamePrompt(channelDetails);
 
       if (isConfirmed) {
-        console.log("what is going on", await saveTelegramCredentials(username, user.telegramSession!));
+        console.log(
+          "what is going on",
+          await saveTelegramCredentials(username, user.telegramSession!)
+        );
       }
     } catch (err) {
       console.error(err);
@@ -207,10 +181,12 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { ChannelDetails } from "@/lib/types";
+import { getChannelDetails } from "@/lib/utils";
 
 function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
   return (

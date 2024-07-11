@@ -7,10 +7,26 @@ import { tgClient } from "@/lib/tgClient";
 import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Api, TelegramClient } from "telegram";
-import { cache } from "react";
-import { Delete } from "./Icons/icons";
+
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 export type User = {
   id: string;
@@ -20,8 +36,10 @@ export type User = {
   channelId: string;
 };
 
+import { createFetchStore } from "react-suspense-fetch";
+
 const getAllFiles = async (client: TelegramClient, user: User) => {
-  const limit = 100;
+  const limit = 8;
   let offsetId = 0;
   let allMessages: Api.Message[] = [];
   let hasMore = true;
@@ -74,25 +92,24 @@ const getAllFiles = async (client: TelegramClient, user: User) => {
   }
 };
 
-function Files({ user, mimeType }: { user?: User; mimeType?: string }) {
+const store = createFetchStore(
+  async (arg: { client: TelegramClient; user: User }) => {
+    return getAllFiles(arg.client, arg.user);
+  }
+);
+
+function Files({ user, mimeType }: { user: User; mimeType?: string }) {
   const [allFiles, setAllFiles] = useState<FilesData[]>();
   const client = tgClient(user?.telegramSession as string);
 
-  // const ff = use(getAllFiles(client, user!))
+  const router = useRouter();
 
-  useEffect(() => {
-    console.log("user", user);
-    if (user) {
-      console.log("user", user);
-      getAllFiles(client, user).then(setAllFiles);
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  store.prefetch({ client, user });
+  const result = user ? store.get({ client, user }) : undefined;
 
   const filesToDisplay = mimeType
-    ? allFiles?.filter(({ type }) => type.startsWith(mimeType))
-    : allFiles;
+    ? result?.filter(({ type }) => type.startsWith(mimeType))
+    : result;
 
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -130,15 +147,20 @@ function Files({ user, mimeType }: { user?: User; mimeType?: string }) {
               <div>Size: {file.size}</div>
             </div>
             <div className="absolute z-50 right-2 bottom-2">
-              <Button
-                onClick={async () => {
-                  if (!user) return alert("Please login to delete files");
-                  await delelteItem(user, file.id);
-                }}
-                variant={"destructive"}
-              >
-                <Delete />
-              </Button>
+              <UserItemActions>
+                <Button
+                  className="w-full border-none"
+                  variant={"destructive"}
+                  onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                    console.log(e);
+                    if (!user) return alert("Please login to delete files");
+                    await delelteItem(user, file.id);
+                    router.refresh();
+                  }}
+                >
+                  <span className="text-white text-sm text">Delete</span>
+                </Button>
+              </UserItemActions>
             </div>
           </CardContent>
         </Card>
@@ -148,3 +170,44 @@ function Files({ user, mimeType }: { user?: User; mimeType?: string }) {
 }
 
 export default Files;
+
+function ConfirmDeleteAction({
+  onConfirm,
+  children,
+}: {
+  onConfirm: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline">{children}</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete your file
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <Button onClick={onConfirm} autoFocus>
+            Continue
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function UserItemActions({ children }: { children: React.ReactNode }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>...</DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem>{children}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

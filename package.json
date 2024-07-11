@@ -15,11 +15,13 @@
   "dependencies": {
     "@clerk/nextjs": "^5.2.2",
     "@next/env": "^14.2.4",
+    "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
     "@t3-oss/env-core": "^0.10.1",
     "@t3-oss/env-nextjs": "^0.10.1",
     "@types/pg": "^8.11.6",
@@ -36,10 +38,11 @@
     "postgres": "^3.4.4",
     "react": "^18.3.1",
     "react-dom": "^18",
+    "react-suspense-fetch": "^0.6.0",
     "sweetalert2": "^11.12.2",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "telegram": "^2.20.15",
+    "telegram": "^2.22.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

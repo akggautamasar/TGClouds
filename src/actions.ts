@@ -9,7 +9,7 @@ import { usersTable } from "./db/schema";
 // export async function uploadFiles(formData: FormData) {
 //   const clerkUser = await currentUser();
 
-//   if (!clerkUser) redirect("/auth");
+//   if (!clerkUser) redirect("/login");
 
 //   const user = await getUser(clerkUser?.emailAddresses[0].emailAddress);
 //   const sessionString = user?.telegramSession;
@@ -92,6 +92,6 @@ export async function getUser(email: string) {
 
     return result;
   } catch (err) {
-    throw new Error("There was an error while getting Files");
+    throw new Error("There was an error while getting User");
   }
 }

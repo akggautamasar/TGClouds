@@ -16,13 +16,12 @@ export type FilesData = {
 
 export const useUserPotected = async () => {
   const userClerk = await currentUser();
-  if (!userClerk) return redirect("/auth/login");
+  if (!userClerk) return redirect("/login");
   const user = await getUser(userClerk?.emailAddresses[0].emailAddress);
 
-
-  if (!user?.channelId || !user?.telegramSession) {
-    return redirect("/connect-telegram");
-  }
+   if (!user?.channelId || !user?.telegramSession) {
+     return redirect("/connect-telegram");
+   }
 
   return user as User
 }
