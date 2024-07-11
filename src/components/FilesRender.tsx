@@ -3,12 +3,13 @@ import { FilesData } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { tgClient } from "@/lib/tgClient";
+import { getTgClient } from "@/lib/getTgClient";
 import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cache, use, useEffect, useState, useTransition } from "react";
+import { cache, use } from "react";
+
 import { Api, TelegramClient } from "telegram";
 
 import {
@@ -27,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { resolve } from "path";
+import { UploadIcon } from "./Icons/icons";
 
 export type User = {
   id: string;
@@ -45,14 +46,9 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
 
   try {
     console.log("Connecting to Telegram client...");
-
-    await client.connect();
-
     console.log("Connection status", client.connected);
 
-    if (!client.connected) {
-      throw new Error("Client is not connected");
-    }
+    if (!client.connected) await client.connect();
 
     while (hasMore) {
       console.log(`Fetching messages with offsetId: ${offsetId}`);
@@ -88,15 +84,19 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
     if (err instanceof Error) {
       console.log(err?.message);
     }
+    throw Error("Failed to fetch files");
+  } finally {
+    await client.disconnect();
   }
 });
 
 function Files({ user, mimeType }: { user: User; mimeType?: string }) {
+  const client = getTgClient(user?.telegramSession as string);
+
   const data = use<FilesData[] | undefined>(
     new Promise((resolve) =>
-      setTimeout(() => {
-        const client = tgClient(user?.telegramSession as string);
-        const data = getAllFiles(client, user);
+      setTimeout(async () => {
+        const data = await getAllFiles(client, user);
         resolve(data);
       }, 0)
     )
@@ -108,6 +108,36 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
     ? data?.filter(({ type }) => type.startsWith(mimeType))
     : data;
 
+  if (!filesToDisplay?.length)
+    <>
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">No files found</h2>
+          <p className="text-muted-foreground">
+            You haven
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="text-center space-y-4">
+                <h2 className="text-2xl font-bold">No files found</h2>
+                <p className="text-muted-foreground">
+                  You haven&apos;t uploaded any files yet. Click the button
+                  below to get started.
+                </p>
+                <Button size="lg" variant="outline">
+                  <UploadIcon className="h-4 w-4 mr-2" />
+                  Upload Files
+                </Button>
+              </div>
+            </div>
+            t uploaded any files yet. Click the button below to get started.
+          </p>
+          <Button size="lg" variant="outline">
+            <UploadIcon className="h-4 w-4 mr-2" />
+            Upload Files
+          </Button>
+        </div>
+      </div>
+    </>;
+
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       {filesToDisplay?.map((file, index) => (
@@ -117,7 +147,7 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
         >
           <Link
             target="_blank"
-            href={`https://t.me/kuneDrive/${file.id}`}
+            href={`https://t.me/${user?.channelId}/${file.id}`}
             className="absolute inset-1 z-10"
             prefetch={false}
           >
@@ -151,7 +181,7 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
                   onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
                     console.log(e);
                     if (!user) return alert("Please login to delete files");
-                    await delelteItem(user, file.id);
+                    await delelteItem(user, file.id, client);
                     router.refresh();
                   }}
                 >

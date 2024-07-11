@@ -1,6 +1,8 @@
 "use client";
 
 import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
+import React from "react";
+import { TelegramClient } from "telegram";
 const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
@@ -16,3 +18,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default Providers;
+
+export const TgClientContext = React.createContext<TelegramClient | undefined>(
+  undefined
+);

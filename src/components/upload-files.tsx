@@ -10,9 +10,12 @@ import { User } from "./FilesRender";
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from "./Icons/icons";
 import { useRouter } from "next/navigation";
 import { useToast } from "./ui/use-toast";
+import { useAtom } from "jotai";
+import { getTgClient } from "@/lib/getTgClient";
 
 export function UploadFiles() {
   const [files, setFiles] = useState<{ file: File; id: string }[]>([]);
+
   const router = useRouter();
   const { toast } = useToast();
 
@@ -28,13 +31,23 @@ export function UploadFiles() {
     <>
       <div>
         {uploadProgress && (
-          <div className="flex justify-between">
-            <div>Upload Progress</div>
-            <div>{uploadProgress?.itemName}</div>
+          <div className="flex justify-between items-center flex-col p-4 bg-gray-100 rounded-lg shadow-md">
+            <div className="font-medium text-gray-700">Upload Progress</div>
             <div>
+              <div className="text-gray-600">{uploadProgress?.itemName}</div>
+            </div>
+            <div className="text-gray-600">
               {uploadProgress?.itemIndex! + 1}/{files.length}
             </div>
-            <div>{uploadProgress?.progress}</div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
+                style={{ width: `${uploadProgress?.progress}%` }}
+              ></div>
+            </div>
+            <div className="ml-2 text-gray-600">
+              {uploadProgress?.progress * 100}%
+            </div>
           </div>
         )}
       </div>
@@ -50,10 +63,11 @@ export function UploadFiles() {
             const fileUploadResult = await uploadFiles(
               formData,
               user as User,
-              setUploadProgress
+              setUploadProgress,
+              getTgClient(user?.telegramSession as string)
             );
             toast({
-              title: `Files uploaded successfully ${files.length}`,
+              title: `You have successfully uploaded ${files.length} files  `,
               duration: 5000,
               description: "you can see them in the files tab",
             });

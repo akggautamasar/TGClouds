@@ -3,7 +3,7 @@
 import { saveTelegramCredentials } from "@/actions";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
-import { tgClient } from "@/lib/tgClient";
+import { getTgClient } from "@/lib/getTgClient";
 import Image from "next/image";
 import { SVGProps, useState } from "react";
 import Swal from "sweetalert2";
@@ -37,11 +37,6 @@ async function getPassword() {
   }).then((result) => result.value as number);
 }
 
-
-
-
-
-
 export default function Component({
   user,
 }: {
@@ -61,7 +56,7 @@ export default function Component({
     try {
       setIsLoading(true);
 
-      client = tgClient(SESSION);
+      client = getTgClient(SESSION);
 
       if (!SESSION) {
         console.log("session no session so creating new");
@@ -101,7 +96,7 @@ export default function Component({
         return;
       }
 
-      const client2 = tgClient(user.telegramSession!);
+      const client2 = getTgClient(user.telegramSession!);
       const channelDetails = await getChannelDetails(client2, username);
       const isConfirmed = await showChannelUsernamePrompt(channelDetails);
 
@@ -183,10 +178,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getChannelDetails } from "@/lib/utils";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { ChannelDetails } from "@/lib/types";
-import { getChannelDetails } from "@/lib/utils";
 
 function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
   return (

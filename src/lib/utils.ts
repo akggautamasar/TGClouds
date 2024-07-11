@@ -1,12 +1,9 @@
-import { type ClassValue, clsx } from "clsx"
-import { revalidatePath } from "next/cache";
-import { twMerge } from "tailwind-merge";
-import { tgClient } from "./tgClient";
 import { User } from "@/components/FilesRender";
+import { type ClassValue, clsx } from "clsx";
+import { Dispatch, SetStateAction } from "react";
+import { twMerge } from "tailwind-merge";
 import { TelegramClient } from "telegram";
 import { ChannelDetails } from "./types";
-import { Dispatch, SetStateAction } from "react";
-import { on } from "events";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,12 +33,16 @@ export async function uploadFiles(
         }
       | undefined
     >
-  >
+  >,
+  client: TelegramClient | undefined
 ) {
-  console.log("user", user);
-  const sessionString = user?.telegramSession;
-  const client = tgClient(sessionString as string);
-  await client.connect();
+  if (!client) {
+    alert("Failed to initialize Telegram client");
+    throw new Error("Failed to initialize Telegram client");
+  }
+  if (client?.connected) await client.connect();
+
+  console.log("contingn upload");
 
   const files = formData.getAll("files") as File[];
   try {
@@ -76,11 +77,16 @@ export async function uploadFiles(
   }
 }
 
-export async function delelteItem(user: User, postId: number | string) {
-  const sessionString = user?.telegramSession;
-  const client = tgClient(sessionString as string);
-  await client.connect();
+export async function delelteItem(
+  user: User,
+  postId: number | string,
+  client: TelegramClient | undefined
+) {
+  if (!client) return alert("You are not connected to Telegram");
 
+  if (!client?.connected) {
+    await client.connect();
+  }
   try {
     const deleteMediaStatus = await client.deleteMessages(
       user?.channelId,
@@ -104,6 +110,11 @@ export async function getChannelDetails(
   client: TelegramClient,
   username: string
 ) {
+  if (!client) {
+    alert("Telegram client is not initialized");
+    throw new Error("Telegram client is not initialized");
+  }
+
   if (!client?.connected) {
     await client.connect();
   }
@@ -127,4 +138,3 @@ export async function getChannelDetails(
   client.disconnect();
   return channelDetails;
 }
-

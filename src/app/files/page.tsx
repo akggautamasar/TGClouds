@@ -1,6 +1,7 @@
 import { getUser } from "@/actions";
-import DisplayFiles from "@/components/files";
+import { Dashboard } from "@/components/dashboard";
 import Files, { User } from "@/components/FilesRender";
+import { LoadingItems } from "@/components/loading-files";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -19,22 +20,21 @@ export const useUserPotected = async () => {
   if (!userClerk) return redirect("/login");
   const user = await getUser(userClerk?.emailAddresses[0].emailAddress);
 
-   if (!user?.channelId || !user?.telegramSession) {
-     return redirect("/connect-telegram");
-   }
+  if (!user?.channelId || !user?.telegramSession) {
+    return redirect("/connect-telegram");
+  }
 
-  return user as User
-}
+  return user as User;
+};
 
 export default async function Home() {
-  const user = await useUserPotected()
+  const user = await useUserPotected();
 
   return (
-    <DisplayFiles>
-      {/* @ts-ignore */}
-      <Suspense fallback={'please wait '}>
+    <Dashboard user={user}>
+      <Suspense fallback={<LoadingItems />}>
         <Files user={user} />
       </Suspense>
-    </DisplayFiles>
+    </Dashboard>
   );
 }

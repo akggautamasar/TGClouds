@@ -1,11 +1,10 @@
-import Providers from "@/lib/progressBarContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-import { ClerkProvider } from "@clerk/nextjs";
-import { env } from "@/env";
 import { ThemeProvider } from "@/components/theme-provider";
+import { env } from "@/env";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,9 +15,9 @@ export const metadata: Metadata = {
 
 import { Toaster } from "@/components/ui/toaster";
 
-import { CookiesProvider } from "next-client-cookies/server";
+import Providers from "@/lib/context";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -39,7 +38,7 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <CookiesProvider>{children}</CookiesProvider>
+              {children}
             </ThemeProvider>
           </ClerkProvider>
         </Providers>
@@ -48,8 +47,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-
-
-
-

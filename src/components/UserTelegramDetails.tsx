@@ -1,32 +1,48 @@
 "use client";
 
-import { ChannelDetails } from "@/lib/types";
-import React, { cache, use, useEffect } from "react";
-import { User } from "./FilesRender";
-import { tgClient } from "@/lib/tgClient";
+import { getTgClient } from "@/lib/getTgClient";
 import { getChannelDetails } from "@/lib/utils";
 import Link from "next/link";
+import { cache, use } from "react";
+import { User } from "./FilesRender";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 const getChannelDetailsCached = cache(getChannelDetails);
 
 function UserTelegramDetails({ user }: { user: User }) {
-  const client = tgClient(user.telegramSession);
-
-  const telegramChannel = use(getChannelDetailsCached(client, user.channelId));
+  const telegramChannel = use(
+    getChannelDetailsCached(getTgClient(user.telegramSession), user.channelId)
+  );
 
   return (
-    <div className="p-4 bg-white dark:bg-black text-black dark:text-white rounded-lg">
-      <div className="text-lg font-bold mb-2">{telegramChannel.title}</div>
-      <div>
-        <Link
-          target="_blank"
-          href={"https://t.me/" + telegramChannel.username}
-          className="text-red-500 font-bold no-underline"
-        >
-          {telegramChannel.username}
-        </Link>
+    <>
+      <div className="mt-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Channel</CardTitle>
+            <CardDescription>{telegramChannel?.title}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button size="sm" className="w-full">
+              <Link
+                target="_blank"
+                href={"https://t.me/" + telegramChannel.username}
+                className="text-muted-foreground font-bold no-underline"
+              >
+                View in Telegram
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -1,8 +1,9 @@
-import { StringSession } from 'telegram/sessions'
-import { TelegramClient } from "telegram"
+import { StringSession } from "telegram/sessions";
+import { TelegramClient } from "telegram";
 import { env } from "@/env";
+import React from "react";
 
-export function tgClient(telegramSession: string) {
+export function getTgClient(telegramSession: string) {
   const session = new StringSession(telegramSession);
   const client = new TelegramClient(
     session,
@@ -12,5 +13,5 @@ export function tgClient(telegramSession: string) {
       connectionRetries: 5,
     }
   );
-  return client
+  return client;
 }

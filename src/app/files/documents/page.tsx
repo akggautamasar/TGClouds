@@ -1,15 +1,16 @@
-import DisplayFiles from "@/components/files";
-import { useUserPotected } from "../page";
+import { Dashboard } from "@/components/dashboard";
 import Files from "@/components/FilesRender";
+import { LoadingItems } from "@/components/loading-files";
 import { Suspense } from "react";
+import { useUserPotected } from "../page";
 export default async function Home() {
   const user = await useUserPotected();
 
   return (
-    <DisplayFiles>
-      <Suspense fallback={"please wait "}>
+    <Dashboard user={user}>
+      <Suspense fallback={<LoadingItems />}>
         <Files user={user} mimeType="application/" />
       </Suspense>
-    </DisplayFiles>
+    </Dashboard>
   );
 }
