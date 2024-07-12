@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import '../../patch-global-alert-polyfill'
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { env } from "@/env";
@@ -25,6 +26,8 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <script>
+        </script>
         <Providers>
           <ClerkProvider
             afterSignOutUrl={"/login"}
@@ -47,3 +50,5 @@ export default async function RootLayout({
     </html>
   );
 }
+
+

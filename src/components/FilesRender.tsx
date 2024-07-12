@@ -38,10 +38,11 @@ export type User = {
   name: string;
   email: string;
   telegramSession: string;
-  channelusername: string;
+  channelUsername: string;
+  channelId: string | null;
 };
 
-const getAllFiles = cache(async (client: TelegramClient, user: user) => {
+const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   const limit = 8;
   let offsetId = 0;
   let allMessages: Api.Message[] = [];
@@ -56,7 +57,7 @@ const getAllFiles = cache(async (client: TelegramClient, user: user) => {
     while (hasMore) {
       console.log(`Fetching messages with offsetId: ${offsetId}`);
 
-      const result = await client.getMessages(user?.channelusername, {
+      const result = await client.getMessages(user?.channelUsername, {
         limit: limit,
         offsetId: offsetId,
       });
@@ -93,7 +94,7 @@ const getAllFiles = cache(async (client: TelegramClient, user: user) => {
   }
 });
 
-function Files({ user, mimeType }: { user: user; mimeType?: string }) {
+function Files({ user, mimeType }: { user: User; mimeType?: string }) {
   const client = getTgClient(user?.telegramSession as string);
 
   const data = use<FilesData[] | undefined>(
@@ -105,7 +106,7 @@ function Files({ user, mimeType }: { user: user; mimeType?: string }) {
     )
   );
 
-  const router = userouter();
+  const router = useRouter();
 
   const filesToDisplay = mimeType
     ? data?.filter(({ type }) => type.startsWith(mimeType))
@@ -148,7 +149,7 @@ function Files({ user, mimeType }: { user: user; mimeType?: string }) {
         >
           <Link
             target="_blank"
-            href={`https://t.me/${user?.channelusername}/${file.id}`}
+            href={`https://t.me/${user?.channelUsername}/${file.id}`}
             className="absolute inset-1 z-10"
             prefetch={false}
           >
@@ -175,7 +176,7 @@ function Files({ user, mimeType }: { user: user; mimeType?: string }) {
               <div>Size: {file.size}</div>
             </div>
             <div className="absolute z-50 right-2 bottom-2">
-              <userItemActions>
+              <UserItemActions>
                 <Button
                   className="w-full border-none"
                   variant={"destructive"}
@@ -188,7 +189,7 @@ function Files({ user, mimeType }: { user: user; mimeType?: string }) {
                 >
                   <span className="text-white text-sm text">Delete</span>
                 </Button>
-              </userItemActions>
+              </UserItemActions>
             </div>
           </CardContent>
         </Card>
@@ -229,7 +230,7 @@ function ConfirmDeleteAction({
   );
 }
 
-function userItemActions({ children }: { children: React.ReactNode }) {
+function UserItemActions({ children }: { children: React.ReactNode }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>...</DropdownMenuTrigger>

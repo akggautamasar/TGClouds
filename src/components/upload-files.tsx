@@ -2,10 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { getTgClient } from "@/lib/getTgClient";
 import { uploadFiles } from "@/lib/utils";
-import { userouter } from "next/navigation";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { user } from "./FilesRender";
 import {
   CloudUploadIcon,
   FileIcon,
@@ -14,11 +12,14 @@ import {
   XIcon,
 } from "./Icons/icons";
 import { useToast } from "./ui/use-toast";
+import { useRouter } from "next/navigation";
+import { User } from "./FilesRender";
+import { Progress } from "./ui/progress";
 
-export function UploadFiles({ user }: { user: user }) {
+export function UploadFiles({ user }: { user: User }) {
   const [files, setFiles] = useState<{ file: File; id: string }[]>([]);
 
-  const router = userouter();
+  const router = useRouter();
   const { toast } = useToast();
 
   const [uploadProgress, setUploadProgress] = useState<{
@@ -40,10 +41,7 @@ export function UploadFiles({ user }: { user: user }) {
               {uploadProgress?.itemIndex! + 1}/{files.length}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full"
-                style={{ width: `${uploadProgress?.progress}%` }}
-              ></div>
+              <Progress value={Math.round(uploadProgress.progress)} className="w-full" />
             </div>
             <div className="ml-2 text-gray-600">
               {uploadProgress?.progress * 100}%
@@ -54,12 +52,12 @@ export function UploadFiles({ user }: { user: user }) {
       <div className="grid gap-6 max-w-xl mx-auto">
         <form
           action={async (formData) => {
-            if (!user?.telegramSession || !user.channelusername)
+            if (!user?.telegramSession || !user.channelUsername)
               return router.replace("/connect-telegram");
 
             const fileUploadResult = await uploadFiles(
               formData,
-              user as user,
+              user as User,
               setUploadProgress,
               getTgClient(user?.telegramSession as string)
             );

@@ -14,7 +14,7 @@ export function HomePage() {
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Unlimited Cloud Storage for Everyone
+                  Unlimited Cloud <span className = "text-red-500">Storage for Everyone</span>
                 </h1>
                 <p className="text-muted-foreground text-lg mb-8">
                   Access your files from anywhere, securely backed up and

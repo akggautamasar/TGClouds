@@ -1,10 +1,10 @@
-import { useuserPotected } from "@/app/files/page";
 import { Dialog } from "@radix-ui/react-dialog";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
 import { UploadFiles } from "./upload-files";
+import { useUserProtected } from "@/actions";
 
 export default async function Upload() {
-  const user = await useuserPotected();
+  const user = await useUserProtected();
   return (
     <Dialog>
       <DialogTrigger>Upload</DialogTrigger>

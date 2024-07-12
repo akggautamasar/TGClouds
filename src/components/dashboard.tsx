@@ -20,10 +20,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { userButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
 import React, { Suspense } from "react";
 import { ModeToggle } from "./darkmodeToggle";
-import { user } from "./FilesRender";
 import {
   CloudIcon,
   FileTextIcon,
@@ -34,14 +33,14 @@ import {
   VideoIcon,
 } from "./Icons/icons";
 import Upload from "./uploadWrapper";
-import userTelegramDetails from "./userTelegramDetails";
+import { User } from "./FilesRender";
 
 export function Dashboard({
   children,
   user,
 }: {
   children: React.ReactNode;
-  user: user;
+  user: User
 }) {
   return (
     <div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -103,7 +102,7 @@ export function Dashboard({
                   <Button size="sm" className="w-full">
                     <Link
                       target="_blank"
-                      href={"https://t.me/" + user.channelusername}
+                      href={"https://t.me/" + user?.channelUsername}
                       className="text-muted-foreground font-bold no-underline"
                     >
                       View in Telegram
@@ -199,7 +198,7 @@ export function Dashboard({
                     <Button size="sm" className="w-full">
                       <Link
                         target="_blank"
-                        href={"https://t.me/" + user.channelusername}
+                        href={"https://t.me/" + user.channelUsername}
                         className="text-muted-foreground font-bold no-underline"
                       >
                         View in Telegram
@@ -270,7 +269,7 @@ export function Dashboard({
             <Upload>Upload</Upload>
           </div>
           <div>
-            <userButton />
+            <UserButton />
           </div>
         </header>
         <main className="flex md:max-h-svh md:overflow-y-auto flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">

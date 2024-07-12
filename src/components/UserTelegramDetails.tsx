@@ -4,7 +4,6 @@ import { getTgClient } from "@/lib/getTgClient";
 import { getChannelDetails } from "@/lib/utils";
 import Link from "next/link";
 import { cache, use } from "react";
-import { user } from "./FilesRender";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -13,14 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import { User } from "./FilesRender";
 
 const getChannelDetailsCached = cache(getChannelDetails);
 
-function userTelegramDetails({ user }: { user: user }) {
+function userTelegramDetails({ user }: { user: User }) {
   const telegramChannel = use(
     getChannelDetailsCached(
       getTgClient(user.telegramSession),
-      user.channelusername
+      user.channelUsername
     )
   );
 

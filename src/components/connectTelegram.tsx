@@ -1,13 +1,23 @@
 "use client";
 
-import { saveChannelName, saveTelegramCredentials } from "@/actions";
+import { saveTelegramCredentials, saveUserName } from "@/actions";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { getTgClient } from "@/lib/getTgClient";
 import Image from "next/image";
-import { SVGProps, useState } from "react";
+import { SVGProps, useEffect, useLayoutEffect, useState } from "react";
 import Swal from "sweetalert2";
-import { TelegramClient } from "telegram";
+import { Api } from "telegram";
+
+
+interface Chat {
+  id: string;
+  accessHash?: string;
+}
+
+interface Result {
+  chats?: Chat[];
+}
 
 async function getPhoneNumber() {
   return await Swal.fire({
@@ -44,26 +54,38 @@ export default function Component({
 }) {
   const [channelDeteails, setChannelDetails] = useState<{
     session?: string | null;
-    channleId?: string | null;
   }>({
     session: user?.telegramSession,
-    channleId: user?.channelUsername,
   });
+
+  useLayoutEffect(() => {
+    const originalAlert = window.alert
+    window.alert = (...arg) => {
+      console.log(arg)
+    }
+
+    return () => {
+      window.alert = originalAlert
+    }
+  }, [])
+  const [channelTitle, setChannelTitle] = useState<null | string>('')
+  const [channelId, setChannelId] = useState<string>()
+  const [accessHash, setAccessHash] = useState<string>()
+
+
+
+  const client = getTgClient(user?.telegramSession ?? "");
+
+  console.log(client)
 
   const router = useRouter();
 
-  const [client, setClient] = useState<TelegramClient | null>(null);
-
   const [isLoading, setIsLoading] = useState<boolean>();
   async function connectTelegram() {
-    const SESSION = user?.telegramSession ?? "";
-    let client: TelegramClient | undefined;
     try {
       setIsLoading(true);
 
-      client = getTgClient(SESSION);
-
-      if (!SESSION) {
+      if (!user?.telegramSession) {
         console.log("session no session so creating new");
         await client.start({
           phoneNumber: async () =>
@@ -74,16 +96,42 @@ export default function Component({
         });
         const session = client.session.save() as unknown as string;
 
-        const result = saveTelegramCredentials(session);
-
-        const detail = channelDeteails
-          ? { ...channelDeteails, session }
-          : { session };
-
+        await saveTelegramCredentials(session);
+        const detail = { ...channelDeteails, session }
         setChannelDetails(detail);
       }
-      setClient(client);
-      if (!client.connected) await client.connect();
+
+      if (!client?.connected) await client.connect()
+      const channelTitle = user.name + 'Drive'
+      await client.invoke(
+        new Api.channels.CreateChannel({
+          title: channelTitle,
+          about: "don't delete this channel you will lose all of you files in https://tg-cloud-k.vercel.app",
+          broadcast: true,
+        })
+      ).then(async (res) => {
+        const result = res as Result
+        Swal.fire({
+          title: 'channel created',
+          text: `we have created a channel  in telegram for you `,
+          timer: 3000
+        })
+
+        const channelId = result.chats?.[0].id;
+        setAccessHash(result.chats?.[0].accessHash)
+
+        setChannelId(channelId!)
+        setChannelTitle(channelTitle)
+      }).catch((err) => {
+        Swal.fire({
+          title: "failed to create channel",
+          text: err.message,
+          timer: 10000
+        })
+        console.log('error', err)
+
+      })
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -92,37 +140,46 @@ export default function Component({
     }
   }
 
-  async function connectChannel(username: string) {
+  async function connectChannel({ channelId, username }: { username: string, channelId: string }) {
+
     try {
-      setIsLoading(true);
+      if (!client.connected) await client.connect()
 
-      if (client) {
-        const channelDetails = await getChannelDetails(client, username);
-        showChannelusernamePrompt(channelDetails);
-        console.log(channelDetails);
-        return;
+      const inputChannel = new Api.InputChannel({
+        //@ts-ignore
+        channelId: channelId,
+        //@ts-ignore
+        accessHash: accessHash,
+      });
+
+
+
+      const result = await client.invoke(
+        new Api.channels.CheckUsername({
+          channel: inputChannel,
+          username: username
+        })
+      );
+
+      if (!result) {
+        const usernamestatus = window.confirm('username is alreay taken')
+        return
       }
 
-      const client2 = getTgClient(user.telegramSession!);
-      const channelDetails = await getChannelDetails(client2, username);
-      if (!channelDetails.isCreator) {
-        alert("you are not the creator of the channel");
-        return;
-      }
-      const isConfirmed = await showChannelusernamePrompt(channelDetails);
-
-      if (isConfirmed) {
-        await saveChannelName(user.telegramSession!);
-        router.push("/files");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      await client.invoke(new Api.channels.UpdateUsername({
+        channel: inputChannel,
+        username: username,
+      })).then(async res => {
+        await saveUserName(username)
+        router.push("/files")
+      })
+      console.log("Username updated successfully.");
+    } catch (error) {
+      console.error("Error updating username:", error);
     }
   }
 
-  if (channelDeteails.session) return <Component2 onSubmit={connectChannel} />;
+  if (channelId && channelTitle) return <UpdateUsernameForm channelId={channelId} channelTitle={channelTitle} onSubmit={connectChannel} />;
 
   return (
     <div className="w-full bg-white py-20 md:py-32 lg:py-40">
@@ -189,131 +246,61 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getChannelDetails } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useFormStatus } from "react-dom";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { useRouter } from "next/navigation";
 
-function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
+
+
+
+const UpdateUsernameForm = <T extends { channelTitle: string, channelId: string }>({ onSubmit, channelTitle, channelId }: { onSubmit: (arg: Pick<T, 'channelId'> & { username: string }) => void } & T) => {
+  const [username, setUsername] = useState('');
+
+  const handleSubmit = () => {
+    onSubmit({ channelId, username });
+  };
+
   return (
     <div className="h-[100dvh] flex justify-center items-center">
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
-          <CardTitle>Connect Your Telegram Account</CardTitle>
+          <CardTitle>Channel Created</CardTitle>
           <CardDescription>
-            Connect your Telegram account to create a channel for secure cloud
-            storage.
+            Your channel <strong>{channelTitle}</strong> has been created. Now, you can update its username.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium">
-                Step 1: Create a Telegram Channel
-              </h3>
-              <ol className="mt-2 space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <CheckIcon className="mt-1 h-4 w-4 flex-shrink-0 text-green-500" />
-                  <span>Open the Telegram app on your device.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckIcon className="mt-1 h-4 w-4 flex-shrink-0 text-green-500" />
-                  <span>
-                    Tap on the <strong>Menu</strong> icon and select{" "}
-                    <strong>New Channel</strong>.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckIcon className="mt-1 h-4 w-4 flex-shrink-0 text-green-500" />
-                  <span>Give your channel a name and a description</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckIcon className="mt-1 h-4 w-4 flex-shrink-0 text-green-500" />
-                  <span>
-                    Give your unique username<strong>Create</strong>.
-                  </span>
-                </li>
-              </ol>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium">
-                Step 2: Connect Your Telegram Channel
-              </h3>
-              <div className="mt-2 space-y-2 text-sm text-muted-foreground">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e?.currentTarget);
-                    const username = formData.get("channel-username");
-                    onSubmit(username as string);
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="channel-username">
-                      Telegram Channel username
-                    </Label>
-                    <Input
-                      id="channel-username"
-                      name="channel-username"
-                      placeholder="@mychannel"
-                    />
-                  </div>
-                  <div>
-                    <Button className="w-full my-4 p-2">Connect</Button>
-                  </div>
-                </form>
+            <form action={() => {
+              handleSubmit()
+            }}>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="channel-username">Telegram Channel Username</Label>
+                <Input
+                  id="channel-username"
+                  name="channel-username"
+                  placeholder="@mychannel"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
               </div>
-            </div>
+              <UpdateButton />
+            </form>
           </div>
         </CardContent>
       </Card>
     </div>
   );
+};
+
+
+function UpdateButton() {
+  const { pending } = useFormStatus()
+  return <Button disabled={pending} type="submit" className="w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700">
+    {pending ? 'please wait...' : " Update Username"}
+  </Button>
 }
 
-function CheckIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
 
-async function showChannelusernamePrompt(channelDetails: any) {
-  const result = await Swal.fire({
-    title: "Channel Details",
-    html: `
-            <strong>Channel Name:</strong> ${channelDetails.title}<br>
-            <strong>Channel username:</strong> ${channelDetails.username}<br>
-            <strong>Channel ID:</strong> ${channelDetails.channelusername}<br>
-            <strong>Creator:</strong> ${channelDetails.isCreator}<br>
-            <strong>Group or Channel:</strong> ${
-              channelDetails.isBroadcast ? "Channel" : "Group"
-            }<br>
-        `,
-    icon: "info",
-    showCloseButton: true,
-    showCancelButton: true,
-    focusConfirm: false,
-    confirmButtonText: `
-            <i class="fa fa-thumbs-up"></i> Confirm
-        `,
-    confirmButtonAriaLabel: "Confirm",
-    cancelButtonText: `
-            <i class="fa fa-thumbs-down"></i> Cancel
-        `,
-    cancelButtonAriaLabel: "Cancel",
-  });
-  return result.isConfirmed;
-}

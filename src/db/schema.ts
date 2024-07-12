@@ -1,4 +1,4 @@
-import { bigint, pgTable, text, uniqueIndex, date } from "drizzle-orm/pg-core";
+import { bigint, pgTable, text, uniqueIndex, date, foreignKey } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable(
   "usersTable",
@@ -7,7 +7,7 @@ export const usersTable = pgTable(
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     telegramSession: text("telegramSession"),
-    channelUsername: text("channelName"),
+    channelUsername: text("channelName").unique(),
     channelId: text("channelId").unique(),
   },
   (table) => ({
@@ -15,13 +15,21 @@ export const usersTable = pgTable(
   })
 );
 
-export const userFiles = pgTable("userFiles", {
-  id: text("id").primaryKey(),
-  fileName: text("filename").notNull(),
-  mimeType: text("mimeType").notNull(),
-  size: bigint("size", { mode: "bigint" }).notNull(),
-  url: text("fileUrl").notNull(),
-  date: date("date", { mode: "string" }).$defaultFn(() =>
-    new Date().toDateString()
-  ),
-});
+export const userFiles = pgTable(
+  "userFiles",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId").notNull(),
+    fileName: text("filename").notNull(),
+    mimeType: text("mimeType").notNull(),
+    size: bigint("size", { mode: "bigint" }).notNull(),
+    url: text("fileUrl").notNull(),
+    date: date("date", { mode: "string" }).$defaultFn(() => new Date().toDateString()),
+  },
+  (table) => ({
+    userFk: foreignKey({
+      columns: [table.userId],
+      foreignColumns: [usersTable.id],
+    }),
+  })
+);

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { SVGProps } from "react"
-import { useuser, userButton } from "@clerk/nextjs";
+import { useUser, UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 
 export default async function Header() {
@@ -16,7 +16,7 @@ export default async function Header() {
         </Link>
         <div className="ml-auto">
           {user ? (
-            <userButton />
+            <UserButton />
           ) : (
             <Link
               href="/login"
@@ -34,20 +34,20 @@ export default async function Header() {
 
 
 function CloudIcon(props: SVGProps<SVGSVGElement>) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-        </svg>
-    )
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+    </svg>
+  )
 }

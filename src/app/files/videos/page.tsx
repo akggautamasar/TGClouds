@@ -1,11 +1,11 @@
+import { useUserProtected } from "@/actions";
 import { Dashboard } from "@/components/dashboard";
 import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
 import { Suspense } from "react";
-import { useuserPotected } from "../page";
 
 export default async function Home() {
-  const user = await useuserPotected();
+  const user = await useUserProtected();
   return (
     <Dashboard user={user}>
       <Suspense fallback={<LoadingItems />}>
