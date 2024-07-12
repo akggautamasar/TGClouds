@@ -1,5 +1,5 @@
 "use client";
-import { FilesData } from "@/app/files/page";
+import { FilesData, FilesTwo } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,7 +62,7 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
         offsetId: offsetId,
       });
 
-      console.log(`Fetched ${result.length} messages`);
+      console.log(`Fetched ${result?.length} messages`);
 
       allMessages = allMessages.concat(result);
       if (result.length < limit) {
@@ -87,6 +87,8 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   } catch (err) {
     if (err instanceof Error) {
       console.log(err?.message);
+      throw Error(err?.message);
+
     }
     throw Error("Failed to fetch files");
   } finally {
@@ -94,14 +96,14 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   }
 });
 
-function Files({ user, mimeType }: { user: User; mimeType?: string }) {
+function Files({ user, mimeType, Files }: { user: User; mimeType?: string, Files?: FilesTwo | undefined }) {
   const client = getTgClient(user?.telegramSession as string);
 
   const data = use<FilesData[] | undefined>(
     new Promise((resolve) =>
       setTimeout(async () => {
-        const data = await getAllFiles(client, user);
-        resolve(data);
+        // const data = await getAllFiles(client, user);
+        // resolve(data);
       }, 0)
     )
   );
@@ -112,7 +114,7 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
     ? data?.filter(({ type }) => type.startsWith(mimeType))
     : data;
 
-  if (!filesToDisplay?.length)
+  if (!Files?.length)
     return (
       <>
         <div className="flex flex-col items-center justify-center h-full">
@@ -142,7 +144,7 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
 
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-      {filesToDisplay?.map((file, index) => (
+      {Files?.map((file, index) => (
         <Card
           key={index}
           className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
@@ -157,19 +159,19 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
           </Link>
           <Image
             src={"https://via.placeholder.com/299x199"}
-            alt={file.name}
+            alt={file.fileName}
             width={299}
             height={199}
             className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
           />
           <CardContent className="p-5 relative">
             <div className="flex items-center justify-between">
-              <div className="truncate font-medium">{file.name}</div>
+              <div className="truncate font-medium">{file.fileName}</div>
               <Badge
                 variant="outline"
                 className="rounded-full px-3 py-1 text-xs"
               >
-                {file.type}
+                {file.mimeType}
               </Badge>
             </div>
             <div className="mt-3 text-sm text-muted-foreground">

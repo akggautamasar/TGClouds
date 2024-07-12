@@ -52,85 +52,35 @@ export default function Component({
 }: {
   user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
 }) {
-  const [channelDeteails, setChannelDetails] = useState<{
-    session?: string | null;
-  }>({
-    session: user?.telegramSession,
-  });
 
-  useLayoutEffect(() => {
-    const originalAlert = window.alert
-    window.alert = (...arg) => {
-      console.log(arg)
-    }
-
-    return () => {
-      window.alert = originalAlert
-    }
-  }, [])
-  const [channelTitle, setChannelTitle] = useState<null | string>('')
-  const [channelId, setChannelId] = useState<string>()
-  const [accessHash, setAccessHash] = useState<string>()
-
-
-
-  const client = getTgClient(user?.telegramSession ?? "");
-
-  console.log(client)
-
-  const router = useRouter();
 
   const [isLoading, setIsLoading] = useState<boolean>();
+  const [session, setSession] = useState<string | null>(user?.telegramSession)
+
+  const [channelDetails, setChannelDetails] = useState<{
+    title: string | null;
+    id: string | undefined;
+    accessHash: string | undefined;
+  }>({
+    title: null,
+    id: undefined,
+    accessHash: undefined,
+  });
+
+  const client = getTgClient(session ?? "");
+  const router = useRouter();
   async function connectTelegram() {
     try {
       setIsLoading(true);
-
-      if (!user?.telegramSession) {
-        console.log("session no session so creating new");
-        await client.start({
-          phoneNumber: async () =>
-            (await getPhoneNumber()) as unknown as string,
-          password: async () => (await getPassword()) as unknown as string,
-          phoneCode: async () => (await getCode()) as unknown as string,
-          onError: (err) => console.log(err),
-        });
-        const session = client.session.save() as unknown as string;
-
-        await saveTelegramCredentials(session);
-        const detail = { ...channelDeteails, session }
-        setChannelDetails(detail);
+      if (!session) {
+        await loginInTelegram();
       }
 
-      if (!client?.connected) await client.connect()
-      const channelTitle = user.name + 'Drive'
-      await client.invoke(
-        new Api.channels.CreateChannel({
-          title: channelTitle,
-          about: "don't delete this channel you will lose all of you files in https://tg-cloud-k.vercel.app",
-          broadcast: true,
-        })
-      ).then(async (res) => {
-        const result = res as Result
-        Swal.fire({
-          title: 'channel created',
-          text: `we have created a channel  in telegram for you `,
-          timer: 3000
-        })
+      if (!client?.connected) {
+        await client.connect();
+      }
 
-        const channelId = result.chats?.[0].id;
-        setAccessHash(result.chats?.[0].accessHash)
-
-        setChannelId(channelId!)
-        setChannelTitle(channelTitle)
-      }).catch((err) => {
-        Swal.fire({
-          title: "failed to create channel",
-          text: err.message,
-          timer: 10000
-        })
-        console.log('error', err)
-
-      })
+      await createTelegramChannel();
 
     } catch (err) {
       console.error(err);
@@ -139,6 +89,56 @@ export default function Component({
       client?.disconnect();
     }
   }
+
+  async function loginInTelegram() {
+    await client.start({
+      phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
+      password: async () => (await getPassword()) as unknown as string,
+      phoneCode: async () => (await getCode()) as unknown as string,
+      onError: (err) => console.log(err),
+    });
+
+    const session = client.session.save() as unknown as string;
+    await saveTelegramCredentials(session);
+    setSession(session)
+  }
+
+  async function createTelegramChannel() {
+    const channelTitle = (user?.name ?? user?.email?.split('@')[0]) + 'Drive' ?? 'TGCloudDrive'
+    const res = await client.invoke(
+      new Api.channels.CreateChannel({
+        title: channelTitle,
+        about: "Don't delete this channel or you will lose all your files in https://tg-cloud-k.vercel.app",
+        broadcast: true,
+      })
+    );
+
+    const result = res as Result;
+
+    if (result?.chats?.[0].id) {
+      setChannelDetails({
+        title: channelTitle,
+        id: result.chats?.[0].id!,
+        accessHash: result.chats?.[0].accessHash!,
+      });
+
+      Swal.fire({
+        title: 'Channel created',
+        text: 'We have created a channel in Telegram for you',
+        timer: 3000,
+      });
+    } else {
+      if (res instanceof Error) {
+        Swal.fire({
+          title: 'failed to create channel',
+          text: res.message,
+          timer: 3000,
+        });
+      }
+    }
+
+  }
+
 
   async function connectChannel({ channelId, username }: { username: string, channelId: string }) {
 
@@ -162,7 +162,7 @@ export default function Component({
       );
 
       if (!result) {
-        const usernamestatus = window.confirm('username is alreay taken')
+        window.confirm('username is alreay taken')
         return
       }
 
@@ -179,7 +179,9 @@ export default function Component({
     }
   }
 
-  if (channelId && channelTitle) return <UpdateUsernameForm channelId={channelId} channelTitle={channelTitle} onSubmit={connectChannel} />;
+  const { title, id, accessHash } = channelDetails;
+
+  if (accessHash && title && id) return <UpdateUsernameForm channelId={id} channelTitle={title} onSubmit={connectChannel} />;
 
   return (
     <div className="w-full bg-white py-20 md:py-32 lg:py-40">
@@ -254,11 +256,11 @@ import { Label } from "./ui/label";
 
 
 
-const UpdateUsernameForm = <T extends { channelTitle: string, channelId: string }>({ onSubmit, channelTitle, channelId }: { onSubmit: (arg: Pick<T, 'channelId'> & { username: string }) => void } & T) => {
+const UpdateUsernameForm = <T extends { channelTitle: string, channelId: string }>({ onSubmit, channelTitle, channelId }: { onSubmit: (arg: Pick<T, 'channelId'> & { username: string }) => Promise<void> } & T) => {
   const [username, setUsername] = useState('');
 
-  const handleSubmit = () => {
-    onSubmit({ channelId, username });
+  const handleSubmit = async () => {
+    await onSubmit({ channelId, username });
   };
 
   return (

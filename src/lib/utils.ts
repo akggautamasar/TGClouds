@@ -6,6 +6,7 @@ import { ChannelDetails } from "./types";
 import { User } from "@/components/FilesRender";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { uploadFile } from "@/actions";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -49,7 +50,7 @@ export async function uploadFiles(
       const file = files[index];
       const toUpload = await client.uploadFile({
         file: file,
-        workers: 1,
+        workers: 5,
         onProgress: (progress) => {
           onProgress({
             itemName: file.name,
@@ -63,12 +64,13 @@ export async function uploadFiles(
         file: toUpload,
         forceDocument: true,
       });
+      await uploadFile({ fileName: file.name, mimeType: file.type.split('/')[0], size: BigInt(file.size), url: `https://t.me/${user.channelUsername}/${result?.id}` })
       console.log("File uploaded successfully:", result);
       result;
     }
   } catch (err) {
     if (err instanceof Error) {
-      throw new Error(err.message);
+      throw new Error(err.message + (user.channelUsername ? 'found' : 'not found'));
     }
     throw new Error("there was an error");
   } finally {

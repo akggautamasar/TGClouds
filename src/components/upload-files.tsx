@@ -30,7 +30,7 @@ export function UploadFiles({ user }: { user: User }) {
 
   return (
     <>
-      <div>
+      <div className="w-full">
         {uploadProgress && (
           <div className="flex justify-between items-center flex-col p-4 bg-gray-100 rounded-lg shadow-md">
             <div className="font-medium text-gray-700">Upload Progress</div>
@@ -61,6 +61,7 @@ export function UploadFiles({ user }: { user: User }) {
               setUploadProgress,
               getTgClient(user?.telegramSession as string)
             );
+            
             toast({
               title: `You have successfully uploaded ${files.length} files  `,
               duration: 5000,

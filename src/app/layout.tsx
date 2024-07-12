@@ -34,6 +34,7 @@ export default async function RootLayout({
             publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
             signUpForceRedirectUrl={"/connect-telegram"}
             signInForceRedirectUrl={"/connect-telegram"}
+
           >
             <ThemeProvider
               attribute="class"

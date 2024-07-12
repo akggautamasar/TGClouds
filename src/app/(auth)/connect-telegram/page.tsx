@@ -15,7 +15,9 @@ async function Page() {
   if (user && user.telegramSession && user.channelUsername) {
     redirect("/files");
   }
-   console.log(user)
+
+
+  console.log('user', user)
 
   return (
     <div>

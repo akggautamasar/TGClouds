@@ -70,7 +70,7 @@ export const saveUserName = async (username: string) => {
     const existinguser = await getUser();
 
     if (!existinguser) {
-      const name = user.fullName ?? `${user.firstName} ${user.lastName}`;
+      const name = user?.fullName ?? `${user.firstName} ${user.lastName}`;
       const data = await db
         .insert(usersTable)
         .values({
