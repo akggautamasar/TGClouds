@@ -1,6 +1,6 @@
 "use client";
 
-import { saveTelegramCredentials } from "@/actions";
+import { saveChannelName, saveTelegramCredentials } from "@/actions";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { getTgClient } from "@/lib/getTgClient";
@@ -45,7 +45,12 @@ export default function Component({
   const [channelDeteails, setChannelDetails] = useState<{
     session?: string | null;
     channleId?: string | null;
-  }>({ session: user?.telegramSession, channleId: user?.channelId });
+  }>({
+    session: user?.telegramSession,
+    channleId: user?.channelUsername,
+  });
+
+  const router = useRouter();
 
   const [client, setClient] = useState<TelegramClient | null>(null);
 
@@ -69,7 +74,7 @@ export default function Component({
         });
         const session = client.session.save() as unknown as string;
 
-        const result = saveTelegramCredentials(null, session);
+        const result = saveTelegramCredentials(session);
 
         const detail = channelDeteails
           ? { ...channelDeteails, session }
@@ -93,7 +98,7 @@ export default function Component({
 
       if (client) {
         const channelDetails = await getChannelDetails(client, username);
-        showChannelUsernamePrompt(channelDetails);
+        showChannelusernamePrompt(channelDetails);
         console.log(channelDetails);
         return;
       }
@@ -104,10 +109,11 @@ export default function Component({
         alert("you are not the creator of the channel");
         return;
       }
-      const isConfirmed = await showChannelUsernamePrompt(channelDetails);
+      const isConfirmed = await showChannelusernamePrompt(channelDetails);
 
       if (isConfirmed) {
-        await saveTelegramCredentials(username, user.telegramSession!);
+        await saveChannelName(user.telegramSession!);
+        router.push("/files");
       }
     } catch (err) {
       console.error(err);
@@ -186,6 +192,7 @@ import {
 import { getChannelDetails } from "@/lib/utils";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { useRouter } from "next/navigation";
 
 function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
   return (
@@ -243,7 +250,7 @@ function Component2({ onSubmit }: { onSubmit: (username: string) => void }) {
                 >
                   <div className="flex items-center gap-2">
                     <Label htmlFor="channel-username">
-                      Telegram Channel Username
+                      Telegram Channel username
                     </Label>
                     <Input
                       id="channel-username"
@@ -283,13 +290,13 @@ function CheckIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-async function showChannelUsernamePrompt(channelDetails: any) {
+async function showChannelusernamePrompt(channelDetails: any) {
   const result = await Swal.fire({
     title: "Channel Details",
     html: `
             <strong>Channel Name:</strong> ${channelDetails.title}<br>
-            <strong>Channel Username:</strong> ${channelDetails.username}<br>
-            <strong>Channel ID:</strong> ${channelDetails.channelId}<br>
+            <strong>Channel username:</strong> ${channelDetails.username}<br>
+            <strong>Channel ID:</strong> ${channelDetails.channelusername}<br>
             <strong>Creator:</strong> ${channelDetails.isCreator}<br>
             <strong>Group or Channel:</strong> ${
               channelDetails.isBroadcast ? "Channel" : "Group"

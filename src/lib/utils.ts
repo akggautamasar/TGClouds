@@ -1,4 +1,4 @@
-import { User } from "@/components/FilesRender";
+import { user } from "@/components/FilesRender";
 import { type ClassValue, clsx } from "clsx";
 import { Dispatch, SetStateAction } from "react";
 import { twMerge } from "tailwind-merge";
@@ -23,7 +23,7 @@ export function formatBytes(bytes: number) {
 
 export async function uploadFiles(
   formData: FormData,
-  user: User,
+  user: user,
   onProgress: Dispatch<
     SetStateAction<
       | {
@@ -57,7 +57,7 @@ export async function uploadFiles(
         },
       });
 
-      const result = await client.sendFile(user?.channelId, {
+      const result = await client.sendFile(user?.channelusername, {
         file: toUpload,
         forceDocument: true,
       });
@@ -75,7 +75,7 @@ export async function uploadFiles(
 }
 
 export async function delelteItem(
-  user: User,
+  user: user,
   postId: number | string,
   client: TelegramClient | undefined
 ) {
@@ -86,7 +86,7 @@ export async function delelteItem(
   }
   try {
     const deleteMediaStatus = await client.deleteMessages(
-      user?.channelId,
+      user?.channelusername,
       [Number(postId)],
       {
         revoke: true,
@@ -127,7 +127,7 @@ export async function getChannelDetails(
   const channelDetails: Partial<ChannelDetails> = {
     title: entity.title,
     username: entity.username,
-    channelId: entity.id.value,
+    channelusername: entity.id.value,
     isCreator: entity.creator,
     isBroadcast: entity.broadcast,
   };

@@ -2,68 +2,57 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { db } from "./db";
 import { usersTable } from "./db/schema";
 
-export async function saveTelegramCredentials(
-  channelId: string | null,
-  session: string
-) {
+export async function saveTelegramCredentials(session: string) {
   if (!session) {
-    throw new Error("Session is required. Please provide channelId.");
+    throw new Error("Session is required ");
   }
 
   const user = await currentUser();
   if (!user) {
-    throw new Error("User needs to be logged in.");
+    throw new Error("user needs to be logged in.");
   }
 
   const email = user.emailAddresses?.[0]?.emailAddress;
   if (!email) {
-    throw new Error("User email is not available.");
+    throw new Error("user email is not available.");
   }
 
-  let shouldRedirect = false;
-
   try {
-    const existingUser = await getUser(email);
+    const existinguser = await getUser(email);
 
-    if (!existingUser) {
+    if (!existinguser) {
       const name = user.fullName ?? `${user.firstName} ${user.lastName}`;
-      await db.insert(usersTable).values({
-        email,
-        name,
-        id: user.id,
-        channelId,
-        telegramSession: session,
-      });
-    }
-
-    if (existingUser) {
-      await db
-        .update(usersTable)
-        .set({
-          channelId,
+      const data = await db
+        .insert(usersTable)
+        .values({
+          email,
+          name,
+          id: user.id,
           telegramSession: session,
         })
-        .where(eq(usersTable.email, email));
+        .returning();
+      return data;
     }
 
-    console.log(channelId, session);
-
-    if (channelId && session) {
-      shouldRedirect = true;
-    }
+    const result = await db
+      .update(usersTable)
+      .set({
+        telegramSession: session,
+      })
+      .where(eq(usersTable.email, email))
+      .returning();
   } catch (error) {
     console.error("Error while saving Telegram credentials:", error);
     throw new Error("There was an error while saving Telegram credentials.");
   }
-
-  if (shouldRedirect) {
-    return redirect("/files");
-  }
 }
+
+export const saveChannelName = async (channelUserName: string) => {
+  //TODO: save channel name and
+};
 
 export async function getUser(email: string) {
   try {
@@ -75,6 +64,6 @@ export async function getUser(email: string) {
 
     return result;
   } catch (err) {
-    throw new Error("There was an error while getting User");
+    throw new Error("There was an error while getting user");
   }
 }

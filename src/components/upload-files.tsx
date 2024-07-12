@@ -2,18 +2,23 @@
 import { Button } from "@/components/ui/button";
 import { getTgClient } from "@/lib/getTgClient";
 import { uploadFiles } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { userouter } from "next/navigation";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { User } from "./FilesRender";
-import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from "./Icons/icons";
+import { user } from "./FilesRender";
+import {
+  CloudUploadIcon,
+  FileIcon,
+  TrashIcon,
+  UploadIcon,
+  XIcon,
+} from "./Icons/icons";
 import { useToast } from "./ui/use-toast";
 
-
-export function UploadFiles({ user }: { user: User }) {
+export function UploadFiles({ user }: { user: user }) {
   const [files, setFiles] = useState<{ file: File; id: string }[]>([]);
 
-  const router = useRouter();
+  const router = userouter();
   const { toast } = useToast();
 
   const [uploadProgress, setUploadProgress] = useState<{
@@ -49,12 +54,12 @@ export function UploadFiles({ user }: { user: User }) {
       <div className="grid gap-6 max-w-xl mx-auto">
         <form
           action={async (formData) => {
-            if (!user?.telegramSession || !user.channelId)
+            if (!user?.telegramSession || !user.channelusername)
               return router.replace("/connect-telegram");
 
             const fileUploadResult = await uploadFiles(
               formData,
-              user as User,
+              user as user,
               setUploadProgress,
               getTgClient(user?.telegramSession as string)
             );

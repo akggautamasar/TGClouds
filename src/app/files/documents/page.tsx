@@ -2,9 +2,9 @@ import { Dashboard } from "@/components/dashboard";
 import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
 import { Suspense } from "react";
-import { useUserPotected } from "../page";
+import { useuserPotected } from "../page";
 export default async function Home() {
-  const user = await useUserPotected();
+  const user = await useuserPotected();
 
   return (
     <Dashboard user={user}>

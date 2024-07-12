@@ -20,10 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { UserButton } from "@clerk/nextjs";
+import { userButton } from "@clerk/nextjs";
 import React, { Suspense } from "react";
 import { ModeToggle } from "./darkmodeToggle";
-import { User } from "./FilesRender";
+import { user } from "./FilesRender";
 import {
   CloudIcon,
   FileTextIcon,
@@ -34,14 +34,14 @@ import {
   VideoIcon,
 } from "./Icons/icons";
 import Upload from "./uploadWrapper";
-import UserTelegramDetails from "./UserTelegramDetails";
+import userTelegramDetails from "./userTelegramDetails";
 
 export function Dashboard({
   children,
   user,
 }: {
   children: React.ReactNode;
-  user: User;
+  user: user;
 }) {
   return (
     <div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -103,7 +103,7 @@ export function Dashboard({
                   <Button size="sm" className="w-full">
                     <Link
                       target="_blank"
-                      href={"https://t.me/" + user.channelId}
+                      href={"https://t.me/" + user.channelusername}
                       className="text-muted-foreground font-bold no-underline"
                     >
                       View in Telegram
@@ -199,7 +199,7 @@ export function Dashboard({
                     <Button size="sm" className="w-full">
                       <Link
                         target="_blank"
-                        href={"https://t.me/" + user.channelId}
+                        href={"https://t.me/" + user.channelusername}
                         className="text-muted-foreground font-bold no-underline"
                       >
                         View in Telegram
@@ -270,7 +270,7 @@ export function Dashboard({
             <Upload>Upload</Upload>
           </div>
           <div>
-            <UserButton />
+            <userButton />
           </div>
         </header>
         <main className="flex md:max-h-svh md:overflow-y-auto flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">

@@ -1,11 +1,9 @@
 import React from 'react'
 import ConnectTelegram from '@/components/connectTelegram'
-import { currentUser } from '@clerk/nextjs/server'
-import { getUser } from '@/actions'
-import { redirect } from 'next/navigation'
+import { currentUser } from "@clerk/nextjs/server";
+import { getUser } from "@/actions";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { usersTable } from "@/db/schema";
-import { User } from "@/components/FilesRender";
 
 async function Page() {
   console.log("user clekr");
@@ -18,7 +16,7 @@ async function Page() {
   const user = await getUser(userClerk?.emailAddresses[0].emailAddress);
   console.log("cheeck user has neccessary details");
 
-  if (user && user.telegramSession && user.channelId) {
+  if (user && user.telegramSession && user.channelusername) {
     console.log("user has all details so lets take him to his files");
     redirect("/files");
   }
@@ -29,7 +27,7 @@ async function Page() {
 
   return (
     <div>
-      <ConnectTelegram user={user as User} />
+      <ConnectTelegram user={user as user} />
     </div>
   );
 }

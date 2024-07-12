@@ -4,11 +4,10 @@ import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-
 export default async function Component() {
-  const user = await currentUser()
+  const user = await currentUser();
 
-  if (user) return redirect('/connect-telegram')
+  if (user) return redirect("/connect-telegram");
 
   return (
     <section className="w-full bg-white py-20 md:py-32 lg:py-40">
