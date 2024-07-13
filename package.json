@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.development -- next dev -p 4000",
-    "build": "next build",
+    "build": "pnpm migrate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "dotenv -e .env.development -- drizzle-kit generate",

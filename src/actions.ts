@@ -1,7 +1,7 @@
 "use server";
 
 import { currentUser } from "@clerk/nextjs/server";
-import { and, asc, desc, eq, ilike, like } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, like } from "drizzle-orm";
 import { db } from "./db";
 import { userFiles, usersTable } from "./db/schema";
 import { redirect } from "next/navigation";
@@ -141,10 +141,23 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
         .offset(offset ?? 0)
         .execute();
 
-      return results;
+      const total = (
+        await db
+          .select({ count: count() })
+          .from(userFiles)
+          .where(
+            and(
+              ilike(userFiles.fileName, `%${searchItem}%`),
+              eq(userFiles.userId, user.id)
+            )
+          )
+          .execute()
+      )[0].count;
+
+      return [results, total];
     }
 
-    const files = await db
+    const results = await db
       .select()
       .from(userFiles)
       .where(eq(userFiles.userId, user.id))
@@ -153,7 +166,15 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
       .offset(offset ?? 0)
       .execute();
 
-    return files;
+    const total = (
+      await db
+        .select({ count: count() })
+        .from(userFiles)
+        .where(eq(userFiles.userId, user.id))
+        .execute()
+    )[0].count;
+
+    return [results, total];
   } catch (err) {
     if (err instanceof Error) {
       console.error("Error fetching files:", err.message);
@@ -193,10 +214,24 @@ export async function getFilesFromSpecificType({
         .offset(offset ?? 0)
         .execute();
 
-      return results;
+      const total = (
+        await db
+          .select({ count: count() })
+          .from(userFiles)
+          .where(
+            and(
+              ilike(userFiles.fileName, `%${searchItem}%`),
+              eq(userFiles.mimeType, fileType),
+              eq(userFiles.userId, user.id)
+            )
+          )
+          .execute()
+      )[0].count;
+
+      return [results, total];
     }
 
-    const files = await db
+    const results = await db
       .select()
       .from(userFiles)
       .where(
@@ -207,7 +242,17 @@ export async function getFilesFromSpecificType({
       .offset(offset ?? 0)
       .execute();
 
-    return files;
+    const total = (
+      await db
+        .select({ count: count() })
+        .from(userFiles)
+        .where(
+          and(eq(userFiles.mimeType, fileType), eq(userFiles.userId, user.id))
+        )
+        .execute()
+    )[0].count;
+
+    return [results, total];
   } catch (err) {
     if (err instanceof Error) {
       console.error("Error fetching files:", err.message);

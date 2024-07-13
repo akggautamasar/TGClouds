@@ -100,37 +100,41 @@ export default function Component({
   }
 
   async function createTelegramChannel() {
-    const channelTitle =
-      (user?.name ?? user?.email?.split("@")[0]) + "Drive" ?? "TGCloudDrive";
-    const res = await client.invoke(
-      new Api.channels.CreateChannel({
-        title: channelTitle,
-        about:
-          "Don't delete this channel or you will lose all your files in https://tg-cloud-k.vercel.app",
-        broadcast: true,
-      })
-    );
+    try {
+      const channelTitle =
+        (user?.name ?? user?.email?.split("@")[0]) + "Drive" ?? "TGCloudDrive";
+      const res = await client.invoke(
+        new Api.channels.CreateChannel({
+          title: channelTitle,
+          about:
+            "Don't delete this channel or you will lose all your files in https://tg-cloud-k.vercel.app",
+          broadcast: true,
+        })
+      );
 
-    const result = res as Result;
+      const result = res as Result;
 
-    if (result?.chats?.[0].id) {
-      setChannelDetails({
-        title: channelTitle,
-        id: result.chats?.[0].id!,
-        accessHash: result.chats?.[0].accessHash!,
-      });
+      if (result?.chats?.[0].id) {
+        setChannelDetails({
+          title: channelTitle,
+          id: result.chats?.[0].id!,
+          accessHash: result.chats?.[0].accessHash!,
+        });
 
-      Swal.fire({
-        title: "Channel created",
-        text: "We have created a channel in Telegram for you",
-        timer: 3000,
-      });
-    } else {
-      Swal.fire({
-        title: "failed to create channel",
-        text: ("message" in res && res?.message) ?? "there was an error",
-        timer: 3000,
-      });
+        Swal.fire({
+          title: "Channel created",
+          text: "We have created a channel in Telegram for you",
+          timer: 3000,
+        });
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        Swal.fire({
+          title: "failed to create channel",
+          text: err?.message ?? "there was an error",
+          timer: 3000,
+        });
+      }
     }
   }
 
@@ -271,9 +275,12 @@ const UpdateUsernameForm = <
   onSubmit: (arg: Pick<T, "channelId"> & { username: string }) => Promise<void>;
 } & T) => {
   const [username, setUsername] = useState("");
+  const [pending, setPending] = useState(false);
 
   const handleSubmit = async () => {
+    setPending(true);
     await onSubmit({ channelId, username });
+    setPending(false);
   };
 
   return (
@@ -306,7 +313,13 @@ const UpdateUsernameForm = <
                   required
                 />
               </div>
-              <UpdateButton />
+              <Button
+                disabled={pending}
+                type="submit"
+                className="w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700"
+              >
+                {pending ? "please wait..." : " Update Username"}
+              </Button>
             </form>
           </div>
         </CardContent>
@@ -314,16 +327,3 @@ const UpdateUsernameForm = <
     </div>
   );
 };
-
-function UpdateButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button
-      disabled={pending}
-      type="submit"
-      className="w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700"
-    >
-      {pending ? "please wait..." : " Update Username"}
-    </Button>
-  );
-}

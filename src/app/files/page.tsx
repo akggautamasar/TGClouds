@@ -16,10 +16,11 @@ export default async function Home({
   const searchItem = searchParams.search;
   const page = parseInt(searchParams.page || "1");
 
-  const files = await getAllFiles(searchItem, (page - 1) * 8);
+  //@ts-ignore
+  const [files, total] = await getAllFiles(searchItem, (page - 1) * 8);
 
   return (
-    <Dashboard user={user}>
+    <Dashboard total={total} user={user}>
       <Suspense fallback={<LoadingItems />}>
         <Files files={files} user={user} />
       </Suspense>

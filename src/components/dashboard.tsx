@@ -40,9 +40,11 @@ import Paginate from "./pagination";
 export function Dashboard({
   children,
   user,
+  total,
 }: {
   children: React.ReactNode;
   user: User;
+  total: number;
 }) {
   return (
     <div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -265,7 +267,7 @@ export function Dashboard({
         </header>
         <main className="flex md:max-h-svh md:overflow-y-auto flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           {children}
-          <Paginate totalItems={200} />
+          <Paginate totalItems={total} />
         </main>
       </div>
     </div>

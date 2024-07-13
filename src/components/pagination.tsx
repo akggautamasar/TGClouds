@@ -46,7 +46,7 @@ function Paginate({ totalItems }: { totalItems: number }) {
   const page = parseInt(searchParams.get("page") || "1");
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const createQueryString = useCreateQueryString(searchParams);
-  const pageNumbersToShow = getPaginationRange(page, totalPages);
+  const pageNumbersToShow = [...new Set(getPaginationRange(page, totalPages))];
   const router = useRouter();
 
   const getURL = (page: number | string) => {

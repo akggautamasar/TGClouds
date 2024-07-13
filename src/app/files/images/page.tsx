@@ -13,14 +13,14 @@ export default async function Home({
   const page = parseInt(searchParams.page || "1");
 
   const searchItem = searchParams.search;
-
-  const files = await getFilesFromSpecificType({
+  //@ts-ignore
+  const [files, total] = await getFilesFromSpecificType({
     fileType: "image",
     searchItem,
     offset: (page - 1) * 8,
   });
   return (
-    <Dashboard user={user}>
+    <Dashboard total={total} user={user}>
       <Suspense fallback={<LoadingItems />}>
         <Files files={files} user={user} />
       </Suspense>

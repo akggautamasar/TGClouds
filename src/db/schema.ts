@@ -39,6 +39,6 @@ export const userFiles = pgTable(
     userFk: foreignKey({
       columns: [table.userId],
       foreignColumns: [usersTable.id],
-    }),
+    }).onDelete('cascade'),
   })
 );
