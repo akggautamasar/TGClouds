@@ -80,6 +80,7 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
       .filter((message) => message.file)
       .map(({ file, id }) => {
         return {
+          //@ts-ignore
           fileName: file?.title,
           name: file?.name,
           size: formatBytes(file?.size as number),

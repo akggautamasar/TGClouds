@@ -297,7 +297,7 @@ export async function uploadFile(file: {
   }
 }
 
-export async function deleteFile(fileId: string) {
+export async function deleteFile(fileId: number) {
   try {
     const user = await getUser();
     if (!user) throw new Error("you need to be logged to delete files");

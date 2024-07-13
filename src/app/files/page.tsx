@@ -4,7 +4,15 @@ import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
 import { Suspense } from "react";
 
-export type FilesData = Awaited<ReturnType<typeof getAllFiles>>;
+export type FilesData = {
+  date: string | null;
+  id: number;
+  userId: string;
+  fileName: string;
+  mimeType: string;
+  size: bigint;
+  url: string;
+}[];
 
 export default async function Home({
   searchParams,
