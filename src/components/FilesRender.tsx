@@ -1,5 +1,5 @@
 "use client";
-import { FilesData, FilesTwo } from "@/app/files/page";
+import { FilesData } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +32,8 @@ import { UploadIcon } from "./Icons/icons";
 import { Dialog } from "@radix-ui/react-dialog";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
 import { UploadFiles } from "./upload-files";
+import { deleteFile } from "@/actions";
+import { successToast } from "@/lib/notify";
 
 export type User = {
   id: string;
@@ -49,20 +51,22 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   let hasMore = true;
 
   try {
-    console.log("Connecting to Telegram client...");
-    console.log("Connection status", client.connected);
+    alert("Connecting to Telegram client...");
+    alert("Connection status" + client.connected);
 
     if (!client.connected) await client.connect();
 
     while (hasMore) {
       console.log(`Fetching messages with offsetId: ${offsetId}`);
 
+      alert("Connecting to Telegram client...");
+      alert("Connection status" + client.connected);
       const result = await client.getMessages(user?.channelUsername, {
         limit: limit,
         offsetId: offsetId,
       });
 
-      console.log(`Fetched ${result?.length} messages`);
+      alert(`Fetched ${result.length} messages`);
 
       allMessages = allMessages.concat(result);
       if (result.length < limit) {
@@ -76,10 +80,10 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
       .filter((message) => message.file)
       .map(({ file, id }) => {
         return {
-          title: file?.title,
+          fileName: file?.title,
           name: file?.name,
           size: formatBytes(file?.size as number),
-          src: crypto.randomUUID(),
+          src: `https://t.me/${user.channelUsername}/${id}`,
           type: file?.mimeType as string,
           id,
         } satisfies FilesData;
@@ -87,34 +91,28 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   } catch (err) {
     if (err instanceof Error) {
       console.log(err?.message);
-      throw Error(err?.message);
-
     }
-    throw Error("Failed to fetch files");
+    console.warn(err);
+    throw Error(JSON.stringify(err));
   } finally {
     await client.disconnect();
   }
+  return null;
 });
 
-function Files({ user, mimeType, Files }: { user: User; mimeType?: string, Files?: FilesTwo | undefined }) {
+function Files({
+  user,
+  files,
+}: {
+  user: User;
+  mimeType?: string;
+  files: FilesData | undefined;
+}) {
   const client = getTgClient(user?.telegramSession as string);
-
-  const data = use<FilesData[] | undefined>(
-    new Promise((resolve) =>
-      setTimeout(async () => {
-        // const data = await getAllFiles(client, user);
-        // resolve(data);
-      }, 0)
-    )
-  );
 
   const router = useRouter();
 
-  const filesToDisplay = mimeType
-    ? data?.filter(({ type }) => type.startsWith(mimeType))
-    : data;
-
-  if (!Files?.length)
+  if (!files?.length)
     return (
       <>
         <div className="flex flex-col items-center justify-center h-full">
@@ -124,7 +122,7 @@ function Files({ user, mimeType, Files }: { user: User; mimeType?: string, Files
               You haven&apos;t uploaded any files yet. Click the button below to
               get started.
             </p>
-            <Button size="lg" variant="outline">
+            <div>
               <Dialog>
                 <DialogTrigger>
                   <div className="flex items-center space-x-2">
@@ -136,22 +134,22 @@ function Files({ user, mimeType, Files }: { user: User; mimeType?: string, Files
                   <UploadFiles user={user} />
                 </DialogContent>
               </Dialog>
-            </Button>
+            </div>
           </div>
         </div>
       </>
     );
 
   return (
-    <div className="grid grid-cols-2 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-      {Files?.map((file, index) => (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {files?.map((file, index) => (
         <Card
           key={index}
           className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
         >
           <Link
             target="_blank"
-            href={`https://t.me/${user?.channelUsername}/${file.id}`}
+            href={file.url}
             className="absolute inset-1 z-10"
             prefetch={false}
           >
@@ -175,7 +173,7 @@ function Files({ user, mimeType, Files }: { user: User; mimeType?: string, Files
               </Badge>
             </div>
             <div className="mt-3 text-sm text-muted-foreground">
-              <div>Size: {file.size}</div>
+              <div>Size: {formatBytes(Number(file.size))}</div>
             </div>
             <div className="absolute z-50 right-2 bottom-2">
               <UserItemActions>
@@ -185,7 +183,9 @@ function Files({ user, mimeType, Files }: { user: User; mimeType?: string, Files
                   onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
                     console.log(e);
                     if (!user) return alert("Please login to delete files");
+                    await deleteFile(file.id);
                     await delelteItem(user, file.id, client);
+                    successToast("file deleted");
                     router.refresh();
                   }}
                 >

@@ -1,0 +1,26 @@
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useEffect } from "react";
+
+function CustomLInk({
+  children,
+  href,
+  ...props
+}: {
+  children: React.ReactNode;
+  href: string;
+} & React.ComponentPropsWithoutRef<typeof Link>) {
+  const router = useRouter();
+  useEffect(() => {
+    router.prefetch(href);
+  }, []);
+
+  return (
+    <Link {...props} href={href}>
+      {children}
+    </Link>
+  );
+}
+
+export default CustomLInk;

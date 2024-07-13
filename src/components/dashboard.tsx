@@ -34,13 +34,15 @@ import {
 } from "./Icons/icons";
 import Upload from "./uploadWrapper";
 import { User } from "./FilesRender";
+import SearchItems from "./searchItems";
+import Paginate from "./pagination";
 
 export function Dashboard({
   children,
   user,
 }: {
   children: React.ReactNode;
-  user: User
+  user: User;
 }) {
   return (
     <div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -147,42 +149,42 @@ export function Dashboard({
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
-                  href="#"
+                  href="/files"
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <CloudIcon className="h-6 w-6" />
                   <span>TG Cloud</span>
                 </Link>
                 <Link
-                  href="/"
+                  href="/files"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <File className="h-5 w-5" />
                   All files
                 </Link>
                 <Link
-                  href="#"
+                  href="/files/images"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <ImageIcon className="h-5 w-5" />
                   Images
                 </Link>
                 <Link
-                  href="#"
+                  href="/files/images"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <VideoIcon className="h-5 w-5" />
                   Videos
                 </Link>
                 <Link
-                  href="#"
+                  href="/files/documnets"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <FileTextIcon className="h-5 w-5" />
                   Documents
                 </Link>
                 <Link
-                  href="#"
+                  href="/files/audio"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Music2Icon className="h-5 w-5" />
@@ -226,18 +228,7 @@ export function Dashboard({
               </div>
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1">
-            <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                />
-              </div>
-            </form>
-          </div>
+          <SearchItems />
           <div>
             <ModeToggle />
           </div>
@@ -274,6 +265,7 @@ export function Dashboard({
         </header>
         <main className="flex md:max-h-svh md:overflow-y-auto flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           {children}
+          <Paginate totalItems={200} />
         </main>
       </div>
     </div>

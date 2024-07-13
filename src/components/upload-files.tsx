@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import { Button } from "@/components/ui/button";
 import { getTgClient } from "@/lib/getTgClient";
 import { uploadFiles } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { useToast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import { User } from "./FilesRender";
 import { Progress } from "./ui/progress";
+import { successToast } from "@/lib/notify";
 
 export function UploadFiles({ user }: { user: User }) {
   const [files, setFiles] = useState<{ file: File; id: string }[]>([]);
@@ -32,19 +33,22 @@ export function UploadFiles({ user }: { user: User }) {
     <>
       <div className="w-full">
         {uploadProgress && (
-          <div className="flex justify-between items-center flex-col p-4 bg-gray-100 rounded-lg shadow-md">
+          <div className="flex justify-between items-center flex-col p-4 bg-gray-100 rounded-lg shadow-md w-full">
             <div className="font-medium text-gray-700">Upload Progress</div>
             <div>
               <div className="text-gray-600">{uploadProgress?.itemName}</div>
             </div>
             <div className="text-gray-600">
-              {uploadProgress?.itemIndex! + 1}/{files.length}
+              {uploadProgress?.itemIndex! + 1}/{files?.length}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <Progress value={Math.round(uploadProgress.progress)} className="w-full" />
+              <Progress
+                value={Math.round(uploadProgress.progress)}
+                className="w-full"
+              />
             </div>
             <div className="ml-2 text-gray-600">
-              {uploadProgress?.progress * 100}%
+              {Math.round(uploadProgress?.progress * 100)}%
             </div>
           </div>
         )}
@@ -61,20 +65,19 @@ export function UploadFiles({ user }: { user: User }) {
               setUploadProgress,
               getTgClient(user?.telegramSession as string)
             );
-            
-            toast({
-              title: `You have successfully uploaded ${files.length} files  `,
-              duration: 5000,
-              description: "you can see them in the files tab",
-            });
+
+            successToast(
+              `You have successfully uploaded ${files.length} files  `
+            );
+
             router.refresh();
           }}
         >
-          <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-lg border-primary hover:border-primary-foreground transition-colors">
+          <div className="flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-lg border-primary hover:border-primary-foreground transition-colors w-full">
             <CloudUploadIcon className="w-10 h-10 text-primary" />
             <h3 className="text-2xl font-bold">Upload Files</h3>
             <p className="text-muted-foreground">
-              Drag and drop files here or click to sFilesDataelect
+              Drag and drop files here or click to select
             </p>
 
             <input
@@ -120,10 +123,10 @@ export function UploadFiles({ user }: { user: User }) {
                     <Button
                       type="button"
                       onClick={() => {
-                        const filetedItems = files.filter(
+                        const filteredItems = files.filter(
                           (file) => file.id !== id
                         );
-                        setFiles(filetedItems);
+                        setFiles(filteredItems);
                       }}
                       variant="ghost"
                       size="icon"
@@ -153,5 +156,3 @@ function UploadButton() {
     </Button>
   );
 }
-
-

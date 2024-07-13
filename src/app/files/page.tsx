@@ -3,35 +3,25 @@ import { Dashboard } from "@/components/dashboard";
 import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
 import { Suspense } from "react";
-import { TypeOf } from "zod";
 
+export type FilesData = Awaited<ReturnType<typeof getAllFiles>>;
 
-
-
-export type FilesData = {
-  title: string;
-  type: string;
-  size: string;
-  src: string;
-  name: string;
-  id: string | number;
-};
-
-
-export type FilesTwo = Awaited<ReturnType<typeof getAllFiles>>
-
-
-
-
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Record<string, string>;
+}) {
   const user = await useUserProtected();
 
-  const files = await getAllFiles()
+  const searchItem = searchParams.search;
+  const page = parseInt(searchParams.page || "1");
+
+  const files = await getAllFiles(searchItem, (page - 1) * 8);
 
   return (
     <Dashboard user={user}>
       <Suspense fallback={<LoadingItems />}>
-        <Files Files={files} user={user} />
+        <Files files={files} user={user} />
       </Suspense>
     </Dashboard>
   );

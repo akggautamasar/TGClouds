@@ -9,7 +9,6 @@ import { SVGProps, useEffect, useLayoutEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { Api } from "telegram";
 
-
 interface Chat {
   id: string;
   accessHash?: string;
@@ -52,10 +51,8 @@ export default function Component({
 }: {
   user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
 }) {
-
-
   const [isLoading, setIsLoading] = useState<boolean>();
-  const [session, setSession] = useState<string | null>(user?.telegramSession)
+  const [session, setSession] = useState<string | null>(user?.telegramSession);
 
   const [channelDetails, setChannelDetails] = useState<{
     title: string | null;
@@ -81,7 +78,6 @@ export default function Component({
       }
 
       await createTelegramChannel();
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -100,15 +96,17 @@ export default function Component({
 
     const session = client.session.save() as unknown as string;
     await saveTelegramCredentials(session);
-    setSession(session)
+    setSession(session);
   }
 
   async function createTelegramChannel() {
-    const channelTitle = (user?.name ?? user?.email?.split('@')[0]) + 'Drive' ?? 'TGCloudDrive'
+    const channelTitle =
+      (user?.name ?? user?.email?.split("@")[0]) + "Drive" ?? "TGCloudDrive";
     const res = await client.invoke(
       new Api.channels.CreateChannel({
         title: channelTitle,
-        about: "Don't delete this channel or you will lose all your files in https://tg-cloud-k.vercel.app",
+        about:
+          "Don't delete this channel or you will lose all your files in https://tg-cloud-k.vercel.app",
         broadcast: true,
       })
     );
@@ -123,27 +121,28 @@ export default function Component({
       });
 
       Swal.fire({
-        title: 'Channel created',
-        text: 'We have created a channel in Telegram for you',
+        title: "Channel created",
+        text: "We have created a channel in Telegram for you",
         timer: 3000,
       });
     } else {
-      if (res instanceof Error) {
-        Swal.fire({
-          title: 'failed to create channel',
-          text: res.message,
-          timer: 3000,
-        });
-      }
+      Swal.fire({
+        title: "failed to create channel",
+        text: ("message" in res && res?.message) ?? "there was an error",
+        timer: 3000,
+      });
     }
-
   }
 
-
-  async function connectChannel({ channelId, username }: { username: string, channelId: string }) {
-
+  async function connectChannel({
+    channelId,
+    username,
+  }: {
+    username: string;
+    channelId: string;
+  }) {
     try {
-      if (!client.connected) await client.connect()
+      if (!client.connected) await client.connect();
 
       const inputChannel = new Api.InputChannel({
         //@ts-ignore
@@ -152,27 +151,29 @@ export default function Component({
         accessHash: accessHash,
       });
 
-
-
       const result = await client.invoke(
         new Api.channels.CheckUsername({
           channel: inputChannel,
-          username: username
+          username: username,
         })
       );
 
       if (!result) {
-        window.confirm('username is alreay taken')
-        return
+        window.confirm("username is alreay taken");
+        return;
       }
 
-      await client.invoke(new Api.channels.UpdateUsername({
-        channel: inputChannel,
-        username: username,
-      })).then(async res => {
-        await saveUserName(username)
-        router.push("/files")
-      })
+      await client
+        .invoke(
+          new Api.channels.UpdateUsername({
+            channel: inputChannel,
+            username: username,
+          })
+        )
+        .then(async (res) => {
+          await saveUserName(username);
+          router.push("/files");
+        });
       console.log("Username updated successfully.");
     } catch (error) {
       console.error("Error updating username:", error);
@@ -181,7 +182,14 @@ export default function Component({
 
   const { title, id, accessHash } = channelDetails;
 
-  if (accessHash && title && id) return <UpdateUsernameForm channelId={id} channelTitle={title} onSubmit={connectChannel} />;
+  if (accessHash && title && id)
+    return (
+      <UpdateUsernameForm
+        channelId={id}
+        channelTitle={title}
+        onSubmit={connectChannel}
+      />
+    );
 
   return (
     <div className="w-full bg-white py-20 md:py-32 lg:py-40">
@@ -253,11 +261,16 @@ import { useFormStatus } from "react-dom";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-
-
-
-const UpdateUsernameForm = <T extends { channelTitle: string, channelId: string }>({ onSubmit, channelTitle, channelId }: { onSubmit: (arg: Pick<T, 'channelId'> & { username: string }) => Promise<void> } & T) => {
-  const [username, setUsername] = useState('');
+const UpdateUsernameForm = <
+  T extends { channelTitle: string; channelId: string }
+>({
+  onSubmit,
+  channelTitle,
+  channelId,
+}: {
+  onSubmit: (arg: Pick<T, "channelId"> & { username: string }) => Promise<void>;
+} & T) => {
+  const [username, setUsername] = useState("");
 
   const handleSubmit = async () => {
     await onSubmit({ channelId, username });
@@ -269,16 +282,21 @@ const UpdateUsernameForm = <T extends { channelTitle: string, channelId: string 
         <CardHeader>
           <CardTitle>Channel Created</CardTitle>
           <CardDescription>
-            Your channel <strong>{channelTitle}</strong> has been created. Now, you can update its username.
+            Your channel <strong>{channelTitle}</strong> has been created. Now,
+            you can update its username.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <form action={() => {
-              handleSubmit()
-            }}>
+            <form
+              action={() => {
+                handleSubmit();
+              }}
+            >
               <div className="flex items-center gap-2">
-                <Label htmlFor="channel-username">Telegram Channel Username</Label>
+                <Label htmlFor="channel-username">
+                  Telegram Channel Username
+                </Label>
                 <Input
                   id="channel-username"
                   name="channel-username"
@@ -297,12 +315,15 @@ const UpdateUsernameForm = <T extends { channelTitle: string, channelId: string 
   );
 };
 
-
 function UpdateButton() {
-  const { pending } = useFormStatus()
-  return <Button disabled={pending} type="submit" className="w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700">
-    {pending ? 'please wait...' : " Update Username"}
-  </Button>
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      disabled={pending}
+      type="submit"
+      className="w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700"
+    >
+      {pending ? "please wait..." : " Update Username"}
+    </Button>
+  );
 }
-
-
