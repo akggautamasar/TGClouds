@@ -8,10 +8,11 @@ import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cache, use } from "react";
+import { cache, Dispatch, SetStateAction, useEffect, useState } from "react";
 
 import { Api, TelegramClient } from "telegram";
 
+import { deleteFile } from "@/actions";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -22,18 +23,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { successToast } from "@/lib/notify";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { UploadIcon } from "./Icons/icons";
-import { Dialog } from "@radix-ui/react-dialog";
-import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { UploadFiles } from "./upload-files";
-import { deleteFile } from "@/actions";
-import { successToast } from "@/lib/notify";
+import Upload from "./uploadWrapper";
 
 export type User = {
   id: string;
@@ -101,6 +98,28 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   return null;
 });
 
+async function downloadMedia(
+  client: TelegramClient,
+  user: User,
+  message_id: number,
+  setProgress: Dispatch<SetStateAction<number>>
+) {
+  //TODO: implenet downloding in web worker 
+  if (!client.connected) await client.connect();
+  const message = await client.getMessages(user.channelUsername, {
+    ids: [message_id],
+  });
+
+  const media = message[0].media;
+  if (media) {
+    const buffer = await client.downloadMedia(media, {
+      progressCallback: (progress) => setProgress(Number(progress)),
+    });
+    const blob = new Blob([buffer as unknown as Buffer]);
+    return blob;
+  }
+}
+
 function Files({
   user,
   files,
@@ -109,10 +128,6 @@ function Files({
   mimeType?: string;
   files: FilesData | undefined;
 }) {
-  const client = getTgClient(user?.telegramSession as string);
-
-  const router = useRouter();
-
   if (!files?.length)
     return (
       <>
@@ -124,17 +139,7 @@ function Files({
               get started.
             </p>
             <div>
-              <Dialog>
-                <DialogTrigger>
-                  <div className="flex items-center space-x-2">
-                    <UploadIcon className="h-4 w-4 mr-2" />
-                    <span>Upload Files</span>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="min-w-[600px] max-h-[700px] overflow-auto min-h-[600px]">
-                  <UploadFiles user={user} />
-                </DialogContent>
-              </Dialog>
+              <Upload user={user} />
             </div>
           </div>
         </div>
@@ -144,64 +149,81 @@ function Files({
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {files?.map((file, index) => (
-        <Card
-          key={index}
-          className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
-        >
-          <Link
-            target="_blank"
-            href={file.url}
-            className="absolute inset-1 z-10"
-            prefetch={false}
-          >
-            <span className="sr-only">View file</span>
-          </Link>
-          <Image
-            src={"https://via.placeholder.com/299x199"}
-            alt={file.fileName}
-            width={299}
-            height={199}
-            className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
-          />
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between">
-              <div className="truncate font-medium">{file.fileName}</div>
-              <Badge
-                variant="outline"
-                className="rounded-full px-3 py-1 text-xs"
-              >
-                {file.mimeType}
-              </Badge>
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              <div>Size: {formatBytes(Number(file.size))}</div>
-            </div>
-            <div className="absolute z-50 right-2 bottom-2">
-              <UserItemActions>
-                <Button
-                  className="w-full border-none"
-                  variant={"destructive"}
-                  onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
-                    console.log(e);
-                    if (!user) return alert("Please login to delete files");
-                    await deleteFile(file.id);
-                    await delelteItem(user, file.id, client);
-                    successToast("file deleted");
-                    router.refresh();
-                  }}
-                >
-                  <span className="text-white text-sm text">Delete</span>
-                </Button>
-              </UserItemActions>
-            </div>
-          </CardContent>
-        </Card>
+        <EachFile file={file} user={user} key={file.id} />
       ))}
     </div>
   );
 }
 
 export default Files;
+
+function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
+  const client = getTgClient(user?.telegramSession as string);
+  const [progress, setProgress] = useState(0);
+  const [url, setURL] = useState("https://via.placeholder.com/299/199");
+
+  useEffect(() => {
+    // downloadMedia(client, user, file.id, setProgress).then((blob) =>
+    //   setURL(URL.createObjectURL(blob))
+    // );
+  }, []);
+
+  const router = useRouter();
+
+  return (
+    <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
+      <Link
+        target="_blank"
+        href={file.url}
+        className="absolute inset-1 z-10"
+        prefetch={false}
+      >
+        <span className="sr-only">View file</span>
+      </Link>
+      {url ? (
+        <Image
+          src={url}
+          alt={file.fileName}
+          width={299}
+          height={199}
+          className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
+        />
+      ) : (
+        <div>{progress}</div>
+      )}
+
+      <CardContent className="p-5 relative">
+        <div className="flex items-center justify-between">
+          <div className="truncate font-medium">{file.fileName}</div>
+          <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+            {file.mimeType}
+          </Badge>
+        </div>
+        <div className="mt-3 text-sm text-muted-foreground">
+          <div>Size: {formatBytes(Number(file.size))}</div>
+        </div>
+        <div className="absolute z-50 right-2 bottom-2">
+          <UserItemActions>
+            <Button
+              className="w-full border-none"
+              variant={"destructive"}
+              onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                console.log(e);
+                if (!user) return alert("Please login to delete files");
+                await deleteFile(file.id);
+                await delelteItem(user, file.id, client);
+                successToast("file deleted");
+                router.refresh();
+              }}
+            >
+              <span className="text-white text-sm text">Delete</span>
+            </Button>
+          </UserItemActions>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function ConfirmDeleteAction({
   onConfirm,

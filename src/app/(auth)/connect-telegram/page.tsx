@@ -1,10 +1,10 @@
-import React from 'react'
-import ConnectTelegram from '@/components/connectTelegram'
+import React from "react";
+import ConnectTelegram from "@/components/connectTelegram";
 import { currentUser } from "@clerk/nextjs/server";
 import { getUser } from "@/actions";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { User } from '@/components/FilesRender';
+import { User } from "@/components/FilesRender";
 
 async function Page() {
   console.log("user clekr");
@@ -16,9 +16,6 @@ async function Page() {
     redirect("/files");
   }
 
-
-  console.log('user', user)
-
   return (
     <div>
       <ConnectTelegram user={user as User} />
@@ -26,4 +23,4 @@ async function Page() {
   );
 }
 
-export default Page
+export default Page;

@@ -68,23 +68,26 @@ function Paginate({ totalItems }: { totalItems: number }) {
             aria-disabled={page === 1}
           />
         </PaginationItem>
-        {pageNumbersToShow.map((pageNumber, index) => (
-          <PaginationItem key={index}>
-            {String(pageNumber) === "..." ? (
-              <PaginationEllipsis />
-            ) : (
-              <PaginationLink
-                onClick={() => router.push(getURL(pageNumber)!)}
-                isActive={pageNumber === page}
-              >
-                {pageNumber}
-              </PaginationLink>
-            )}
-          </PaginationItem>
-        ))}
+        {pageNumbersToShow.map((pageNumber, index) => {
+          if (!pageNumber) return;
+          return (
+            <PaginationItem key={index}>
+              {String(pageNumber) === "..." ? (
+                <PaginationEllipsis />
+              ) : (
+                <PaginationLink
+                  onClick={() => router.push(getURL(pageNumber)!)}
+                  isActive={pageNumber === page}
+                >
+                  {pageNumber}
+                </PaginationLink>
+              )}
+            </PaginationItem>
+          );
+        })}
         <PaginationItem
           className={`${
-            page === totalPages ? "cursor-not-allowed opacity-50" : ""
+            page === totalPages || !pageNumbersToShow.includes(Number(page) + 1) ? "cursor-not-allowed opacity-50" : ""
           }`}
         >
           <PaginationNext

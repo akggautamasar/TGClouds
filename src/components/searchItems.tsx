@@ -14,7 +14,7 @@ function SearchItems() {
 
   const debounced = useDebouncedCallback((value: string) => {
     router.push(pathname + "?" + createQueryString("search", value));
-  }, 500);
+  }, 200);
 
   return (
     <div className="w-full flex-1">

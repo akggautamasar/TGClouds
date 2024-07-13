@@ -2,6 +2,8 @@ import { getAllFiles, useUserProtected } from "@/actions";
 import { Dashboard } from "@/components/dashboard";
 import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
+import { db } from "@/db";
+import { userFiles, usersTable } from "@/db/schema";
 import { Suspense } from "react";
 
 export type FilesData = {

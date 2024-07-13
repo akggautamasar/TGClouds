@@ -91,7 +91,7 @@ export default function Component({
       phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
       password: async () => (await getPassword()) as unknown as string,
       phoneCode: async () => (await getCode()) as unknown as string,
-      onError: (err) => console.log(err),
+      onError: ((err) => errorToast(err?.message))
     });
 
     const session = client.session.save() as unknown as string;
@@ -101,8 +101,7 @@ export default function Component({
 
   async function createTelegramChannel() {
     try {
-      const channelTitle =
-        (user?.name ?? user?.email?.split("@")[0]) + "Drive" ?? "TGCloudDrive";
+      const channelTitle = user?.name ? `${user?.name}Drive` : "TGCloudDrive";
       const res = await client.invoke(
         new Api.channels.CreateChannel({
           title: channelTitle,
@@ -264,6 +263,7 @@ import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { errorToast } from "@/lib/notify";
 
 const UpdateUsernameForm = <
   T extends { channelTitle: string; channelId: string }

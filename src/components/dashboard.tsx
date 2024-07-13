@@ -257,9 +257,7 @@ export function Dashboard({
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="h-8 gap-1 flex border-gray-400 items-center justify-center">
-            <UploadIcon className="h-4 w-4" />
-            {/* @ts-ignore */}
-            <Upload>Upload</Upload>
+            <Upload user={user} />
           </div>
           <div>
             <UserButton />
