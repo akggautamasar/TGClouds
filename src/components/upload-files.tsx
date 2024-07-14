@@ -6,7 +6,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Dropzone from "react-dropzone";
 
-import { successToast } from "@/lib/notify";
+import { promiseToast } from "@/lib/notify";
 import { useRouter } from "next/navigation";
 import { User } from "./FilesRender";
 import {
@@ -16,7 +16,6 @@ import {
   UploadIcon,
   XIcon,
 } from "./Icons/icons";
-import { Progress } from "./ui/progress";
 
 interface DropedFile {
   file: File;
@@ -53,17 +52,28 @@ export const UploadFiles = ({
     if (!user?.telegramSession || !user.channelUsername) {
       return router.replace("/connect-telegram");
     }
+    const isFirstUpload = Number(localStorage.getItem("isUploaded") ?? "1");
 
-    const fileUploadResult = await uploadFiles(
-      formData,
-      user,
-      setUploadProgress,
-      getTgClient(user?.telegramSession as string)
-    );
-
-    successToast(`You have successfully uploaded ${dropedfiles.length} files`);
-    setOpen(false);
-    router.refresh();
+    promiseToast({
+      cb: () =>
+        uploadFiles(
+          formData,
+          user,
+          setUploadProgress,
+          getTgClient(user?.telegramSession as string)
+        ),
+      errMsg: "Oops we fucked up we failed to upload your files",
+      successMsg: !!isFirstUpload
+        ? `Legendary upload, bro! You got the first upload! Your file(s) are now living the cloud dream!`
+        : "File Uploaded",
+      loadingMsg: "please wait...",
+      position:'top-right'
+    }).then((res) => {
+      setOpen(false);
+      setFiles([])
+      localStorage.setItem("isUploaded", "0");
+      router.refresh();
+    });
   };
 
   return (

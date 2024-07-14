@@ -8,7 +8,15 @@ import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cache, Dispatch, SetStateAction, useEffect, useState } from "react";
+import {
+  cache,
+  Dispatch,
+  SetStateAction,
+  use,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { Api, TelegramClient } from "telegram";
 
@@ -23,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { errorToast, successToast } from "@/lib/notify";
+import { errorToast, promiseToast, successToast } from "@/lib/notify";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import Upload from "./uploadWrapper";
+import { SortByContext } from "@/lib/context";
 
 export type User = {
   id: string;
@@ -133,7 +142,21 @@ function Files({
   mimeType?: string;
   files: FilesData | undefined;
 }) {
-  if (!files?.length)
+  const { sortBy } = use(SortByContext)!;
+
+  const sortedFiles = useMemo(() => {
+    if (!files || !files?.length) return [];
+    if (sortBy == "name")
+      return files.sort((a, b) => a.fileName.localeCompare(b.fileName));
+    if (sortBy == "date")
+      return files.sort((a, b) => a.date!.localeCompare(b?.date!));
+    if (sortBy == "size")
+      return files.sort((a, b) => Number(a.size) - Number(b.size));
+    return files.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy]);
+
+  if (!sortedFiles?.length)
     return (
       <>
         <div className="flex flex-col items-center justify-center h-full">
@@ -153,7 +176,7 @@ function Files({
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {files?.map((file, index) => (
+      {sortedFiles?.map((file, index) => (
         <EachFile file={file} user={user} key={file.id} />
       ))}
     </div>
@@ -205,7 +228,10 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
           </Badge>
         </div>
         <div className="mt-3 text-sm text-muted-foreground">
-          <div>Size: {formatBytes(Number(file.size))}</div>
+          <div>
+            <div>Size: {formatBytes(Number(file.size))}</div>
+            <div>Date:{file.date}</div>
+          </div>
         </div>
         <div className="absolute z-50 right-2 bottom-2">
           <UserItemActions>
@@ -216,15 +242,19 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
                 console.log(e);
                 if (!user) return alert("Please login to delete files");
 
-                await deleteFile(file.id);
+                const promies = () =>
+                  Promise.all([
+                    deleteFile(file.id),
+                    delelteItem(user, file.fileTelegramId, client),
+                  ]);
 
-                const deleteFilResult = await delelteItem(
-                  user,
-                  file.fileTelegramId,
-                  client
-                );
-
-                successToast("You have Deleted the file successfully");
+                promiseToast({
+                  cb: promies,
+                  errMsg: "Failed to Delete the file",
+                  loadingMsg: "please wait",
+                  successMsg: "you have successfully deleted the file",
+                  position: "top-center",
+                });
                 router.refresh();
               }}
             >

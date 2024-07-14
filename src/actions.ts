@@ -7,6 +7,9 @@ import { userFiles, usersTable } from "./db/schema";
 import { redirect } from "next/navigation";
 import { User } from "./components/FilesRender";
 
+import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+
 export async function saveTelegramCredentials({
   accessHash,
   channelId,
@@ -304,14 +307,13 @@ export async function uploadFile(file: {
       })
       .returning();
 
-    console.log(result);
-
     return result;
   } catch (err) {
     if (err instanceof Error) {
       console.error("Error uploading file:", err?.message);
       throw new Error("Failed to upload file. Please try again later.");
     }
+  } finally {
   }
 }
 

@@ -141,7 +141,7 @@ export default function Component({
           text: "We have created a channel in Telegram for you",
           timer: 3000,
         });
-        router.refresh();
+        location.reload()
       }
     } catch (err) {
       console.error(err);
@@ -432,7 +432,7 @@ const UpdateUsernameForm = <
     setPending(false);
   };
 
-  const checkUsername = useDebouncedCallback(onChange, 300);
+  const checkUsername = useDebouncedCallback(onChange, 200);
 
   const isUpdateButtonDisabled = pending || status?.type !== "success";
 
