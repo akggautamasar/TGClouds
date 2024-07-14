@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { errorToast, successToast } from "@/lib/notify";
+import { errorToast, promiseToast, successToast } from "@/lib/notify";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -153,6 +153,7 @@ function Files({
     if (sortBy == "size")
       return files.sort((a, b) => Number(a.size) - Number(b.size));
     return files.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy]);
 
   if (!sortedFiles?.length)
@@ -241,15 +242,19 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
                 console.log(e);
                 if (!user) return alert("Please login to delete files");
 
-                await deleteFile(file.id);
+                const promies = () =>
+                  Promise.all([
+                    deleteFile(file.id),
+                    delelteItem(user, file.fileTelegramId, client),
+                  ]);
 
-                const deleteFilResult = await delelteItem(
-                  user,
-                  file.fileTelegramId,
-                  client
-                );
-
-                successToast("You have Deleted the file successfully");
+                promiseToast({
+                  cb: promies,
+                  errMsg: "Failed to Delete the file",
+                  loadingMsg: "please wait",
+                  successMsg: "you have successfully deleted the file",
+                  position: "top-center",
+                });
                 router.refresh();
               }}
             >
