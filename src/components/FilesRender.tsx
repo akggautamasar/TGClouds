@@ -40,17 +40,9 @@ import {
 } from "./ui/dropdown-menu";
 import Upload from "./uploadWrapper";
 import { SortByContext } from "@/lib/context";
+import { db } from "@/db";
 
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  telegramSession: string | null;
-  channelUsername: string | null;
-  channelId: string | null;
-  accessHash: string | null;
-  channelTitle: string | null;
-};
+export type User = Awaited<ReturnType<typeof db.query.usersTable.findFirst>>;
 
 const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   const limit = 8;
@@ -69,13 +61,11 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
 
       alert("Connecting to Telegram client...");
       alert("Connection status" + client.connected);
-      if (!user.channelUsername) throw new Error("oops we fuckd up");
+      if (!user?.channelUsername) throw new Error("oops we fuckd up");
       const result = await client.getMessages(user?.channelUsername, {
         limit: limit,
         offsetId: offsetId,
       });
-
-      alert(`Fetched ${result.length} messages`);
 
       allMessages = allMessages.concat(result);
       if (result.length < limit) {
@@ -93,7 +83,7 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
           fileName: file?.title,
           name: file?.name,
           size: formatBytes(file?.size as number),
-          src: `https://t.me/${user.channelUsername}/${id}`,
+          src: `https://t.me/${user?.channelUsername}/${id}`,
           type: file?.mimeType as string,
           id,
         } satisfies FilesData;
@@ -118,7 +108,7 @@ async function downloadMedia(
 ) {
   //TODO: implenet downloding in web worker
   if (!client.connected) await client.connect();
-  if (!user.channelUsername) throw new Error("oops we fuckd up");
+  if (!user?.channelUsername) throw new Error("oops we fuckd up");
 
   const message = await client.getMessages(user.channelUsername, {
     ids: [message_id],
@@ -133,7 +123,6 @@ async function downloadMedia(
     return blob;
   }
 }
-
 function Files({
   user,
   files,
@@ -153,7 +142,7 @@ function Files({
     if (sortBy == "size")
       return files.sort((a, b) => Number(a.size) - Number(b.size));
     return files.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy]);
 
   if (!sortedFiles?.length)

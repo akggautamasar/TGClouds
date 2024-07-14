@@ -107,7 +107,11 @@ export function Dashboard({
                   <Button size="sm" className="w-full">
                     <Link
                       target="_blank"
-                      href={"https://t.me/" + user?.channelUsername}
+                      href={
+                        user?.hasPublicTgChannel
+                          ? "https://t.me/" + user?.channelUsername!
+                          : `https://t.me/c/${user?.channelId}/1`
+                      }
                       className="text-muted-foreground font-bold no-underline"
                     >
                       View in Telegram
@@ -137,7 +141,7 @@ export function Dashboard({
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 sticky z-50 top-0 items-center gap-4 border-b bg-black/50 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 sticky z-50 top-0 items-center gap-4 border-b  dark:bg-black/50 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -173,21 +177,21 @@ export function Dashboard({
                   Images
                 </Link>
                 <Link
-                  href="/files/images"
+                  href="/files/videos"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <VideoIcon className="h-5 w-5" />
                   Videos
                 </Link>
                 <Link
-                  href="/files/documnets"
+                  href="files/documents"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <FileTextIcon className="h-5 w-5" />
                   Documents
                 </Link>
                 <Link
-                  href="/files/audio"
+                  href="/files/audios"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Music2Icon className="h-5 w-5" />
@@ -203,7 +207,11 @@ export function Dashboard({
                     <Button size="sm" className="w-full">
                       <Link
                         target="_blank"
-                        href={"https://t.me/" + user.channelUsername}
+                        href={
+                          user?.hasPublicTgChannel
+                            ? "https://t.me/" + user?.channelUsername!
+                            : `https://t.me/c/${user?.channelId}/1`
+                        }
                         className="text-muted-foreground font-bold no-underline"
                       >
                         View in Telegram

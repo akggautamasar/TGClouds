@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   uniqueIndex,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable(
@@ -18,6 +19,7 @@ export const usersTable = pgTable(
     channelId: text("channelId").unique(),
     accessHash: text("accessHash"),
     channelTitle: text("channelTitle"),
+    hasPublicTgChannel: boolean("hasPublicChannel"),
   },
   (table) => ({
     emailIdx: uniqueIndex("email_idx").on(table.email),

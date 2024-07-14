@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { Dispatch, SetStateAction, useCallback } from "react";
 import { twMerge } from "tailwind-merge";
-import { TelegramClient } from "telegram";
+import { Api, TelegramClient } from "telegram";
 import { ChannelDetails } from "./types";
 import { User } from "@/components/FilesRender";
 import { currentUser } from "@clerk/nextjs/server";
@@ -65,17 +65,20 @@ export async function uploadFiles(
         },
       });
 
-      if (!user.channelUsername) throw new Error("oops we fuckd up");
-
-      const result = await client.sendFile(user?.channelUsername, {
-        file: toUpload,
-        forceDocument: true,
-      });
+      const result = await client.sendFile(
+        getChannelEntity(user?.channelId!, user?.accessHash!),
+        {
+          file: toUpload,
+          forceDocument: true,
+        }
+      );
       const uploadToDbResult = await uploadFile({
         fileName: file.name,
         mimeType: file.type.split("/")[0],
         size: BigInt(file.size),
-        url: `https://t.me/${user.channelUsername}/${result?.id}`,
+        url: !user?.hasPublicTgChannel
+          ? `https://t.me/c/${user?.channelId}/${result?.id}`
+          : `https://t.me/${user?.channelUsername}/${result?.id}`,
         fileTelegramId: result.id,
       });
       console.log("File uploaded successfully:", uploadToDbResult);
@@ -107,9 +110,8 @@ export async function delelteItem(
     await client.connect();
   }
   try {
-    if (!user.channelUsername) throw new Error("oops we fuckd up");
     const deleteMediaStatus = await client.deleteMessages(
-      user.channelUsername,
+      getChannelEntity(user?.channelId!, user?.accessHash!),
       [Number(postId)],
       {
         revoke: true,
@@ -174,3 +176,12 @@ export function useCreateQueryString(
     return params.toString();
   };
 }
+
+export const getChannelEntity = (channelId: string, accessHash: string) => {
+  return new Api.InputChannel({
+    //@ts-ignore
+    channelId: channelId,
+    //@ts-ignore
+    accessHash: accessHash,
+  });
+};
