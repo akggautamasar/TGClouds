@@ -27,7 +27,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
             </div>
           </DialogTrigger>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[700px]">
           <DialogTitle className="sr-only">upload file</DialogTitle>
           <UploadFiles setOpen={setOpen} user={user} />
         </DialogContent>
@@ -46,7 +46,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
           </div>
         </DialogTrigger>
       </DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="h-4/5">
         <UploadFiles setOpen={setOpen} user={user} />
       </DrawerContent>
     </Drawer>

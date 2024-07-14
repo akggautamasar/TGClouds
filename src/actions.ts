@@ -7,7 +7,17 @@ import { userFiles, usersTable } from "./db/schema";
 import { redirect } from "next/navigation";
 import { User } from "./components/FilesRender";
 
-export async function saveTelegramCredentials(session: string) {
+export async function saveTelegramCredentials({
+  accessHash,
+  channelId,
+  channelTitle,
+  session,
+}: {
+  session: string;
+  accessHash: string;
+  channelId: string;
+  channelTitle: string;
+}) {
   if (!session) {
     throw new Error("Session is required ");
   }
@@ -34,19 +44,25 @@ export async function saveTelegramCredentials(session: string) {
           name,
           id: user.id,
           telegramSession: session,
+          accessHash: accessHash,
+          channelId: channelId,
+          channelTitle: channelTitle,
         })
         .returning();
-      return data;
+      return user.id;
     }
 
     const result = await db
       .update(usersTable)
       .set({
         telegramSession: session,
+        accessHash: accessHash,
+        channelId: channelId,
+        channelTitle: channelTitle,
       })
       .where(eq(usersTable.email, email))
       .returning();
-    return result;
+    return session;
   } catch (error) {
     console.error("Error while saving Telegram credentials:", error);
     throw new Error("There was an error while saving Telegram credentials.");
@@ -266,6 +282,7 @@ export async function uploadFile(file: {
   mimeType: string;
   size: bigint;
   url: string;
+  fileTelegramId: number;
 }) {
   try {
     const user = await getUser();
@@ -283,6 +300,7 @@ export async function uploadFile(file: {
         size: file.size,
         url: file.url,
         date: new Date().toDateString(),
+        fileTelegramId: String(file.fileTelegramId),
       })
       .returning();
 

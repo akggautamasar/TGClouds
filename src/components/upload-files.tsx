@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { getTgClient } from "@/lib/getTgClient";
-import { uploadFiles } from "@/lib/utils";
+import { formatBytes, uploadFiles } from "@/lib/utils";
 import { Dispatch, SetStateAction, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Dropzone from "react-dropzone";
@@ -62,7 +62,7 @@ export const UploadFiles = ({
     );
 
     successToast(`You have successfully uploaded ${dropedfiles.length} files`);
-    setOpen(false)
+    setOpen(false);
     router.refresh();
   };
 
@@ -78,22 +78,21 @@ export const UploadFiles = ({
             <div className="text-gray-600">
               {uploadProgress.itemIndex + 1}/{dropedfiles.length}
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            {/* <div className="w-full bg-gray-200 rounded-full h-2.5">
               <Progress
                 value={Math.round(uploadProgress.progress)}
                 className="w-full"
               />
-            </div>
+            </div> */}
             <div className="ml-2 text-gray-600">
               {Math.round(uploadProgress.progress * 100)}%
             </div>
           </div>
         )}
       </div>
-      <div className="grid gap-6 max-w-xl mx-auto">
+      <div className="grid gap-6 max-w-xl overflow-x-hidden mx-auto">
         <form
-          onSubmit={async (e) => {
-            e.preventDefault();
+          action={async () => {
             const formData = new FormData();
             if (!dropedfiles.length) return;
             for (const { file } of dropedfiles) {
@@ -139,18 +138,20 @@ export const UploadFiles = ({
                 </span>
               </button>
             </div>
-            <div className="grid gap-2 my-3">
+            <div className="grid gap-2 my-3 max-h-80 overflow-y-auto">
               {dropedfiles.map(({ file, id }) => (
                 <div
                   key={id}
                   className="flex items-center justify-between bg-muted p-4 rounded-md"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 max-w-md overflow-x-hidden">
                     <FileIcon className="w-6 h-6 text-muted-foreground" />
                     <div>
-                      <div className="font-medium text-clip">{file.name}</div>
+                      <div className="font-medium text-clip break-words">
+                        {file.name}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        {file.size}
+                        {formatBytes(file.size)}
                       </div>
                     </div>
                   </div>

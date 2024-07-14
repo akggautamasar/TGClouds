@@ -74,6 +74,7 @@ export async function uploadFiles(
         mimeType: file.type.split("/")[0],
         size: BigInt(file.size),
         url: `https://t.me/${user.channelUsername}/${result?.id}`,
+        fileTelegramId: result.id,
       });
       console.log("File uploaded successfully:", uploadToDbResult);
       result;
@@ -121,6 +122,10 @@ export async function delelteItem(
     if (err instanceof TypeNotFoundError) {
       throw new Error(err.message);
     }
+    if (err && typeof err == "object" && "message" in err) {
+      throw new Error(err.message as string);
+    }
+    return null;
   } finally {
     await client.disconnect();
   }

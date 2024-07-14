@@ -11,6 +11,7 @@ export const env = createEnv({
     NEXT_PUBLIC_PUBLISHABLE_KEY: z.string().min(1),
     NEXT_PUBLIC_TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
     NEXT_PUBLIC_TELEGRAM_API_HASH: z.string(),
+    NEXT_PUBLIC_SENTRY_AUTH_TOKEN: z.string(),
   },
   runtimeEnv: {
     TELEGRAM_API_ID: process.env.TELEGRAM_API_ID,
@@ -18,6 +19,7 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     NEXT_PUBLIC_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_PUBLISHABLE_KEY,
     NEXT_PUBLIC_TELEGRAM_API_ID: process.env.NEXT_PUBLIC_TELEGRAM_API_ID,
-    NEXT_PUBLIC_TELEGRAM_API_HASH: process.env.NEXT_PUBLIC_TELEGRAM_API_HASH
+    NEXT_PUBLIC_TELEGRAM_API_HASH: process.env.NEXT_PUBLIC_TELEGRAM_API_HASH,
+    NEXT_PUBLIC_SENTRY_AUTH_TOKEN: process.env.NEXT_PUBLIC_SENTRY_AUTH_TOKEN,
   },
 });

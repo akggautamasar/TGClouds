@@ -5,9 +5,24 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { getTgClient } from "@/lib/getTgClient";
 import Image from "next/image";
-import { SVGProps, useEffect, useLayoutEffect, useState } from "react";
+import { Dispatch, SetStateAction, SVGProps, useState } from "react";
 import Swal from "sweetalert2";
 import { Api } from "telegram";
+import { RPCError } from "telegram/errors";
+import { useDebouncedCallback } from "use-debounce";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { errorToast } from "@/lib/notify";
+import { useRouter } from "next/navigation";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { error } from "console";
 
 interface Chat {
   id: string;
@@ -17,6 +32,49 @@ interface Chat {
 interface Result {
   chats?: Chat[];
 }
+
+const errors = {
+  checkusername: {
+    CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
+      "You're managing too many public channels. To change this channel's username, make some of your public channels private.",
+    CHANNEL_INVALID:
+      "There seems to be a problem with the channel you provided. Please double-check the channel information.",
+    CHAT_ID_INVALID:
+      "The provided chat ID is invalid. Please ensure you're using the correct chat identifier.",
+    USERNAME_INVALID:
+      "The username you entered is invalid. Usernames must be between 5 and 32 characters long and can only contain letters, numbers, underscores, and hyphens.",
+  },
+  createChannel: {
+    CHANNELS_ADMIN_LOCATED_TOO_MUCH:
+      "You've reached the limit for creating public geogroups. Try creating a private channel instead.",
+    CHANNELS_TOO_MUCH:
+      "You've joined too many channels or supergroups. Reduce the number of channels you're in to create a new one.",
+    CHAT_ABOUT_TOO_LONG:
+      "The channel description is too long. Please shorten it and try again.",
+    CHAT_TITLE_EMPTY: "Please provide a title for your new channel.",
+    USER_RESTRICTED:
+      "It seems your account has been restricted due to spam reports. You can't create channels or chats at this time.",
+  },
+  updateUsername: {
+    CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
+      "You're managing too many public channels. To change this channel's username, make some of your public channels private.",
+    CHANNEL_INVALID:
+      "There seems to be a problem with the channel you provided. Please double-check the channel information.",
+    CHANNEL_PRIVATE:
+      "You can't update the username of a private channel you haven't joined. Join the channel and try again.",
+    CHAT_ADMIN_REQUIRED: "Only admins of the channel can change its username.",
+    CHAT_NOT_MODIFIED:
+      "There seems to be an issue updating the username. Please try again.",
+    CHAT_WRITE_FORBIDDEN:
+      "You don't have permission to make changes to the channel's username.",
+    USERNAME_INVALID:
+      "The username you entered is invalid. Usernames must be between 5 and 32 characters long and can only contain letters, numbers, underscores, and hyphens.",
+    USERNAME_NOT_MODIFIED:
+      "The username wasn't changed. Perhaps you entered the same username as the current one?",
+    USERNAME_OCCUPIED:
+      "The username you want is already taken. Please choose a different username.",
+  },
+} as const;
 
 async function getPhoneNumber() {
   return await Swal.fire({
@@ -54,30 +112,37 @@ export default function Component({
   const [isLoading, setIsLoading] = useState<boolean>();
   const [session, setSession] = useState<string | null>(user?.telegramSession);
 
-  const [channelDetails, setChannelDetails] = useState<{
-    title: string | null;
-    id: string | undefined;
-    accessHash: string | undefined;
-  }>({
-    title: null,
-    id: undefined,
-    accessHash: undefined,
-  });
-
   const client = getTgClient(session ?? "");
   const router = useRouter();
   async function connectTelegram() {
     try {
       setIsLoading(true);
+      let newSession: string | undefined;
       if (!session) {
-        await loginInTelegram();
+        newSession = await loginInTelegram();
       }
 
       if (!client?.connected) {
         await client.connect();
       }
 
-      await createTelegramChannel();
+      const data = await createTelegramChannel()!;
+      if (data) {
+        const { accessHash, channelTitle, id } = data;
+        await saveTelegramCredentials({
+          session: newSession!,
+          accessHash,
+          channelId: id,
+          channelTitle,
+        });
+
+        Swal.fire({
+          title: "Channel created",
+          text: "We have created a channel in Telegram for you",
+          timer: 3000,
+        });
+        router.refresh();
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -87,16 +152,25 @@ export default function Component({
   }
 
   async function loginInTelegram() {
-    await client.start({
-      phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
-      password: async () => (await getPassword()) as unknown as string,
-      phoneCode: async () => (await getCode()) as unknown as string,
-      onError: ((err) => errorToast(err?.message))
-    });
+    try {
+      await client.start({
+        phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
+        password: async () => (await getPassword()) as unknown as string,
+        phoneCode: async () => (await getCode()) as unknown as string,
+        onError: (err) => errorToast(err?.message),
+      });
 
-    const session = client.session.save() as unknown as string;
-    await saveTelegramCredentials(session);
-    setSession(session);
+      const session = client.session.save() as unknown as string;
+      return session;
+    } catch (err) {
+      if (err && typeof err == "object" && "message" in err) {
+        Swal.fire({
+          title: "failed to create channel",
+          text: (err?.message as string) ?? "there was an error",
+          timer: 3000,
+        });
+      }
+    }
   }
 
   async function createTelegramChannel() {
@@ -114,23 +188,29 @@ export default function Component({
       const result = res as Result;
 
       if (result?.chats?.[0].id) {
-        setChannelDetails({
-          title: channelTitle,
-          id: result.chats?.[0].id!,
+        return {
+          channelTitle,
+          id: result.chats?.[0].id,
           accessHash: result.chats?.[0].accessHash!,
-        });
-
-        Swal.fire({
-          title: "Channel created",
-          text: "We have created a channel in Telegram for you",
-          timer: 3000,
-        });
+        };
       }
     } catch (err) {
-      if (err instanceof Error) {
+      if (err instanceof RPCError) {
+        const text =
+          errors.createChannel[
+            err.errorMessage as keyof typeof errors.createChannel
+          ];
+
+        Swal.fire({
+          title: err.message,
+          text: text ?? "there was an error",
+          timer: 3000,
+        });
+      } else {
         Swal.fire({
           title: "failed to create channel",
-          text: err?.message ?? "there was an error",
+          //@ts-expect-error
+          text: err?.message! ?? "there was an error",
           timer: 3000,
         });
       }
@@ -149,9 +229,9 @@ export default function Component({
 
       const inputChannel = new Api.InputChannel({
         //@ts-ignore
-        channelId: channelId,
+        channelId: user.channelId,
         //@ts-ignore
-        accessHash: accessHash,
+        accessHash: user.accessHash,
       });
 
       const result = await client.invoke(
@@ -162,7 +242,11 @@ export default function Component({
       );
 
       if (!result) {
-        window.confirm("username is alreay taken");
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "username is alreay taken",
+        });
         return;
       }
 
@@ -175,24 +259,92 @@ export default function Component({
         )
         .then(async (res) => {
           await saveUserName(username);
+          await Swal.fire({
+            icon:'success', 
+            title:'Update success', 
+            text:'you have update channle username now we will redirect you to dashborad in a minute', 
+            timer:2000
+          })
           router.push("/files");
         });
       console.log("Username updated successfully.");
-    } catch (error) {
-      console.error("Error updating username:", error);
+    } catch (err) {
+      console.error("Error updating username:", err);
+      if (err instanceof RPCError) {
+        const text =
+          errors.updateUsername[
+            err.errorMessage as keyof typeof errors.updateUsername
+          ];
+        Swal.fire({
+          icon: "error",
+          title: err.message,
+          text: text,
+        });
+        return;
+      }
+      if (err && typeof err == "object" && "message" in err) {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: err.message as string,
+        });
+      }
     }
   }
 
-  const { title, id, accessHash } = channelDetails;
+  const checkUserNameOnChange = async (
+    username: string | undefined,
+    setStatus: Dispatch<
+      SetStateAction<{ type: "error" | "success"; message: string } | null>
+    >
+  ) => {
+    if (!username) return;
+    try {
+      const inputChannel = new Api.InputChannel({
+        //@ts-ignore
+        channelId: user.channelId,
+        //@ts-ignore
+        accessHash: user.accessHash,
+      });
 
-  if (accessHash && title && id)
+      if (!client.connected) await client.connect();
+      const result = await client.invoke(
+        new Api.channels.CheckUsername({
+          channel: inputChannel,
+          username: username,
+        })
+      );
+      if (!result) {
+        setStatus({ type: "error", message: "username is alreay taken" });
+        return;
+      }
+      setStatus({ message: "username available", type: "success" });
+    } catch (err) {
+      console.error(err);
+      if (err instanceof RPCError) {
+        const type = err.errorMessage as keyof typeof errors.checkusername;
+        const text = errors.checkusername[type];
+        setStatus({ message: text, type: "error" });
+        return;
+      }
+      if (err && typeof err == "object" && "message" in err) {
+        setStatus({ message: err.message as string, type: "error" });
+      }
+    }
+  };
+
+  if (user && user?.accessHash && user?.channelTitle && user?.channelId) {
+    const { channelId, channelTitle } = user;
+
     return (
       <UpdateUsernameForm
-        channelId={id}
-        channelTitle={title}
+        onChange={checkUserNameOnChange}
+        channelId={channelId}
+        channelTitle={channelTitle}
         onSubmit={connectChannel}
       />
     );
+  }
 
   return (
     <div className="w-full bg-white py-20 md:py-32 lg:py-40">
@@ -252,40 +404,41 @@ function TextIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useRouter } from "next/navigation";
-import { useFormStatus } from "react-dom";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { errorToast } from "@/lib/notify";
-
 const UpdateUsernameForm = <
   T extends { channelTitle: string; channelId: string }
 >({
   onSubmit,
   channelTitle,
   channelId,
+  onChange,
 }: {
   onSubmit: (arg: Pick<T, "channelId"> & { username: string }) => Promise<void>;
+  onChange: (
+    username: string,
+    setError: Dispatch<
+      SetStateAction<{ type: "error" | "success"; message: string } | null>
+    >
+  ) => Promise<void>;
 } & T) => {
-  const [username, setUsername] = useState("");
   const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<{
+    type: "error" | "success";
+    message: string;
+  } | null>(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (username: string) => {
     setPending(true);
     await onSubmit({ channelId, username });
     setPending(false);
   };
 
+  const checkUsername = useDebouncedCallback(onChange, 300);
+
+  const isUpdateButtonDisabled = pending || status?.type !== "success";
+
   return (
     <div className="h-[100dvh] flex justify-center items-center">
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="w-full max-w-md md:max-w-lg mx-auto">
         <CardHeader>
           <CardTitle>Channel Created</CardTitle>
           <CardDescription>
@@ -296,27 +449,47 @@ const UpdateUsernameForm = <
         <CardContent>
           <div className="space-y-6">
             <form
-              action={() => {
-                handleSubmit();
+              action={(formData) => {
+                const username = formData.get("channel-username");
+                handleSubmit(username as unknown as string);
               }}
             >
               <div className="flex items-center gap-2">
                 <Label htmlFor="channel-username">
                   Telegram Channel Username
                 </Label>
-                <Input
-                  id="channel-username"
-                  name="channel-username"
-                  placeholder="@mychannel"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
+                <div className="flex justify-center flex-col items-center gap-1">
+                  <Input
+                    id="channel-username"
+                    name="channel-username"
+                    placeholder="@mychannel"
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        setStatus(null);
+                        return;
+                      }
+                      checkUsername(e.target.value, setStatus);
+                    }}
+                    required
+                  />
+                  {status?.type == "error" ? (
+                    <span className="text-sm text-[0.8em] text-red-500 block w-full">
+                      {status.message}
+                    </span>
+                  ) : null}
+                  {status?.type == "success" ? (
+                    <span className="text-sm text-[0.8em] text-green-500 block w-full">
+                      {status.message}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <Button
-                disabled={pending}
+                disabled={isUpdateButtonDisabled}
                 type="submit"
-                className="w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700"
+                className={`w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700 ${
+                  isUpdateButtonDisabled ? "cursor-not-allowed" : ""
+                }`}
               >
                 {pending ? "please wait..." : " Update Username"}
               </Button>

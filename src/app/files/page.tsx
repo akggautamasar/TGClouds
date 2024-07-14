@@ -14,6 +14,7 @@ export type FilesData = {
   mimeType: string;
   size: bigint;
   url: string;
+  fileTelegramId: string;
 }[];
 
 export default async function Home({

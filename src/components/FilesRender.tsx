@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { successToast } from "@/lib/notify";
+import { errorToast, successToast } from "@/lib/notify";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -104,7 +104,7 @@ async function downloadMedia(
   message_id: number,
   setProgress: Dispatch<SetStateAction<number>>
 ) {
-  //TODO: implenet downloding in web worker 
+  //TODO: implenet downloding in web worker
   if (!client.connected) await client.connect();
   const message = await client.getMessages(user.channelUsername, {
     ids: [message_id],
@@ -210,9 +210,16 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
               onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
                 console.log(e);
                 if (!user) return alert("Please login to delete files");
+
                 await deleteFile(file.id);
-                await delelteItem(user, file.id, client);
-                successToast("file deleted");
+
+                const deleteFilResult = await delelteItem(
+                  user,
+                  file.fileTelegramId,
+                  client
+                );
+
+                successToast("You have Deleted the file successfully");
                 router.refresh();
               }}
             >

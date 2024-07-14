@@ -4,7 +4,7 @@ import {
   foreignKey,
   pgTable,
   text,
-  uniqueIndex
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable(
@@ -16,6 +16,8 @@ export const usersTable = pgTable(
     telegramSession: text("telegramSession"),
     channelUsername: text("channelName").unique(),
     channelId: text("channelId").unique(),
+    accessHash: text("accessHash"),
+    channelTitle: text("channelTitle"),
   },
   (table) => ({
     emailIdx: uniqueIndex("email_idx").on(table.email),
@@ -34,11 +36,12 @@ export const userFiles = pgTable(
     date: date("date", { mode: "string" }).$defaultFn(() =>
       new Date().toDateString()
     ),
+    fileTelegramId: text("fileTelegramId"),
   },
   (table) => ({
     userFk: foreignKey({
       columns: [table.userId],
       foreignColumns: [usersTable.id],
-    }).onDelete('cascade'),
+    }).onDelete("cascade"),
   })
 );
