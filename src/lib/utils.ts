@@ -1,11 +1,17 @@
 import { type ClassValue, clsx } from "clsx";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useCallback } from "react";
 import { twMerge } from "tailwind-merge";
 import { TelegramClient } from "telegram";
 import { ChannelDetails } from "./types";
 import { User } from "@/components/FilesRender";
 import { currentUser } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import {
+  ReadonlyURLSearchParams,
+  redirect,
+  useSearchParams,
+} from "next/navigation";
+import { uploadFile } from "@/actions";
+import { TypeNotFoundError } from "telegram/errors";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,10 +35,10 @@ export async function uploadFiles(
   onProgress: Dispatch<
     SetStateAction<
       | {
-        itemName: string;
-        itemIndex: number;
-        progress: number;
-      }
+          itemName: string;
+          itemIndex: number;
+          progress: number;
+        }
       | undefined
     >
   >,
@@ -49,7 +55,7 @@ export async function uploadFiles(
       const file = files[index];
       const toUpload = await client.uploadFile({
         file: file,
-        workers: 1,
+        workers: 2,
         onProgress: (progress) => {
           onProgress({
             itemName: file.name,
@@ -59,17 +65,31 @@ export async function uploadFiles(
         },
       });
 
+      if (!user.channelUsername) throw new Error("oops we fuckd up");
+
       const result = await client.sendFile(user?.channelUsername, {
         file: toUpload,
         forceDocument: true,
       });
-      console.log("File uploaded successfully:", result);
+      const uploadToDbResult = await uploadFile({
+        fileName: file.name,
+        mimeType: file.type.split("/")[0],
+        size: BigInt(file.size),
+        url: `https://t.me/${user.channelUsername}/${result?.id}`,
+        fileTelegramId: result.id,
+      });
+      console.log("File uploaded successfully:", uploadToDbResult);
       result;
     }
   } catch (err) {
+    if (err instanceof TypeNotFoundError) {
+      throw new Error(err.message);
+    }
+
     if (err instanceof Error) {
       throw new Error(err.message);
     }
+
     throw new Error("there was an error");
   } finally {
     await client.disconnect();
@@ -87,6 +107,7 @@ export async function delelteItem(
     await client.connect();
   }
   try {
+    if (!user.channelUsername) throw new Error("oops we fuckd up");
     const deleteMediaStatus = await client.deleteMessages(
       user.channelUsername,
       [Number(postId)],
@@ -99,7 +120,13 @@ export async function delelteItem(
     if (err instanceof Error) {
       throw new Error(err.message);
     }
-    throw new Error("there was an error");
+    if (err instanceof TypeNotFoundError) {
+      throw new Error(err.message);
+    }
+    if (err && typeof err == "object" && "message" in err) {
+      throw new Error(err.message as string);
+    }
+    return null;
   } finally {
     await client.disconnect();
   }
@@ -138,4 +165,12 @@ export async function getChannelDetails(
   return channelDetails;
 }
 
-
+export function useCreateQueryString(
+  searchParams: ReadonlyURLSearchParams
+): (name: string, value: string) => string {
+  return (name: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(name, value);
+    return params.toString();
+  };
+}

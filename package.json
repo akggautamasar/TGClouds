@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.development -- next dev -p 4000",
-    "build": "next build",
+    "build": "pnpm migrate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "dotenv -e .env.development -- drizzle-kit generate",
@@ -13,8 +13,8 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.2.2",
-    "@next/env": "^14.2.4",
+    "@clerk/nextjs": "^5.2.3",
+    "@next/env": "^14.2.5",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.1",
@@ -23,9 +23,11 @@
     "@radix-ui/react-progress": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
+    "@sentry/nextjs": "^8",
     "@t3-oss/env-core": "^0.10.1",
     "@t3-oss/env-nextjs": "^0.10.1",
     "@types/pg": "^8.11.6",
+    "@uidotdev/usehooks": "^2.4.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "dotenv-cli": "^7.4.2",
@@ -38,22 +40,26 @@
     "pg": "^8.12.0",
     "postgres": "^3.4.4",
     "react": "^18.3.1",
-    "react-dom": "^18",
+    "react-dom": "^18.3.1",
+    "react-dropzone": "^14.2.3",
+    "react-hot-toast": "^2.4.1",
     "sweetalert2": "^11.12.2",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "telegram": "^2.22.2",
+    "telegram": "^2.21.1",
+    "use-debounce": "^10.0.1",
+    "vaul": "^0.9.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
     "drizzle-kit": "^0.22.8",
-    "eslint": "^8",
+    "eslint": "^8.57.0",
     "eslint-config-next": "14.2.4",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3"
   }
 }

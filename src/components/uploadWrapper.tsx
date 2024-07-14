@@ -1,16 +1,54 @@
-import { Dialog } from "@radix-ui/react-dialog";
-import { DialogContent, DialogTrigger } from "./ui/dialog";
+"use client";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { useState } from "react";
+import { User } from "./FilesRender";
+import { UploadIcon } from "./Icons/icons";
 import { UploadFiles } from "./upload-files";
-import { useUserProtected } from "@/actions";
 
-export default async function Upload() {
-  const user = await useUserProtected();
+export default function DrawerDialogDemo({ user }: { user: User }) {
+  const [open, setOpen] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <DialogTrigger>
+            <div className="flex justify-center items-center gap-2">
+              <UploadIcon className="h-4 w-4" />
+              Upload
+            </div>
+          </DialogTrigger>
+        </DialogTrigger>
+        <DialogContent className="w-[700px]">
+          <DialogTitle className="sr-only">upload file</DialogTitle>
+          <UploadFiles setOpen={setOpen} user={user} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog>
-      <DialogTrigger>Upload</DialogTrigger>
-      <DialogContent className="min-w-[600px] max-h-[700px] overflow-auto min-h-[600px]">
-        <UploadFiles user={user} />
-      </DialogContent>
-    </Dialog>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <DialogTrigger>
+          {" "}
+          <div className="flex justify-center items-center gap-2">
+            <UploadIcon className="h-4 w-4" />
+            Upload
+          </div>
+        </DialogTrigger>
+      </DrawerTrigger>
+      <DrawerContent className="h-4/5">
+        <UploadFiles setOpen={setOpen} user={user} />
+      </DrawerContent>
+    </Drawer>
   );
 }

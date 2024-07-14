@@ -1,30 +1,39 @@
-import { useUserProtected } from "@/actions";
+import { getAllFiles, useUserProtected } from "@/actions";
 import { Dashboard } from "@/components/dashboard";
 import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
+import { db } from "@/db";
+import { userFiles, usersTable } from "@/db/schema";
 import { Suspense } from "react";
 
-
-
-
 export type FilesData = {
-  title: string;
-  type: string;
-  size: string;
-  src: string;
-  name: string;
-  id: string | number;
-};
+  date: string | null;
+  id: number;
+  userId: string;
+  fileName: string;
+  mimeType: string;
+  size: bigint;
+  url: string;
+  fileTelegramId: string;
+}[];
 
-
-
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Record<string, string>;
+}) {
   const user = await useUserProtected();
 
+  const searchItem = searchParams.search;
+  const page = parseInt(searchParams.page || "1");
+
+  //@ts-ignore
+  const [files, total] = await getAllFiles(searchItem, (page - 1) * 8);
+
   return (
-    <Dashboard user={user}>
+    <Dashboard total={total} user={user}>
       <Suspense fallback={<LoadingItems />}>
-        <Files user={user} />
+        <Files files={files} user={user} />
       </Suspense>
     </Dashboard>
   );

@@ -8,10 +8,11 @@ import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cache, use } from "react";
+import { cache, Dispatch, SetStateAction, useEffect, useState } from "react";
 
 import { Api, TelegramClient } from "telegram";
 
+import { deleteFile } from "@/actions";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -22,24 +23,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { errorToast, successToast } from "@/lib/notify";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { UploadIcon } from "./Icons/icons";
-import { Dialog } from "@radix-ui/react-dialog";
-import { DialogContent, DialogTrigger } from "./ui/dialog";
-import { UploadFiles } from "./upload-files";
+import Upload from "./uploadWrapper";
 
 export type User = {
   id: string;
   name: string;
   email: string;
-  telegramSession: string;
-  channelUsername: string;
+  telegramSession: string | null;
+  channelUsername: string | null;
   channelId: string | null;
+  accessHash: string | null;
+  channelTitle: string | null;
 };
 
 const getAllFiles = cache(async (client: TelegramClient, user: User) => {
@@ -49,20 +50,23 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   let hasMore = true;
 
   try {
-    console.log("Connecting to Telegram client...");
-    console.log("Connection status", client.connected);
+    alert("Connecting to Telegram client...");
+    alert("Connection status" + client.connected);
 
     if (!client.connected) await client.connect();
 
     while (hasMore) {
       console.log(`Fetching messages with offsetId: ${offsetId}`);
 
+      alert("Connecting to Telegram client...");
+      alert("Connection status" + client.connected);
+      if (!user.channelUsername) throw new Error("oops we fuckd up");
       const result = await client.getMessages(user?.channelUsername, {
         limit: limit,
         offsetId: offsetId,
       });
 
-      console.log(`Fetched ${result.length} messages`);
+      alert(`Fetched ${result.length} messages`);
 
       allMessages = allMessages.concat(result);
       if (result.length < limit) {
@@ -76,10 +80,11 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
       .filter((message) => message.file)
       .map(({ file, id }) => {
         return {
-          title: file?.title,
+          //@ts-ignore
+          fileName: file?.title,
           name: file?.name,
           size: formatBytes(file?.size as number),
-          src: crypto.randomUUID(),
+          src: `https://t.me/${user.channelUsername}/${id}`,
           type: file?.mimeType as string,
           id,
         } satisfies FilesData;
@@ -88,31 +93,47 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
     if (err instanceof Error) {
       console.log(err?.message);
     }
-    throw Error("Failed to fetch files");
+    console.warn(err);
+    throw Error(JSON.stringify(err));
   } finally {
     await client.disconnect();
   }
+  return null;
 });
 
-function Files({ user, mimeType }: { user: User; mimeType?: string }) {
-  const client = getTgClient(user?.telegramSession as string);
+async function downloadMedia(
+  client: TelegramClient,
+  user: User,
+  message_id: number,
+  setProgress: Dispatch<SetStateAction<number>>
+) {
+  //TODO: implenet downloding in web worker
+  if (!client.connected) await client.connect();
+  if (!user.channelUsername) throw new Error("oops we fuckd up");
 
-  const data = use<FilesData[] | undefined>(
-    new Promise((resolve) =>
-      setTimeout(async () => {
-        const data = await getAllFiles(client, user);
-        resolve(data);
-      }, 0)
-    )
-  );
+  const message = await client.getMessages(user.channelUsername, {
+    ids: [message_id],
+  });
 
-  const router = useRouter();
+  const media = message[0].media;
+  if (media) {
+    const buffer = await client.downloadMedia(media, {
+      progressCallback: (progress) => setProgress(Number(progress)),
+    });
+    const blob = new Blob([buffer as unknown as Buffer]);
+    return blob;
+  }
+}
 
-  const filesToDisplay = mimeType
-    ? data?.filter(({ type }) => type.startsWith(mimeType))
-    : data;
-
-  if (!filesToDisplay?.length)
+function Files({
+  user,
+  files,
+}: {
+  user: User;
+  mimeType?: string;
+  files: FilesData | undefined;
+}) {
+  if (!files?.length)
     return (
       <>
         <div className="flex flex-col items-center justify-center h-full">
@@ -122,83 +143,99 @@ function Files({ user, mimeType }: { user: User; mimeType?: string }) {
               You haven&apos;t uploaded any files yet. Click the button below to
               get started.
             </p>
-            <Button size="lg" variant="outline">
-              <Dialog>
-                <DialogTrigger>
-                  <div className="flex items-center space-x-2">
-                    <UploadIcon className="h-4 w-4 mr-2" />
-                    <span>Upload Files</span>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="min-w-[600px] max-h-[700px] overflow-auto min-h-[600px]">
-                  <UploadFiles user={user} />
-                </DialogContent>
-              </Dialog>
-            </Button>
+            <div>
+              <Upload user={user} />
+            </div>
           </div>
         </div>
       </>
     );
 
   return (
-    <div className="grid grid-cols-2 gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-      {filesToDisplay?.map((file, index) => (
-        <Card
-          key={index}
-          className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
-        >
-          <Link
-            target="_blank"
-            href={`https://t.me/${user?.channelUsername}/${file.id}`}
-            className="absolute inset-1 z-10"
-            prefetch={false}
-          >
-            <span className="sr-only">View file</span>
-          </Link>
-          <Image
-            src={"https://via.placeholder.com/299x199"}
-            alt={file.name}
-            width={299}
-            height={199}
-            className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
-          />
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between">
-              <div className="truncate font-medium">{file.name}</div>
-              <Badge
-                variant="outline"
-                className="rounded-full px-3 py-1 text-xs"
-              >
-                {file.type}
-              </Badge>
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              <div>Size: {file.size}</div>
-            </div>
-            <div className="absolute z-50 right-2 bottom-2">
-              <UserItemActions>
-                <Button
-                  className="w-full border-none"
-                  variant={"destructive"}
-                  onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
-                    console.log(e);
-                    if (!user) return alert("Please login to delete files");
-                    await delelteItem(user, file.id, client);
-                    router.refresh();
-                  }}
-                >
-                  <span className="text-white text-sm text">Delete</span>
-                </Button>
-              </UserItemActions>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {files?.map((file, index) => (
+        <EachFile file={file} user={user} key={file.id} />
       ))}
     </div>
   );
 }
 
 export default Files;
+
+function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
+  const client = getTgClient(user?.telegramSession as string);
+  const [progress, setProgress] = useState(0);
+  const [url, setURL] = useState("https://via.placeholder.com/299/199");
+
+  useEffect(() => {
+    // downloadMedia(client, user, file.id, setProgress).then((blob) =>
+    //   setURL(URL.createObjectURL(blob))
+    // );
+  }, []);
+
+  const router = useRouter();
+
+  return (
+    <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
+      <Link
+        target="_blank"
+        href={file.url}
+        className="absolute inset-1 z-10"
+        prefetch={false}
+      >
+        <span className="sr-only">View file</span>
+      </Link>
+      {url ? (
+        <Image
+          src={url}
+          alt={file.fileName}
+          width={299}
+          height={199}
+          className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
+        />
+      ) : (
+        <div>{progress}</div>
+      )}
+
+      <CardContent className="p-5 relative">
+        <div className="flex items-center justify-between">
+          <div className="truncate font-medium">{file.fileName}</div>
+          <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+            {file.mimeType}
+          </Badge>
+        </div>
+        <div className="mt-3 text-sm text-muted-foreground">
+          <div>Size: {formatBytes(Number(file.size))}</div>
+        </div>
+        <div className="absolute z-50 right-2 bottom-2">
+          <UserItemActions>
+            <Button
+              className="w-full border-none"
+              variant={"destructive"}
+              onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                console.log(e);
+                if (!user) return alert("Please login to delete files");
+
+                await deleteFile(file.id);
+
+                const deleteFilResult = await delelteItem(
+                  user,
+                  file.fileTelegramId,
+                  client
+                );
+
+                successToast("You have Deleted the file successfully");
+                router.refresh();
+              }}
+            >
+              <span className="text-white text-sm text">Delete</span>
+            </Button>
+          </UserItemActions>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function ConfirmDeleteAction({
   onConfirm,
