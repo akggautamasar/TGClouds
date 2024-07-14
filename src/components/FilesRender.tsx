@@ -8,7 +8,15 @@ import { delelteItem, formatBytes } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cache, Dispatch, SetStateAction, useEffect, useState } from "react";
+import {
+  cache,
+  Dispatch,
+  SetStateAction,
+  use,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { Api, TelegramClient } from "telegram";
 
@@ -31,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import Upload from "./uploadWrapper";
+import { SortByContext } from "@/lib/context";
 
 export type User = {
   id: string;
@@ -133,7 +142,20 @@ function Files({
   mimeType?: string;
   files: FilesData | undefined;
 }) {
-  if (!files?.length)
+  const { sortBy } = use(SortByContext)!;
+
+  const sortedFiles = useMemo(() => {
+    if (!files || !files?.length) return [];
+    if (sortBy == "name")
+      return files.sort((a, b) => a.fileName.localeCompare(b.fileName));
+    if (sortBy == "date")
+      return files.sort((a, b) => a.date!.localeCompare(b?.date!));
+    if (sortBy == "size")
+      return files.sort((a, b) => Number(a.size) - Number(b.size));
+    return files.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
+  }, [sortBy]);
+
+  if (!sortedFiles?.length)
     return (
       <>
         <div className="flex flex-col items-center justify-center h-full">
@@ -153,7 +175,7 @@ function Files({
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {files?.map((file, index) => (
+      {sortedFiles?.map((file, index) => (
         <EachFile file={file} user={user} key={file.id} />
       ))}
     </div>
@@ -205,7 +227,10 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
           </Badge>
         </div>
         <div className="mt-3 text-sm text-muted-foreground">
-          <div>Size: {formatBytes(Number(file.size))}</div>
+          <div>
+            <div>Size: {formatBytes(Number(file.size))}</div>
+            <div>Date:{file.date}</div>
+          </div>
         </div>
         <div className="absolute z-50 right-2 bottom-2">
           <UserItemActions>

@@ -36,6 +36,7 @@ import Upload from "./uploadWrapper";
 import { User } from "./FilesRender";
 import SearchItems from "./searchItems";
 import Paginate from "./pagination";
+import SortBy from "./SortBy";
 
 export function Dashboard({
   children,
@@ -234,28 +235,7 @@ export function Dashboard({
           <div>
             <ModeToggle />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-              >
-                <FilterIcon className="h-4 w-4" />
-                <span className="sr-only">Filter</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value="name">
-                <DropdownMenuRadioItem value="name">Name</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="date">Date</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="size">Size</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="type">Type</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SortBy />
           <div className="h-8 gap-1 flex border-gray-400 items-center justify-center">
             <Upload user={user} />
           </div>

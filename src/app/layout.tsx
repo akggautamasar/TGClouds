@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 import { Toaster } from "react-hot-toast";
 
-import Providers from "@/lib/context";
+import Providers, { SortByContext, SortByContextWrapper } from "@/lib/context";
 
 export default async function RootLayout({
   children,
@@ -40,7 +40,7 @@ export default async function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
+              <SortByContextWrapper>{children}</SortByContextWrapper>
             </ThemeProvider>
           </ClerkProvider>
         </Providers>
