@@ -14,7 +14,9 @@ function CustomLInk({
   const router = useRouter();
   useEffect(() => {
     router.prefetch(href);
-  }, []);
+    
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [href]);
 
   return (
     <Link {...props} href={href}>

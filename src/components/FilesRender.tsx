@@ -36,9 +36,11 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  telegramSession: string;
-  channelUsername: string;
+  telegramSession: string | null;
+  channelUsername: string | null;
   channelId: string | null;
+  accessHash: string | null;
+  channelTitle: string | null;
 };
 
 const getAllFiles = cache(async (client: TelegramClient, user: User) => {
@@ -58,6 +60,7 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
 
       alert("Connecting to Telegram client...");
       alert("Connection status" + client.connected);
+      if (!user.channelUsername) throw new Error("oops we fuckd up");
       const result = await client.getMessages(user?.channelUsername, {
         limit: limit,
         offsetId: offsetId,
@@ -106,6 +109,8 @@ async function downloadMedia(
 ) {
   //TODO: implenet downloding in web worker
   if (!client.connected) await client.connect();
+  if (!user.channelUsername) throw new Error("oops we fuckd up");
+
   const message = await client.getMessages(user.channelUsername, {
     ids: [message_id],
   });

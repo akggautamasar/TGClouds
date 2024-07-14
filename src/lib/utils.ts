@@ -65,6 +65,8 @@ export async function uploadFiles(
         },
       });
 
+      if (!user.channelUsername) throw new Error("oops we fuckd up");
+
       const result = await client.sendFile(user?.channelUsername, {
         file: toUpload,
         forceDocument: true,
@@ -85,9 +87,7 @@ export async function uploadFiles(
     }
 
     if (err instanceof Error) {
-      throw new Error(
-        err.message + (user.channelUsername ? "found" : "not found")
-      );
+      throw new Error(err.message);
     }
 
     throw new Error("there was an error");
@@ -107,6 +107,7 @@ export async function delelteItem(
     await client.connect();
   }
   try {
+    if (!user.channelUsername) throw new Error("oops we fuckd up");
     const deleteMediaStatus = await client.deleteMessages(
       user.channelUsername,
       [Number(postId)],
