@@ -1,17 +1,20 @@
 "use client";
-import { FilesData } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTgClient } from "@/lib/getTgClient";
-import { delelteItem, formatBytes } from "@/lib/utils";
+import { delelteItem, formatBytes, getChannelEntity } from "@/lib/utils";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "./Link";
 import { useRouter } from "next/navigation";
+
+import Circle from "react-circle";
+
 import {
   cache,
   Dispatch,
   SetStateAction,
+  Suspense,
   use,
   useEffect,
   useMemo,
@@ -41,8 +44,8 @@ import {
 import Upload from "./uploadWrapper";
 import { SortByContext } from "@/lib/context";
 import { db } from "@/db";
-
-export type User = Awaited<ReturnType<typeof db.query.usersTable.findFirst>>;
+import Message, { FilesData, User } from "@/lib/types";
+import { RPCError } from "telegram/errors";
 
 const getAllFiles = cache(async (client: TelegramClient, user: User) => {
   const limit = 8;
@@ -103,24 +106,39 @@ const getAllFiles = cache(async (client: TelegramClient, user: User) => {
 async function downloadMedia(
   client: TelegramClient,
   user: User,
-  message_id: number,
+  message_id: number | string,
   setProgress: Dispatch<SetStateAction<number>>
 ) {
   //TODO: implenet downloding in web worker
-  if (!client.connected) await client.connect();
-  if (!user?.channelUsername) throw new Error("oops we fuckd up");
 
-  const message = await client.getMessages(user.channelUsername, {
-    ids: [message_id],
-  });
+  try {
+    if (!client.connected) await client?.connect();
 
-  const media = message[0].media;
-  if (media) {
-    const buffer = await client.downloadMedia(media, {
-      progressCallback: (progress) => setProgress(Number(progress)),
-    });
-    const blob = new Blob([buffer as unknown as Buffer]);
-    return blob;
+    const message = (await client.getMessages(
+      getChannelEntity(user?.channelId!, user?.accessHash!),
+      {
+        ids: [Number(message_id)],
+      }
+    )) as unknown as Message[];
+
+    const media = message[0].media;
+
+    const sizeType = media.document.thumbs[0].type;
+
+    if (media) {
+      const buffer = await client.downloadMedia(media, {
+        progressCallback: (progress, total) => {
+          const percent = (progress / total) * 100;
+          setProgress(Number(percent?.toFixed(2)));
+        },
+        thumb: media.document.size.length,
+      });
+      const blob = new Blob([buffer as unknown as Buffer]);
+      return blob;
+    }
+  } catch (err) {
+    console.log(err);
+  } finally {
   }
 }
 function Files({
@@ -132,6 +150,8 @@ function Files({
   files: FilesData | undefined;
 }) {
   const { sortBy } = use(SortByContext)!;
+
+  const [progress, setProgress] = useState(0);
 
   const sortedFiles = useMemo(() => {
     if (!files || !files?.length) return [];
@@ -166,7 +186,14 @@ function Files({
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {sortedFiles?.map((file, index) => (
-        <EachFile file={file} user={user} key={file.id} />
+        <Suspense
+          key={file.id}
+          fallback={
+            <FileDownloadProgress file={file} downloadProgress={progress} />
+          }
+        >
+          <EachFile setProgress={setProgress} file={file} user={user} />
+        </Suspense>
       ))}
     </div>
   );
@@ -174,16 +201,30 @@ function Files({
 
 export default Files;
 
-function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
+function EachFile({
+  file,
+  setProgress,
+  user,
+}: {
+  file: FilesData[number];
+  user: User;
+  setProgress: Dispatch<SetStateAction<number>>;
+}) {
   const client = getTgClient(user?.telegramSession as string);
-  const [progress, setProgress] = useState(0);
-  const [url, setURL] = useState("https://via.placeholder.com/299/199");
+  const [progress] = useState(0);
+  const [url, setURL] = useState<string | null>(null);
 
-  useEffect(() => {
-    // downloadMedia(client, user, file.id, setProgress).then((blob) =>
-    //   setURL(URL.createObjectURL(blob))
-    // );
-  }, []);
+  async function downlaodFile() {
+    const blob = await downloadMedia(
+      client,
+      user,
+      file?.fileTelegramId,
+      setProgress
+    );
+
+    const url = URL.createObjectURL(blob!);
+    setURL(url);
+  }
 
   const router = useRouter();
 
@@ -203,7 +244,7 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
           alt={file.fileName}
           width={299}
           height={199}
-          className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
+          className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
         />
       ) : (
         <div>{progress}</div>
@@ -217,10 +258,20 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
           </Badge>
         </div>
         <div className="mt-3 text-sm text-muted-foreground">
-          <div>
+          <div className="flex justify-between items-center gap-3">
             <div>Size: {formatBytes(Number(file.size))}</div>
             <div>Date:{file.date}</div>
           </div>
+        </div>
+        <div>
+          <button
+            className="relative z-[99999]"
+            onClick={() => {
+              downlaodFile();
+            }}
+          >
+            d
+          </button>
         </div>
         <div className="absolute z-50 right-2 bottom-2">
           <UserItemActions>
@@ -251,6 +302,32 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
             </Button>
           </UserItemActions>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FileDownloadProgress({
+  downloadProgress,
+  file,
+}: {
+  downloadProgress: number;
+  file: FilesData[number];
+}) {
+  return (
+    <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
+      <div>
+        <Circle progress={downloadProgress} />
+      </div>
+
+      <CardContent className="p-5 relative">
+        <div className="flex items-center justify-between">
+          <div className="truncate font-medium">{file.fileName}</div>
+          <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+            {file.mimeType}
+          </Badge>
+        </div>
+        <div className="mt-3 text-sm text-muted-foreground"></div>
       </CardContent>
     </Card>
   );

@@ -8,7 +8,6 @@ import Dropzone from "react-dropzone";
 
 import { promiseToast } from "@/lib/notify";
 import { useRouter } from "next/navigation";
-import { User } from "./FilesRender";
 import {
   CloudUploadIcon,
   FileIcon,
@@ -16,6 +15,7 @@ import {
   UploadIcon,
   XIcon,
 } from "./Icons/icons";
+import { User } from "@/lib/types";
 
 interface DropedFile {
   file: File;

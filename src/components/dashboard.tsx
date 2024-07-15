@@ -1,5 +1,5 @@
 import { File, Menu, Search } from "lucide-react";
-import Link from "next/link";
+import Link from "./Link";
 
 import { Button } from "@/components/ui/button";
 import {

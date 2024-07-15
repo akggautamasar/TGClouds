@@ -349,7 +349,12 @@ export const useUserProtected = async () => {
   if (!userClerk) return redirect("/login");
   const user = await getUser();
 
-  if (!user?.accessHash && !user?.channelId && user?.hasPublicTgChannel == null)
+  const hasNotDecidedToHavePrivateChannle =
+    user?.hasPublicTgChannel === null || user?.hasPublicTgChannel === undefined;
+
+  const hasNotHaveNeccessaryDetails = !user?.accessHash || !user?.channelId;
+
+  if (hasNotDecidedToHavePrivateChannle || hasNotHaveNeccessaryDetails)
     return redirect("/connect-telegram");
 
   if (!user.channelUsername && (!user.channelId || !user.accessHash)) {

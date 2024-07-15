@@ -2,8 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { Dispatch, SetStateAction, useCallback } from "react";
 import { twMerge } from "tailwind-merge";
 import { Api, TelegramClient } from "telegram";
-import { ChannelDetails } from "./types";
-import { User } from "@/components/FilesRender";
+import { ChannelDetails, User } from "./types";
 import { currentUser } from "@clerk/nextjs/server";
 import {
   ReadonlyURLSearchParams,
@@ -45,7 +44,6 @@ export async function uploadFiles(
   client: TelegramClient | undefined
 ) {
   if (!client) {
-    alert("Failed to initialize Telegram client");
     throw new Error("Failed to initialize Telegram client");
   }
   if (!client?.connected) await client.connect();
@@ -72,6 +70,9 @@ export async function uploadFiles(
           forceDocument: true,
         }
       );
+
+      navigator.clipboard.writeText(JSON.stringify(result));
+
       const uploadToDbResult = await uploadFile({
         fileName: file.name,
         mimeType: file.type.split("/")[0],

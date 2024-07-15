@@ -12,13 +12,17 @@ async function Page() {
   if (!userClerk) return redirect("/login");
   const user = await getUser();
 
-  if (user && user.telegramSession && user.channelUsername) {
-    redirect("/files");
-  }
+  if (
+    user?.hasPublicTgChannel !== null &&
+    user?.hasPublicTgChannel !== undefined &&
+    user.accessHash &&
+    user.channelId
+  )
+    return redirect("/files");
 
   return (
     <div>
-      <ConnectTelegram user={user as User} />
+      <ConnectTelegram user={user as NonNullable<User>} />
     </div>
   );
 }

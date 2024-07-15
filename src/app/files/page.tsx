@@ -4,18 +4,10 @@ import Files from "@/components/FilesRender";
 import { LoadingItems } from "@/components/loading-files";
 import { db } from "@/db";
 import { userFiles, usersTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { Suspense } from "react";
 
-export type FilesData = {
-  date: string | null;
-  id: number;
-  userId: string;
-  fileName: string;
-  mimeType: string;
-  size: bigint;
-  url: string;
-  fileTelegramId: string;
-}[];
+
 
 export default async function Home({
   searchParams,

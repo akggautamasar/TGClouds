@@ -15,6 +15,9 @@ import { Api } from "telegram";
 import { RPCError } from "telegram/errors";
 import { useDebouncedCallback } from "use-debounce";
 
+import { LoadingSVG, TextIcon } from "./Icons/icons";
+import { User } from "./FilesRender";
+
 import {
   Select,
   SelectContent,
@@ -420,6 +423,7 @@ export default function Component({
 
     return (
       <UpdateUsernameForm
+        user={user}
         onChange={checkUserNameOnChange}
         channelId={channelId}
         channelTitle={channelTitle}
@@ -465,27 +469,6 @@ export default function Component({
   );
 }
 
-function TextIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M17 6.1H3" />
-      <path d="M21 12.1H3" />
-      <path d="M15.1 18H3" />
-    </svg>
-  );
-}
-
 const showChannelVisisblityConfrimation = async (visibility: string) => {
   return await Swal.fire({
     title: "Confirm Channel Visibility",
@@ -503,9 +486,11 @@ const UpdateUsernameForm = <
   onSubmit,
   channelTitle,
   channelId,
+  user,
   onChange,
 }: {
   onSubmit: (arg: Pick<T, "channelId"> & { username: string }) => Promise<void>;
+  user: User;
   onChange: (
     username: string,
     setError: Dispatch<
@@ -527,7 +512,13 @@ const UpdateUsernameForm = <
     setPending(false);
   };
 
-  const [isPublic, setIsPublic] = useState(false);
+  const hasPuplicChannelByDefault =
+    user?.channelUsername &&
+    (user.hasPublicTgChannel === null || user.hasPublicTgChannel === undefined)
+      ? true
+      : false;
+
+  const [isPublic, setIsPublic] = useState(hasPuplicChannelByDefault);
   const checkUsername = useDebouncedCallback(onChange, 200);
   const isUpdateButtonDisabled = pending || status?.type !== "success";
 
@@ -535,17 +526,53 @@ const UpdateUsernameForm = <
     setPending(true);
     const result = await showChannelVisisblityConfrimation("private");
     if (result.isConfirmed) {
+      if (hasPuplicChannelByDefault) {
+        await onSubmit({ channelId: user?.channelId!, username: "" });
+      }
       await updateHasPublicChannelStatus(false);
       router.push("/files");
     }
     setPending(false);
   };
 
+  const contiunePublic = async () => {
+    setPending(true);
+    const result = await showChannelVisisblityConfrimation("public");
+    if (result.isConfirmed) {
+      await updateHasPublicChannelStatus(false);
+      router.push("/files");
+    }
+    setPending(false);
+  };
+
+  const warning = hasPuplicChannelByDefault
+    ? {
+        message: (
+          <p>
+            We Noticed Your channel <strong>{channelTitle}</strong> is currently
+            public. Your files might be accessible to anyone on Telegram. Do you
+            want to make it private
+          </p>
+        ),
+        header: "Telegram Channel Visiblity warning",
+      }
+    : {
+        message: (
+          <p>
+            Your channel <strong>{channelTitle}</strong> is private by default.
+            You can make it public, but keep in mind that if you do, your
+            channel will be accessible to anyone, and they might be able to view
+            your content
+          </p>
+        ),
+        header: "Your channel is private by default",
+      };
+
   return (
     <div className="h-screen flex justify-center items-center bg-gray-100 p-4">
       <div className="space-y-4 max-w-lg w-full">
         <div className="bg-white p-4 rounded shadow-sm">
-          <WarningIndicator />
+          <WarningIndicator warning={warning} />
           <Select
             onValueChange={(value: string) => setIsPublic(value === "public")}
           >
@@ -559,7 +586,7 @@ const UpdateUsernameForm = <
           </Select>
         </div>
 
-        {isPublic ? (
+        {isPublic && !hasPuplicChannelByDefault ? (
           <Card className="bg-white text-black p-4 rounded shadow-sm">
             <CardHeader>
               <CardTitle className="text-black">Channel Created</CardTitle>
@@ -585,6 +612,7 @@ const UpdateUsernameForm = <
                     Telegram Channel Username
                   </Label>
                   <Input
+                    defaultValue={user?.channelUsername ?? ""}
                     id="channel-username"
                     name="channel-username"
                     className="text-white"
@@ -626,9 +654,17 @@ const UpdateUsernameForm = <
           </Card>
         ) : (
           <div className="bg-white p-4 rounded shadow-sm text-center">
-            <Button onClick={makePrivake} disabled={pending}>
-              {pending ? <LoadingSVG /> : "Continue Private"}
-            </Button>
+            {hasPuplicChannelByDefault && isPublic ? (
+              <div>
+                <Button onClick={contiunePublic} disabled={pending}>
+                  {pending ? <LoadingSVG /> : "Continue Public"}
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={makePrivake} disabled={pending}>
+                {pending ? <LoadingSVG /> : "Continue Private"}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -636,10 +672,11 @@ const UpdateUsernameForm = <
   );
 };
 
-import Link from "next/link";
-import { LoadingSVG } from "./Icons/icons";
-
-export function WarningIndicator() {
+export function WarningIndicator({
+  warning,
+}: {
+  warning: { message: JSX.Element; header: string };
+}) {
   return (
     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
       <div className="flex">
@@ -648,14 +685,10 @@ export function WarningIndicator() {
         </div>
         <div className="ml-3">
           <h3 className="text-lg font-medium text-yellow-800">
-            Your channel is private by default
+            {warning.header}
           </h3>
           <div className="mt-2 text-yellow-700">
-            <p className="text-gray-700">
-              Your channel is private by default. You can make it public, but
-              keep in mind that if you do, your channel will be accessible to
-              anyone, and they might be able to view your content.
-            </p>
+            <p className="text-gray-700">{warning.message}</p>
           </div>
         </div>
       </div>
