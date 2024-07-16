@@ -4,7 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { getUser } from "@/actions";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { User } from "@/components/FilesRender";
+import { User } from "@/lib/types";
 
 async function Page() {
   console.log("user clekr");
@@ -12,13 +12,17 @@ async function Page() {
   if (!userClerk) return redirect("/login");
   const user = await getUser();
 
-  if (user && user.telegramSession && user.channelUsername) {
-    redirect("/files");
-  }
+  if (
+    user?.hasPublicTgChannel !== null &&
+    user?.hasPublicTgChannel !== undefined &&
+    user.accessHash &&
+    user.channelId
+  )
+    return redirect("/files");
 
   return (
     <div>
-      <ConnectTelegram user={user as User} />
+      <ConnectTelegram user={user as NonNullable<User>} />
     </div>
   );
 }

@@ -1,17 +1,12 @@
+import { uploadFile } from "@/actions";
 import { type ClassValue, clsx } from "clsx";
-import { Dispatch, SetStateAction, useCallback } from "react";
+import { LRUCache } from "lru-cache";
+import { ReadonlyURLSearchParams } from "next/navigation";
+import { Dispatch, SetStateAction } from "react";
 import { twMerge } from "tailwind-merge";
 import { Api, TelegramClient } from "telegram";
-import { ChannelDetails } from "./types";
-import { User } from "@/components/FilesRender";
-import { currentUser } from "@clerk/nextjs/server";
-import {
-  ReadonlyURLSearchParams,
-  redirect,
-  useSearchParams,
-} from "next/navigation";
-import { uploadFile } from "@/actions";
 import { TypeNotFoundError } from "telegram/errors";
+import { ChannelDetails, User } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -45,7 +40,6 @@ export async function uploadFiles(
   client: TelegramClient | undefined
 ) {
   if (!client) {
-    alert("Failed to initialize Telegram client");
     throw new Error("Failed to initialize Telegram client");
   }
   if (!client?.connected) await client.connect();
@@ -72,6 +66,9 @@ export async function uploadFiles(
           forceDocument: true,
         }
       );
+
+      navigator.clipboard.writeText(JSON.stringify(result));
+
       const uploadToDbResult = await uploadFile({
         fileName: file.name,
         mimeType: file.type.split("/")[0],
@@ -185,3 +182,8 @@ export const getChannelEntity = (channelId: string, accessHash: string) => {
     accessHash: accessHash,
   });
 };
+
+export const blobCache = new LRUCache<string, Blob>({
+  max: 100,
+  ttl: 1000 * 60 * 60 * 24 * 30 * 12,
+});

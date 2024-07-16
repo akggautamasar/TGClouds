@@ -8,7 +8,6 @@ import Dropzone from "react-dropzone";
 
 import { promiseToast } from "@/lib/notify";
 import { useRouter } from "next/navigation";
-import { User } from "./FilesRender";
 import {
   CloudUploadIcon,
   FileIcon,
@@ -16,6 +15,8 @@ import {
   UploadIcon,
   XIcon,
 } from "./Icons/icons";
+import { User } from "@/lib/types";
+import { revalidatePath } from "next/cache";
 
 interface DropedFile {
   file: File;
@@ -69,6 +70,7 @@ export const UploadFiles = ({
       setOpen(false);
       setFiles([]);
       localStorage.setItem("isUploaded", "0");
+     
       router.refresh();
     });
   };

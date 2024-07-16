@@ -1,5 +1,5 @@
 import { File, Menu, Search } from "lucide-react";
-import Link from "next/link";
+import Link from "./Link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,10 +33,10 @@ import {
   VideoIcon,
 } from "./Icons/icons";
 import Upload from "./uploadWrapper";
-import { User } from "./FilesRender";
 import SearchItems from "./searchItems";
 import Paginate from "./pagination";
 import SortBy from "./SortBy";
+import { User } from "@/lib/types";
 
 export function Dashboard({
   children,

@@ -1,3 +1,5 @@
+import { SVGProps } from "react";
+
 export function CloudUploadIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -285,21 +287,63 @@ export function Delete() {
   );
 }
 
+export function LoadingSVG() {
+  return (
+    <svg
+      className="w-16 h-16 text-primary-foreground"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 4V2M12 22V20M4 12H2M22 12H20M18.3639 18.3639L16.95 16.95M7.05 7.05L5.6361 5.6361M18.3639 5.6361L16.95 7.05M7.05 16.95L5.6361 18.3639"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
+export function TextIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 6.1H3" />
+      <path d="M21 12.1H3" />
+      <path d="M15.1 18H3" />
+    </svg>
+  );
+}
 
-export function LoadingSVG(){
-  return  <svg
-          className="w-16 h-16 text-primary-foreground"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 4V2M12 22V20M4 12H2M22 12H20M18.3639 18.3639L16.95 16.95M7.05 7.05L5.6361 5.6361M18.3639 5.6361L16.95 7.05M7.05 16.95L5.6361 18.3639"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+export function CloudDownload() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      className="lucide lucide-cloud-download"
+    >
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+      <path d="M12 12v9" />
+      <path d="m8 17 4 4 4-4" />
+    </svg>
+  );
 }
