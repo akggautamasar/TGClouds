@@ -33,10 +33,10 @@ import {
   VideoIcon,
 } from "./Icons/icons";
 import Upload from "./uploadWrapper";
-import { User } from "./FilesRender";
 import SearchItems from "./searchItems";
 import Paginate from "./pagination";
 import SortBy from "./SortBy";
+import { User } from "@/lib/types";
 
 export function Dashboard({
   children,

@@ -16,7 +16,6 @@ import { RPCError } from "telegram/errors";
 import { useDebouncedCallback } from "use-debounce";
 
 import { LoadingSVG, TextIcon } from "./Icons/icons";
-import { User } from "./FilesRender";
 
 import {
   Select,
@@ -38,6 +37,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { error } from "console";
+import { User } from "@/lib/types";
 
 interface Chat {
   id: string;

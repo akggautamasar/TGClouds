@@ -3,15 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTgClient } from "@/lib/getTgClient";
-import { delelteItem, formatBytes, getChannelEntity } from "@/lib/utils";
+import {
+  blobCache,
+  delelteItem,
+  formatBytes,
+  getChannelEntity,
+} from "@/lib/utils";
 import Image from "next/image";
-import Link from "./Link";
 import { useRouter } from "next/navigation";
+import Link from "./Link";
 
 import Circle from "react-circle";
 
 import {
-  cache,
   Dispatch,
   SetStateAction,
   Suspense,
@@ -21,7 +25,7 @@ import {
   useState,
 } from "react";
 
-import { Api, TelegramClient } from "telegram";
+import { Api } from "telegram";
 
 import { deleteFile } from "@/actions";
 import {
@@ -34,7 +38,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { errorToast, promiseToast, successToast } from "@/lib/notify";
+import { SortByContext } from "@/lib/context";
+import { promiseToast } from "@/lib/notify";
+import Message, { FilesData, User } from "@/lib/types";
+import { LRUCache } from "lru-cache";
+import { CloudDownload } from "./Icons/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,74 +50,18 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import Upload from "./uploadWrapper";
-import { SortByContext } from "@/lib/context";
-import { db } from "@/db";
-import Message, { FilesData, User } from "@/lib/types";
-import { RPCError } from "telegram/errors";
 
-const getAllFiles = cache(async (client: TelegramClient, user: User) => {
-  const limit = 8;
-  let offsetId = 0;
-  let allMessages: Api.Message[] = [];
-  let hasMore = true;
-
-  try {
-    alert("Connecting to Telegram client...");
-    alert("Connection status" + client.connected);
-
-    if (!client.connected) await client.connect();
-
-    while (hasMore) {
-      console.log(`Fetching messages with offsetId: ${offsetId}`);
-
-      alert("Connecting to Telegram client...");
-      alert("Connection status" + client.connected);
-      if (!user?.channelUsername) throw new Error("oops we fuckd up");
-      const result = await client.getMessages(user?.channelUsername, {
-        limit: limit,
-        offsetId: offsetId,
-      });
-
-      allMessages = allMessages.concat(result);
-      if (result.length < limit) {
-        hasMore = false;
-      } else {
-        offsetId = result[result.length - 1].id;
-      }
-    }
-
-    return allMessages
-      .filter((message) => message.file)
-      .map(({ file, id }) => {
-        return {
-          //@ts-ignore
-          fileName: file?.title,
-          name: file?.name,
-          size: formatBytes(file?.size as number),
-          src: `https://t.me/${user?.channelUsername}/${id}`,
-          type: file?.mimeType as string,
-          id,
-        } satisfies FilesData;
-      });
-  } catch (err) {
-    if (err instanceof Error) {
-      console.log(err?.message);
-    }
-    console.warn(err);
-    throw Error(JSON.stringify(err));
-  } finally {
-    await client.disconnect();
-  }
-  return null;
-});
-
-async function downloadMedia(
-  client: TelegramClient,
+const downloadMedia = async function (
   user: User,
   message_id: number | string,
   setProgress: Dispatch<SetStateAction<number>>
-) {
-  //TODO: implenet downloding in web worker
+): Promise<Blob | null> {
+  const cacheKey = `${user?.channelId}-${message_id}`;
+  if (blobCache.has(cacheKey)) {
+    return blobCache.get(cacheKey)!;
+  }
+
+  const client = getTgClient(user?.telegramSession!);
 
   try {
     if (!client.connected) await client?.connect();
@@ -123,24 +75,30 @@ async function downloadMedia(
 
     const media = message[0].media;
 
-    const sizeType = media.document.thumbs[0].type;
-
     if (media) {
-      const buffer = await client.downloadMedia(media, {
-        progressCallback: (progress, total) => {
-          const percent = (progress / total) * 100;
-          setProgress(Number(percent?.toFixed(2)));
-        },
-        thumb: media.document.size.length,
-      });
+      const buffer = await client.downloadMedia(
+        media as unknown as Api.TypeMessageMedia,
+        {
+          progressCallback: (progress, total) => {
+            const percent = (Number(progress) / Number(total)) * 100;
+            setProgress(Number(percent?.toFixed(2)));
+          },
+          // thumb: 0,
+        }
+      );
+
       const blob = new Blob([buffer as unknown as Buffer]);
+
+      blobCache.set(cacheKey, blob);
+
       return blob;
     }
   } catch (err) {
     console.log(err);
-  } finally {
   }
-}
+
+  return null;
+};
 function Files({
   user,
   files,
@@ -211,16 +169,15 @@ function EachFile({
   setProgress: Dispatch<SetStateAction<number>>;
 }) {
   const client = getTgClient(user?.telegramSession as string);
-  const [progress] = useState(0);
   const [url, setURL] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (file.mimeType !== "image") return;
+    downlaodFile();
+  }, []);
+
   async function downlaodFile() {
-    const blob = await downloadMedia(
-      client,
-      user,
-      file?.fileTelegramId,
-      setProgress
-    );
+    const blob = await downloadMedia(user, file?.fileTelegramId, setProgress);
 
     const url = URL.createObjectURL(blob!);
     setURL(url);
@@ -230,25 +187,16 @@ function EachFile({
 
   return (
     <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-      <Link
-        target="_blank"
-        href={file.url}
-        className="absolute inset-1 z-10"
-        prefetch={false}
-      >
+      <Link target="_blank" href={file.url} prefetch={false}>
         <span className="sr-only">View file</span>
-      </Link>
-      {url ? (
         <Image
-          src={url}
+          src={url ?? "/placeholder.svg"}
           alt={file.fileName}
           width={299}
           height={199}
           className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
         />
-      ) : (
-        <div>{progress}</div>
-      )}
+      </Link>
 
       <CardContent className="p-5 relative">
         <div className="flex items-center justify-between">
@@ -264,14 +212,18 @@ function EachFile({
           </div>
         </div>
         <div>
-          <button
-            className="relative z-[99999]"
-            onClick={() => {
-              downlaodFile();
-            }}
-          >
-            d
-          </button>
+          {url ? (
+            <a download={"filename.jpg"} href={url}>
+              <Button
+                className="p-2 py-2"
+                onClick={() => {
+                  downlaodFile();
+                }}
+              >
+                <CloudDownload />
+              </Button>
+            </a>
+          ) : null}
         </div>
         <div className="absolute z-50 right-2 bottom-2">
           <UserItemActions>

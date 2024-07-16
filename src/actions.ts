@@ -3,9 +3,10 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { and, asc, count, desc, eq, ilike, like } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { User } from "./components/FilesRender";
 import { db } from "./db";
 import { userFiles, usersTable } from "./db/schema";
+import { revalidatePath } from "next/cache";
+import { User } from "./lib/types";
 
 export async function saveTelegramCredentials({
   accessHash,
@@ -303,7 +304,7 @@ export async function uploadFile(file: {
         fileTelegramId: String(file.fileTelegramId),
       })
       .returning();
-
+    revalidatePath("/files");
     return result;
   } catch (err) {
     if (err instanceof Error) {
