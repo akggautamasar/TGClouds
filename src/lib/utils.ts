@@ -49,7 +49,7 @@ export async function uploadFiles(
       const file = files[index];
       const toUpload = await client.uploadFile({
         file: file,
-        workers: 2,
+        workers: 5,
         onProgress: (progress) => {
           onProgress({
             itemName: file.name,
@@ -63,13 +63,13 @@ export async function uploadFiles(
         getChannelEntity(user?.channelId!, user?.accessHash!),
         {
           file: toUpload,
-          forceDocument: true,
+          forceDocument: false,
         }
       );
 
       const uploadToDbResult = await uploadFile({
         fileName: file.name,
-        mimeType: file.type.split("/")[0],
+        mimeType: file.type,
         size: BigInt(file.size),
         url: !user?.hasPublicTgChannel
           ? `https://t.me/c/${user?.channelId}/${result?.id}`
@@ -77,7 +77,6 @@ export async function uploadFiles(
         fileTelegramId: result.id,
       });
       console.log("File uploaded successfully:", uploadToDbResult);
-      return uploadToDbResult;
     }
   } catch (err) {
     if (err instanceof TypeNotFoundError) {

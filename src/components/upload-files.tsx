@@ -50,9 +50,7 @@ export const UploadFiles = ({
   };
 
   const handleSubmit = async (formData: FormData) => {
-    const isFirstUpload = Number(localStorage.getItem("isUploaded") ?? "1");
-
-await promiseToast({
+    await promiseToast({
       cb: () =>
         uploadFiles(
           formData,
@@ -61,18 +59,13 @@ await promiseToast({
           getTgClient(user?.telegramSession as string)
         ),
       errMsg: "Oops we fucked up we failed to upload your files",
-      successMsg: !!isFirstUpload
-        ? `Legendary upload, bro! You got the first upload! Your file(s) are now living the cloud dream!`
-        : "File Uploaded",
+      successMsg: "File Uploaded",
       loadingMsg: "please wait...",
       position: "top-right",
-    }).then((res) => {
-      setOpen(false);
-      setFiles([]);
-      localStorage.setItem("isUploaded", "0");
-     
-      router.refresh();
     });
+    setOpen(false);
+    setFiles([]);
+    router.refresh();
   };
 
   return (

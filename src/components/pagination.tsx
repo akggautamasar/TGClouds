@@ -58,10 +58,14 @@ function Paginate({ totalItems }: { totalItems: number }) {
     <Pagination>
       <PaginationContent>
         <PaginationItem
-          className={`${page === 1 ? "cursor-not-allowed opacity-50" : ""}`}
+          className={`${
+            page === 1 ? "cursor-not-allowed opacity-50" : ""
+          } cursor-pointer`}
         >
           <PaginationPrevious
-            href={page === totalPages ? "#" : getURL(page - 1)}
+            onClick={() =>
+              router.push(page === totalPages ? "#" : getURL(page - 1)!)
+            }
             aria-disabled={page === 1}
           />
         </PaginationItem>
@@ -73,7 +77,8 @@ function Paginate({ totalItems }: { totalItems: number }) {
                 <PaginationEllipsis />
               ) : (
                 <PaginationLink
-                  href={getURL(pageNumber)}
+                  className="cursor-pointer"
+                  onClick={() => router.push(getURL(pageNumber)!)}
                   isActive={pageNumber === page}
                 >
                   {pageNumber}
@@ -87,10 +92,15 @@ function Paginate({ totalItems }: { totalItems: number }) {
             page === totalPages || !pageNumbersToShow.includes(Number(page) + 1)
               ? "cursor-not-allowed opacity-50"
               : ""
-          }`}
+          }
+               cursor-pointer
+          `}
         >
           <PaginationNext
-            href={page === totalPages ? "#" : getURL(page + 1)}
+            className="cursor-pointer"
+            onClick={() =>
+              router.push(page === totalPages ? "#" : getURL(page + 1)!)
+            }
             aria-disabled={page === totalPages}
           />
         </PaginationItem>

@@ -1,7 +1,7 @@
 "use server";
 
 import { currentUser } from "@clerk/nextjs/server";
-import { and, asc, count, desc, eq, ilike, like } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import { userFiles, usersTable } from "./db/schema";
@@ -151,7 +151,7 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
         .from(userFiles)
         .where(
           and(
-            like(userFiles.fileName, `%${searchItem}%`),
+            ilike(userFiles.fileName, `%${searchItem}%`),
             eq(userFiles.userId, user.id)
           )
         )
@@ -224,7 +224,7 @@ export async function getFilesFromSpecificType({
         .where(
           and(
             ilike(userFiles.fileName, `%${searchItem}%`),
-            eq(userFiles.mimeType, fileType),
+            eq(userFiles.category, fileType),
             eq(userFiles.userId, user.id)
           )
         )
@@ -240,7 +240,7 @@ export async function getFilesFromSpecificType({
           .where(
             and(
               ilike(userFiles.fileName, `%${searchItem}%`),
-              eq(userFiles.mimeType, fileType),
+              eq(userFiles.category, fileType),
               eq(userFiles.userId, user.id)
             )
           )
@@ -254,7 +254,7 @@ export async function getFilesFromSpecificType({
       .select()
       .from(userFiles)
       .where(
-        and(eq(userFiles.mimeType, fileType), eq(userFiles.userId, user.id))
+        and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id))
       )
       .orderBy(asc(userFiles.id))
       .limit(8)
@@ -266,7 +266,7 @@ export async function getFilesFromSpecificType({
         .select({ count: count() })
         .from(userFiles)
         .where(
-          and(eq(userFiles.mimeType, fileType), eq(userFiles.userId, user.id))
+          and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id))
         )
         .execute()
     )[0].count;
@@ -304,6 +304,7 @@ export async function uploadFile(file: {
         url: file.url,
         date: new Date().toDateString(),
         fileTelegramId: String(file.fileTelegramId),
+        category:file?.mimeType?.split('/')[0]
       })
       .returning();
     revalidatePath("/files");
