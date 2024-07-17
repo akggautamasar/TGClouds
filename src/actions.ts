@@ -2,13 +2,11 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import { and, asc, count, desc, eq, ilike, like } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { db } from "./db";
 import { userFiles, usersTable } from "./db/schema";
-import { redirect } from "next/navigation";
-import { User } from "./components/FilesRender";
-
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { User } from "./lib/types";
 
 export async function saveTelegramCredentials({
   accessHash,
@@ -306,7 +304,7 @@ export async function uploadFile(file: {
         fileTelegramId: String(file.fileTelegramId),
       })
       .returning();
-
+    revalidatePath("/files");
     return result;
   } catch (err) {
     if (err instanceof Error) {
@@ -352,9 +350,36 @@ export const useUserProtected = async () => {
   if (!userClerk) return redirect("/login");
   const user = await getUser();
 
-  if (!user?.channelUsername || !user?.telegramSession) {
+  const hasNotDecidedToHavePrivateChannle =
+    user?.hasPublicTgChannel === null || user?.hasPublicTgChannel === undefined;
+
+  const hasNotHaveNeccessaryDetails = !user?.accessHash || !user?.channelId;
+
+  if (hasNotDecidedToHavePrivateChannle || hasNotHaveNeccessaryDetails)
     return redirect("/connect-telegram");
+
+  if (!user.channelUsername && (!user.channelId || !user.accessHash)) {
+    throw new Error("There was something wrong");
   }
 
   return user as User;
+};
+
+export const updateHasPublicChannelStatus = async (isPublic: boolean) => {
+  try {
+    const user = await getUser();
+    if (!user)
+      throw new Error("Seems lke you are not authenticated", {
+        cause: "AUTH_ERR",
+      });
+    await db
+      .update(usersTable)
+      .set({ hasPublicTgChannel: isPublic })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+    return user.id;
+  } catch (err) {
+    if (err instanceof Error) throw new Error(err.message);
+  }
+  throw new Error("There was an error while updating status");
 };

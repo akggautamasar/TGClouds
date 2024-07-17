@@ -8,7 +8,6 @@ import Dropzone from "react-dropzone";
 
 import { promiseToast } from "@/lib/notify";
 import { useRouter } from "next/navigation";
-import { User } from "./FilesRender";
 import {
   CloudUploadIcon,
   FileIcon,
@@ -16,6 +15,8 @@ import {
   UploadIcon,
   XIcon,
 } from "./Icons/icons";
+import { User } from "@/lib/types";
+import { revalidatePath } from "next/cache";
 
 interface DropedFile {
   file: File;
@@ -49,9 +50,6 @@ export const UploadFiles = ({
   };
 
   const handleSubmit = async (formData: FormData) => {
-    if (!user?.telegramSession || !user.channelUsername) {
-      return router.replace("/connect-telegram");
-    }
     const isFirstUpload = Number(localStorage.getItem("isUploaded") ?? "1");
 
 await promiseToast({
@@ -67,11 +65,12 @@ await promiseToast({
         ? `Legendary upload, bro! You got the first upload! Your file(s) are now living the cloud dream!`
         : "File Uploaded",
       loadingMsg: "please wait...",
-      position:'top-right'
+      position: "top-right",
     }).then((res) => {
       setOpen(false);
-      setFiles([])
+      setFiles([]);
       localStorage.setItem("isUploaded", "0");
+     
       router.refresh();
     });
   };

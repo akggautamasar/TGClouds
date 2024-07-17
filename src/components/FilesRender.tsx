@@ -1,24 +1,31 @@
 "use client";
-import { FilesData } from "@/app/files/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTgClient } from "@/lib/getTgClient";
-import { delelteItem, formatBytes } from "@/lib/utils";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  cache,
+  blobCache,
+  delelteItem,
+  formatBytes,
+  getChannelEntity,
+} from "@/lib/utils";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import Link from "./Link";
+
+import Circle from "react-circle";
+
+import {
   Dispatch,
   SetStateAction,
+  Suspense,
   use,
   useEffect,
   useMemo,
   useState,
 } from "react";
 
-import { Api, TelegramClient } from "telegram";
+import { Api } from "telegram";
 
 import { deleteFile } from "@/actions";
 import {
@@ -31,7 +38,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { errorToast, promiseToast, successToast } from "@/lib/notify";
+import { SortByContext } from "@/lib/context";
+import { promiseToast } from "@/lib/notify";
+import Message, { FilesData, User } from "@/lib/types";
+import { LRUCache } from "lru-cache";
+import { CloudDownload } from "./Icons/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,101 +50,55 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import Upload from "./uploadWrapper";
-import { SortByContext } from "@/lib/context";
 
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  telegramSession: string | null;
-  channelUsername: string | null;
-  channelId: string | null;
-  accessHash: string | null;
-  channelTitle: string | null;
-};
+const downloadMedia = async function (
+  user: User,
+  message_id: number | string,
+  setProgress: Dispatch<SetStateAction<number>>
+): Promise<Blob | null> {
+  const cacheKey = `${user?.channelId}-${message_id}`;
+  if (blobCache.has(cacheKey)) {
+    return blobCache.get(cacheKey)!;
+  }
 
-const getAllFiles = cache(async (client: TelegramClient, user: User) => {
-  const limit = 8;
-  let offsetId = 0;
-  let allMessages: Api.Message[] = [];
-  let hasMore = true;
+  const client = getTgClient(user?.telegramSession!);
 
   try {
-    alert("Connecting to Telegram client...");
-    alert("Connection status" + client.connected);
+    if (!client.connected) await client?.connect();
 
-    if (!client.connected) await client.connect();
-
-    while (hasMore) {
-      console.log(`Fetching messages with offsetId: ${offsetId}`);
-
-      alert("Connecting to Telegram client...");
-      alert("Connection status" + client.connected);
-      if (!user.channelUsername) throw new Error("oops we fuckd up");
-      const result = await client.getMessages(user?.channelUsername, {
-        limit: limit,
-        offsetId: offsetId,
-      });
-
-      alert(`Fetched ${result.length} messages`);
-
-      allMessages = allMessages.concat(result);
-      if (result.length < limit) {
-        hasMore = false;
-      } else {
-        offsetId = result[result.length - 1].id;
+    const message = (await client.getMessages(
+      getChannelEntity(user?.channelId!, user?.accessHash!),
+      {
+        ids: [Number(message_id)],
       }
-    }
+    )) as unknown as Message[];
 
-    return allMessages
-      .filter((message) => message.file)
-      .map(({ file, id }) => {
-        return {
-          //@ts-ignore
-          fileName: file?.title,
-          name: file?.name,
-          size: formatBytes(file?.size as number),
-          src: `https://t.me/${user.channelUsername}/${id}`,
-          type: file?.mimeType as string,
-          id,
-        } satisfies FilesData;
-      });
+    const media = message[0].media;
+
+    if (media) {
+      const buffer = await client.downloadMedia(
+        media as unknown as Api.TypeMessageMedia,
+        {
+          progressCallback: (progress, total) => {
+            const percent = (Number(progress) / Number(total)) * 100;
+            setProgress(Number(percent?.toFixed(2)));
+          },
+          // thumb: 0,
+        }
+      );
+
+      const blob = new Blob([buffer as unknown as Buffer]);
+
+      blobCache.set(cacheKey, blob);
+
+      return blob;
+    }
   } catch (err) {
-    if (err instanceof Error) {
-      console.log(err?.message);
-    }
-    console.warn(err);
-    throw Error(JSON.stringify(err));
-  } finally {
-    await client.disconnect();
+    console.log(err);
   }
+
   return null;
-});
-
-async function downloadMedia(
-  client: TelegramClient,
-  user: User,
-  message_id: number,
-  setProgress: Dispatch<SetStateAction<number>>
-) {
-  //TODO: implenet downloding in web worker
-  if (!client.connected) await client.connect();
-  if (!user.channelUsername) throw new Error("oops we fuckd up");
-
-  const message = await client.getMessages(user.channelUsername, {
-    ids: [message_id],
-  });
-
-  const media = message[0].media;
-  if (media) {
-    const buffer = await client.downloadMedia(media, {
-      progressCallback: (progress) => setProgress(Number(progress)),
-    });
-    const blob = new Blob([buffer as unknown as Buffer]);
-    return blob;
-  }
-}
-
+};
 function Files({
   user,
   files,
@@ -144,6 +109,8 @@ function Files({
 }) {
   const { sortBy } = use(SortByContext)!;
 
+  const [progress, setProgress] = useState(0);
+
   const sortedFiles = useMemo(() => {
     if (!files || !files?.length) return [];
     if (sortBy == "name")
@@ -153,7 +120,7 @@ function Files({
     if (sortBy == "size")
       return files.sort((a, b) => Number(a.size) - Number(b.size));
     return files.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy]);
 
   if (!sortedFiles?.length)
@@ -177,7 +144,14 @@ function Files({
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {sortedFiles?.map((file, index) => (
-        <EachFile file={file} user={user} key={file.id} />
+        <Suspense
+          key={file.id}
+          fallback={
+            <FileDownloadProgress file={file} downloadProgress={progress} />
+          }
+        >
+          <EachFile setProgress={setProgress} file={file} user={user} />
+        </Suspense>
       ))}
     </div>
   );
@@ -185,40 +159,44 @@ function Files({
 
 export default Files;
 
-function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
+function EachFile({
+  file,
+  setProgress,
+  user,
+}: {
+  file: FilesData[number];
+  user: User;
+  setProgress: Dispatch<SetStateAction<number>>;
+}) {
   const client = getTgClient(user?.telegramSession as string);
-  const [progress, setProgress] = useState(0);
-  const [url, setURL] = useState("https://via.placeholder.com/299/199");
+  const [url, setURL] = useState<string | null>(null);
 
   useEffect(() => {
-    // downloadMedia(client, user, file.id, setProgress).then((blob) =>
-    //   setURL(URL.createObjectURL(blob))
-    // );
+    if (file.mimeType !== "image") return;
+    downlaodFile();
   }, []);
+
+  async function downlaodFile() {
+    const blob = await downloadMedia(user, file?.fileTelegramId, setProgress);
+
+    const url = URL.createObjectURL(blob!);
+    setURL(url);
+  }
 
   const router = useRouter();
 
   return (
     <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-      <Link
-        target="_blank"
-        href={file.url}
-        className="absolute inset-1 z-10"
-        prefetch={false}
-      >
+      <Link target="_blank" href={file.url} prefetch={false}>
         <span className="sr-only">View file</span>
-      </Link>
-      {url ? (
         <Image
-          src={url}
+          src={url ?? "/placeholder.svg"}
           alt={file.fileName}
           width={299}
           height={199}
-          className="h-41 w-full object-cover transition-opacity group-hover:opacity-50"
+          className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
         />
-      ) : (
-        <div>{progress}</div>
-      )}
+      </Link>
 
       <CardContent className="p-5 relative">
         <div className="flex items-center justify-between">
@@ -228,10 +206,24 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
           </Badge>
         </div>
         <div className="mt-3 text-sm text-muted-foreground">
-          <div>
+          <div className="flex justify-between items-center gap-3">
             <div>Size: {formatBytes(Number(file.size))}</div>
             <div>Date:{file.date}</div>
           </div>
+        </div>
+        <div>
+          {url ? (
+            <a download={"filename.jpg"} href={url}>
+              <Button
+                className="p-2 py-2"
+                onClick={() => {
+                  downlaodFile();
+                }}
+              >
+                <CloudDownload />
+              </Button>
+            </a>
+          ) : null}
         </div>
         <div className="absolute z-50 right-2 bottom-2">
           <UserItemActions>
@@ -262,6 +254,32 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
             </Button>
           </UserItemActions>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FileDownloadProgress({
+  downloadProgress,
+  file,
+}: {
+  downloadProgress: number;
+  file: FilesData[number];
+}) {
+  return (
+    <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
+      <div>
+        <Circle progress={downloadProgress} />
+      </div>
+
+      <CardContent className="p-5 relative">
+        <div className="flex items-center justify-between">
+          <div className="truncate font-medium">{file.fileName}</div>
+          <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+            {file.mimeType}
+          </Badge>
+        </div>
+        <div className="mt-3 text-sm text-muted-foreground"></div>
       </CardContent>
     </Card>
   );

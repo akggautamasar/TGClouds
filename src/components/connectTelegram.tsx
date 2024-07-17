@@ -1,6 +1,10 @@
 "use client";
 
-import { saveTelegramCredentials, saveUserName } from "@/actions";
+import {
+  saveTelegramCredentials,
+  saveUserName,
+  updateHasPublicChannelStatus,
+} from "@/actions";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { getTgClient } from "@/lib/getTgClient";
@@ -10,6 +14,16 @@ import Swal from "sweetalert2";
 import { Api } from "telegram";
 import { RPCError } from "telegram/errors";
 import { useDebouncedCallback } from "use-debounce";
+
+import { LoadingSVG, TextIcon } from "./Icons/icons";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   Card,
@@ -23,6 +37,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { error } from "console";
+import { User } from "@/lib/types";
 
 interface Chat {
   id: string;
@@ -79,30 +94,96 @@ const errors = {
 async function getPhoneNumber() {
   return await Swal.fire({
     title: "Enter your phone number",
-    input: "text",
-
-    inputLabel: "Phone Number",
-    inputPlaceholder: "Please Input Your Phone Number",
+    html: `
+      <label for="phone-input">Phone Number (include country code, e.g., +1)</label>
+      <input type="text" id="phone-input" class="swal2-input" placeholder="+1 (555) 555-5555">
+    `,
+    inputAttributes: {
+      inputmode: "tel",
+      pattern: "\\+[0-9]{1,3}\\s?[0-9]{10}",
+    },
     showCancelButton: true,
-  }).then((result) => result.value as number);
+
+    preConfirm: () => {
+      const phoneNumber = (
+        Swal?.getPopup()?.querySelector("#phone-input") as HTMLInputElement
+      ).value;
+      if (!/^\+\d{1,3}\s?\d{10}$/.test(phoneNumber)) {
+        Swal.showValidationMessage(
+          "Please enter a valid phone number with the country code, e.g., +1 (555) 555-5555"
+        );
+      }
+      return phoneNumber;
+    },
+  }).then((result) => result.value);
 }
+
 async function getCode() {
   return await Swal.fire({
     title: "Enter the verification code",
-    input: "text",
-    inputLabel: "Verification Code",
-    inputPlaceholder: "Please Input the code",
+    html: `
+      <label for="code-input">Verification Code</label>
+      <input type="text" id="code-input" class="swal2-input" placeholder="Please enter the code you received from Telegram">
+    `,
+    inputAttributes: {
+      inputmode: "numeric",
+      pattern: "[0-9]{6}",
+    },
     showCancelButton: true,
-  }).then((result) => result.value as number);
+
+    preConfirm: () => {
+      const code = (
+        Swal?.getPopup()?.querySelector("#code-input") as HTMLInputElement
+      ).value;
+      if (!/^\d{5}$/.test(code)) {
+        Swal.showValidationMessage(
+          "Please enter a valid 5-digit verification code."
+        );
+        setTimeout(() => {
+          Swal.resetValidationMessage;
+        }, 5000);
+      }
+      return code;
+    },
+  }).then((result) => result.value);
 }
+
 async function getPassword() {
   return await Swal.fire({
     title: "Enter Your Password",
-    input: "text",
-    inputLabel: "Password",
-    inputPlaceholder: "Please Enter Your password",
+    html: `
+      <label for="password-input">Password</label>
+      <input type="password" id="password-input" class="swal2-input" placeholder="Please enter your password">
+      <input type="checkbox" id="toggle-password" style="margin-top: 10px;">
+      <label for="toggle-password" style="margin-left: 5px;">Show Password</label>
+    `,
     showCancelButton: true,
-  }).then((result) => result.value as number);
+    didOpen: () => {
+      const passwordInput = Swal?.getPopup()?.querySelector(
+        "#password-input"
+      ) as HTMLInputElement;
+      const togglePassword = Swal?.getPopup()?.querySelector(
+        "#toggle-password"
+      ) as HTMLInputElement;
+
+      togglePassword.addEventListener("change", () => {
+        if (togglePassword.checked) {
+          passwordInput.type = "text";
+        } else {
+          passwordInput.type = "password";
+        }
+      });
+    },
+    preConfirm: () => {
+      const password = (
+        Swal?.getPopup()?.querySelector("#password-input") as HTMLInputElement
+      ).value;
+      if (!password) {
+        Swal.showValidationMessage("Please enter your password.");
+      }
+      return password;
+    },
+  }).then((result) => result.value);
 }
 
 export default function Component({
@@ -142,7 +223,7 @@ export default function Component({
           text: "We have created a channel in Telegram for you",
           timer: 3000,
         });
-        location.reload()
+        location.reload();
       }
     } catch (err) {
       console.error(err);
@@ -259,11 +340,14 @@ export default function Component({
           })
         )
         .then(async (res) => {
-          await saveUserName(username);
+          await Promise.all([
+            saveUserName(username),
+            updateHasPublicChannelStatus(true),
+          ]);
           await Swal.fire({
             icon: "success",
             title: "Update success",
-            text: "you have update channel username now we will redirect you to dashborad in a minute",
+            text: "you have update channle username now we will redirect you to dashborad in a minute",
             timer: 2000,
           });
           router.push("/files");
@@ -339,6 +423,7 @@ export default function Component({
 
     return (
       <UpdateUsernameForm
+        user={user}
         onChange={checkUserNameOnChange}
         channelId={channelId}
         channelTitle={channelTitle}
@@ -384,26 +469,16 @@ export default function Component({
   );
 }
 
-function TextIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M17 6.1H3" />
-      <path d="M21 12.1H3" />
-      <path d="M15.1 18H3" />
-    </svg>
-  );
-}
+const showChannelVisisblityConfrimation = async (visibility: string) => {
+  return await Swal.fire({
+    title: "Confirm Channel Visibility",
+    text: `Are you sure you want to make your channel ${visibility} ?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: `Yes, make it ${visibility} 👍`,
+    cancelButtonText: "No,let Me Think 🤔",
+  });
+};
 
 const UpdateUsernameForm = <
   T extends { channelTitle: string; channelId: string }
@@ -411,9 +486,11 @@ const UpdateUsernameForm = <
   onSubmit,
   channelTitle,
   channelId,
+  user,
   onChange,
 }: {
   onSubmit: (arg: Pick<T, "channelId"> & { username: string }) => Promise<void>;
+  user: User;
   onChange: (
     username: string,
     setError: Dispatch<
@@ -427,42 +504,118 @@ const UpdateUsernameForm = <
     message: string;
   } | null>(null);
 
+  const router = useRouter();
+
   const handleSubmit = async (username: string) => {
     setPending(true);
     await onSubmit({ channelId, username });
     setPending(false);
   };
 
-  const checkUsername = useDebouncedCallback(onChange, 200);
+  const hasPuplicChannelByDefault =
+    user?.channelUsername &&
+    (user.hasPublicTgChannel === null || user.hasPublicTgChannel === undefined)
+      ? true
+      : false;
 
+  const [isPublic, setIsPublic] = useState(hasPuplicChannelByDefault);
+  const checkUsername = useDebouncedCallback(onChange, 200);
   const isUpdateButtonDisabled = pending || status?.type !== "success";
 
+  const makePrivake = async () => {
+    setPending(true);
+    const result = await showChannelVisisblityConfrimation("private");
+    if (result.isConfirmed) {
+      if (hasPuplicChannelByDefault) {
+        await onSubmit({ channelId: user?.channelId!, username: "" });
+      }
+      await updateHasPublicChannelStatus(false);
+      router.push("/files");
+    }
+    setPending(false);
+  };
+
+  const contiunePublic = async () => {
+    setPending(true);
+    const result = await showChannelVisisblityConfrimation("public");
+    if (result.isConfirmed) {
+      await updateHasPublicChannelStatus(false);
+      router.push("/files");
+    }
+    setPending(false);
+  };
+
+  const warning = hasPuplicChannelByDefault
+    ? {
+        message: (
+          <p>
+            We Noticed Your channel <strong>{channelTitle}</strong> is currently
+            public. Your files might be accessible to anyone on Telegram. Do you
+            want to make it private
+          </p>
+        ),
+        header: "Telegram Channel Visiblity warning",
+      }
+    : {
+        message: (
+          <p>
+            Your channel <strong>{channelTitle}</strong> is private by default.
+            You can make it public, but keep in mind that if you do, your
+            channel will be accessible to anyone, and they might be able to view
+            your content
+          </p>
+        ),
+        header: "Your channel is private by default",
+      };
+
   return (
-    <div className="h-[100dvh] flex justify-center items-center">
-      <Card className="w-full max-w-md md:max-w-lg mx-auto">
-        <CardHeader>
-          <CardTitle>Channel Created</CardTitle>
-          <CardDescription>
-            Your channel <strong>{channelTitle}</strong> has been created. Now,
-            you can update its username.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <form
-              action={(formData) => {
-                const username = formData.get("channel-username");
-                handleSubmit(username as unknown as string);
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Label htmlFor="channel-username">
-                  Telegram Channel Username
-                </Label>
-                <div className="flex justify-center flex-col items-center gap-1">
+    <div className="h-screen flex justify-center items-center bg-gray-100 p-4">
+      <div className="space-y-4 max-w-lg w-full">
+        <div className="bg-white p-4 rounded shadow-sm">
+          <WarningIndicator warning={warning} />
+          <Select
+            onValueChange={(value: string) => setIsPublic(value === "public")}
+          >
+            <SelectTrigger className="w-full mt-4">
+              <SelectValue placeholder="Channel Visibility" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="public">Public</SelectItem>
+              <SelectItem value="private">Private</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {isPublic && !hasPuplicChannelByDefault ? (
+          <Card className="bg-white text-black p-4 rounded shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-black">Channel Created</CardTitle>
+              <CardDescription>
+                Your channel <strong>{channelTitle}</strong> has been created.
+                Now, you can update its username.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form
+                action={async (formData) => {
+                  const result = await showChannelVisisblityConfrimation(
+                    "public"
+                  );
+                  if (!result.isConfirmed) return;
+                  const username = formData.get("channel-username") as string;
+                  handleSubmit(username);
+                }}
+                className="space-y-4"
+              >
+                <div className="flex flex-col space-y-1">
+                  <Label htmlFor="channel-username">
+                    Telegram Channel Username
+                  </Label>
                   <Input
+                    defaultValue={user?.channelUsername ?? ""}
                     id="channel-username"
                     name="channel-username"
+                    className="text-white"
                     placeholder="@mychannel"
                     onChange={(e) => {
                       if (!e.target.value) {
@@ -473,31 +626,93 @@ const UpdateUsernameForm = <
                     }}
                     required
                   />
-                  {status?.type == "error" ? (
-                    <span className="text-sm text-[0.8em] text-red-500 block w-full">
+                  {status && (
+                    <span
+                      className={`text-sm block w-full ${
+                        status.type === "error"
+                          ? "text-red-500"
+                          : "text-green-500"
+                      }`}
+                    >
                       {status.message}
                     </span>
-                  ) : null}
-                  {status?.type == "success" ? (
-                    <span className="text-sm text-[0.8em] text-green-500 block w-full">
-                      {status.message}
-                    </span>
-                  ) : null}
+                  )}
                 </div>
+                <Button
+                  disabled={isUpdateButtonDisabled}
+                  type="submit"
+                  className={`w-full p-2 text-white ${
+                    isUpdateButtonDisabled
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-700"
+                  }`}
+                >
+                  {pending ? "Please wait..." : "Update Username"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="bg-white p-4 rounded shadow-sm text-center">
+            {hasPuplicChannelByDefault && isPublic ? (
+              <div>
+                <Button onClick={contiunePublic} disabled={pending}>
+                  {pending ? <LoadingSVG /> : "Continue Public"}
+                </Button>
               </div>
-              <Button
-                disabled={isUpdateButtonDisabled}
-                type="submit"
-                className={`w-full my-4 p-2 bg-blue-500 text-white hover:bg-blue-700 ${
-                  isUpdateButtonDisabled ? "cursor-not-allowed" : ""
-                }`}
-              >
-                {pending ? "please wait..." : " Update Username"}
+            ) : (
+              <Button onClick={makePrivake} disabled={pending}>
+                {pending ? <LoadingSVG /> : "Continue Private"}
               </Button>
-            </form>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };
+
+export function WarningIndicator({
+  warning,
+}: {
+  warning: { message: JSX.Element; header: string };
+}) {
+  return (
+    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <TriangleAlertIcon className="h-5 w-5 text-yellow-400" />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-lg font-medium text-yellow-800">
+            {warning.header}
+          </h3>
+          <div className="mt-2 text-yellow-700">
+            <p className="text-gray-700">{warning.message}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TriangleAlertIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}

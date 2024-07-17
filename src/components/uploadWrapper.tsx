@@ -8,9 +8,9 @@ import {
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { useState } from "react";
-import { User } from "./FilesRender";
 import { UploadIcon } from "./Icons/icons";
 import { UploadFiles } from "./upload-files";
+import { User } from "@/lib/types";
 
 export default function DrawerDialogDemo({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
