@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "./Link";
+import FileContextMenu from "./fileContextMenu";
 
 import Circle from "react-circle";
 
@@ -182,80 +183,63 @@ function EachFile({
     const url = URL.createObjectURL(blob!);
     setURL(url);
   }
-
   const router = useRouter();
+  
+  const fileContextMenuActions = [
+    { actionName: "save", onClick: async () => downlaodFile() },
+    {
+      actionName: "delete",
+      onClick: async () => {
+        const promies = () =>
+          Promise.all([
+            deleteFile(file.id),
+            delelteItem(user, file.fileTelegramId, client),
+          ]);
+
+        promiseToast({
+          cb: promies,
+          errMsg: "Failed to Delete the file",
+          loadingMsg: "please wait",
+          successMsg: "you have successfully deleted the file",
+          position: "top-center",
+        }).then(() => router.refresh());
+      },
+    },
+  ];
+
+
+
 
   return (
-    <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
-      <Link target="_blank" href={file.url} prefetch={false}>
-        <span className="sr-only">View file</span>
-        <Image
-          src={url ?? "/placeholder.svg"}
-          alt={file.fileName}
-          width={299}
-          height={199}
-          className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
-        />
-      </Link>
+    <FileContextMenu fileContextMenuAction={fileContextMenuActions}>
+      <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
+        <Link target="_blank" href={file.url} prefetch={false}>
+          <span className="sr-only">View file</span>
+          <Image
+            src={url ?? "/placeholder.svg"}
+            alt={file.fileName}
+            width={299}
+            height={199}
+            className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
+          />
+        </Link>
 
-      <CardContent className="p-5 relative">
-        <div className="flex items-center justify-between">
-          <div className="truncate font-medium">{file.fileName}</div>
-          <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
-            {file.mimeType}
-          </Badge>
-        </div>
-        <div className="mt-3 text-sm text-muted-foreground">
-          <div className="flex justify-between items-center gap-3">
-            <div>Size: {formatBytes(Number(file.size))}</div>
-            <div>Date:{file.date}</div>
+        <CardContent className="p-5 relative">
+          <div className="flex items-center justify-between">
+            <div className="truncate font-medium">{file.fileName}</div>
+            <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+              {file.mimeType}
+            </Badge>
           </div>
-        </div>
-        <div>
-          {url ? (
-            <a download={"filename.jpg"} href={url}>
-              <Button
-                className="p-2 py-2"
-                onClick={() => {
-                  downlaodFile();
-                }}
-              >
-                <CloudDownload />
-              </Button>
-            </a>
-          ) : null}
-        </div>
-        <div className="absolute z-50 right-2 bottom-2">
-          <UserItemActions>
-            <Button
-              className="w-full border-none"
-              variant={"destructive"}
-              onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
-                console.log(e);
-                if (!user) return alert("Please login to delete files");
-
-                const promies = () =>
-                  Promise.all([
-                    deleteFile(file.id),
-                    delelteItem(user, file.fileTelegramId, client),
-                  ]);
-
-                promiseToast({
-                  cb: promies,
-                  errMsg: "Failed to Delete the file",
-                  loadingMsg: "please wait",
-                  successMsg: "you have successfully deleted the file",
-                  position: "top-center",
-                });
-                router.refresh();
-              }}
-            >
-              <span className="text-white text-sm text">Delete</span>
-            </Button>
-          </UserItemActions>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="mt-3 text-sm text-muted-foreground">
+            <div className="flex justify-between items-center gap-3">
+              <div>Size: {formatBytes(Number(file.size))}</div>
+              <div>Date:{file.date}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </FileContextMenu>
   );
 }
 

@@ -1,6 +1,6 @@
 import { uploadFile } from "@/actions";
 import { type ClassValue, clsx } from "clsx";
-import { LRUCache } from "lru-cache";
+import TTLCache from "@isaacs/ttlcache";
 import { ReadonlyURLSearchParams } from "next/navigation";
 import { Dispatch, SetStateAction } from "react";
 import { twMerge } from "tailwind-merge";
@@ -67,8 +67,6 @@ export async function uploadFiles(
         }
       );
 
-      navigator.clipboard.writeText(JSON.stringify(result));
-
       const uploadToDbResult = await uploadFile({
         fileName: file.name,
         mimeType: file.type.split("/")[0],
@@ -79,7 +77,7 @@ export async function uploadFiles(
         fileTelegramId: result.id,
       });
       console.log("File uploaded successfully:", uploadToDbResult);
-      result;
+      return uploadToDbResult;
     }
   } catch (err) {
     if (err instanceof TypeNotFoundError) {
@@ -183,7 +181,7 @@ export const getChannelEntity = (channelId: string, accessHash: string) => {
   });
 };
 
-export const blobCache = new LRUCache<string, Blob>({
+export const blobCache = new TTLCache<string, Blob>({
   max: 100,
-  ttl: 1000 * 60 * 60 * 24 * 30 * 12,
+  ttl: 1000 * 60 * 60 * 24 * 7, // 1 week
 });

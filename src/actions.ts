@@ -132,6 +132,8 @@ export async function getUser() {
 
     return result;
   } catch (err) {
+    console.log(err);
+    if (err instanceof Error) throw new Error(err.message);
     throw new Error("There was an error while getting user");
   }
 }
