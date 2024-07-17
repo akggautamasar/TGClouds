@@ -39,6 +39,7 @@ export const userFiles = pgTable(
       new Date().toDateString()
     ),
     fileTelegramId: text("fileTelegramId"),
+    category: text("fileCategory"),
   },
   (table) => ({
     userFk: foreignKey({

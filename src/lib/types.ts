@@ -113,6 +113,46 @@ export type FilesData = {
   size: bigint;
   url: string;
   fileTelegramId: string;
+  category: string;
 }[];
 
 export type User = Awaited<ReturnType<typeof db.query.usersTable.findFirst>>;
+
+export interface MessageMediaPhoto {
+  flags: number;
+  spoiler: boolean;
+  photo: Photo;
+  ttlSeconds: number | null;
+  className: string;
+}
+
+interface Photo {
+  flags: number;
+  hasStickers: boolean;
+  id: string;
+  accessHash: string;
+  fileReference: FileReference;
+  date: number;
+  sizes: PhotoSize[];
+  videoSizes: null;
+  dcId: number;
+  className: string;
+}
+
+interface FileReference {
+  type: string;
+  data: number[];
+}
+
+interface PhotoSize {
+  type: string;
+  bytes?: {
+    type: string;
+    data: number[];
+  };
+  className: string;
+  w?: number;
+  h?: number;
+  size?: number;
+  sizes?: number[];
+}

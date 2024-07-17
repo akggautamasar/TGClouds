@@ -4,26 +4,39 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import React from "react";
-import { Button } from "./ui/button";
+import React, { SVGProps } from "react";
 
 function FileContextMenu({
   children,
-  fileContextMenuAction,
+  fileContextMenuActions,
 }: {
   children: React.ReactNode;
-  fileContextMenuAction: { actionName: string; onClick: () => Promise<void> }[];
+  fileContextMenuActions: {
+    actionName: string;
+    onClick: () => Promise<void>;
+    Icon: (props: SVGProps<SVGSVGElement>) => JSX.Element;
+    className: string;
+  }[];
 }) {
   return (
     <ContextMenu>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
-      <ContextMenuContent>
-        {fileContextMenuAction.map(({ actionName, onClick }) => {
-          <Button onClick={() => onClick()}>
-            <ContextMenuItem>{actionName}</ContextMenuItem>;
-          </Button>;
-          return;
-        })}
+      <ContextMenuContent className="w-64 rounded-md shadow-lg">
+        {fileContextMenuActions.map(
+          ({ actionName, onClick, Icon, className }) => {
+            return (
+              <ContextMenuItem
+                role="button"
+                onClick={onClick}
+                key={actionName}
+                className={className}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{actionName}</span>
+              </ContextMenuItem>
+            );
+          }
+        )}
       </ContextMenuContent>
     </ContextMenu>
   );

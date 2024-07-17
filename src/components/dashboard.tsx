@@ -1,4 +1,4 @@
-import { File, Menu, Search } from "lucide-react";
+import { File, Menu } from "lucide-react";
 import Link from "./Link";
 
 import { Button } from "@/components/ui/button";
@@ -9,34 +9,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { User } from "@/lib/types";
 import { UserButton } from "@clerk/nextjs";
-import React, { Suspense } from "react";
+import React from "react";
 import { ModeToggle } from "./darkmodeToggle";
 import {
   CloudIcon,
   FileTextIcon,
-  FilterIcon,
   ImageIcon,
   Music2Icon,
-  UploadIcon,
-  VideoIcon,
+  VideoIcon
 } from "./Icons/icons";
-import Upload from "./uploadWrapper";
-import SearchItems from "./searchItems";
 import Paginate from "./pagination";
+import SearchItems from "./searchItems";
 import SortBy from "./SortBy";
-import { User } from "@/lib/types";
+import Upload from "./uploadWrapper";
 
 export function Dashboard({
   children,
@@ -141,7 +129,7 @@ export function Dashboard({
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 sticky z-50 top-0 items-center gap-4 border-b  dark:bg-black/50 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 bg-white sticky z-50 top-0 items-center gap-4 border-b dark:bg-black/95  px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button

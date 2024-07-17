@@ -1,6 +1,5 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTgClient } from "@/lib/getTgClient";
 import {
@@ -10,7 +9,7 @@ import {
   getChannelEntity,
 } from "@/lib/utils";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "./Link";
 import FileContextMenu from "./fileContextMenu";
 
@@ -21,41 +20,29 @@ import {
   SetStateAction,
   Suspense,
   use,
+  useCallback,
   useEffect,
-  useMemo,
+  useRef,
   useState,
 } from "react";
 
-import { Api } from "telegram";
+import { Api, TelegramClient } from "telegram";
 
 import { deleteFile } from "@/actions";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { SortByContext } from "@/lib/context";
 import { promiseToast } from "@/lib/notify";
-import Message, { FilesData, User } from "@/lib/types";
-import { LRUCache } from "lru-cache";
-import { CloudDownload } from "./Icons/icons";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+import Message, { FilesData, MessageMediaPhoto, User } from "@/lib/types";
+import { CloudDownload, Trash2Icon } from "./Icons/icons";
 import Upload from "./uploadWrapper";
+import { message } from "telegram/client";
+import { File } from "buffer";
 
 const downloadMedia = async function (
   user: User,
   message_id: number | string,
-  setProgress: Dispatch<SetStateAction<number>>
+  setProgress: Dispatch<SetStateAction<number>>,
+  size: "large" | "small",
+  category: string
 ): Promise<Blob | null> {
   const cacheKey = `${user?.channelId}-${message_id}`;
   if (blobCache.has(cacheKey)) {
@@ -74,9 +61,27 @@ const downloadMedia = async function (
       }
     )) as unknown as Message[];
 
-    const media = message[0].media;
+    const media = message[0].media as Message["media"] | MessageMediaPhoto;
 
     if (media) {
+      if (size == "small" && category == "image") {
+        const buffer = await client.downloadMedia(
+          media as unknown as Api.TypeMessageMedia,
+          {
+            progressCallback: (progress, total) => {
+              const percent = (Number(progress) / Number(total)) * 100;
+              setProgress(Number(percent?.toFixed(2)));
+            },
+            thumb: 0,
+          }
+        );
+
+        const blob = new Blob([buffer as unknown as Buffer]);
+
+        blobCache.set(cacheKey, blob);
+
+        return blob;
+      }
       const buffer = await client.downloadMedia(
         media as unknown as Api.TypeMessageMedia,
         {
@@ -84,7 +89,6 @@ const downloadMedia = async function (
             const percent = (Number(progress) / Number(total)) * 100;
             setProgress(Number(percent?.toFixed(2)));
           },
-          // thumb: 0,
         }
       );
 
@@ -96,6 +100,8 @@ const downloadMedia = async function (
     }
   } catch (err) {
     console.log(err);
+  } finally {
+    await client.disconnect();
   }
 
   return null;
@@ -112,7 +118,9 @@ function Files({
 
   const [progress, setProgress] = useState(0);
 
-  const sortedFiles = useMemo(() => {
+  const searchParams = useSearchParams();
+
+  const sortedFiles = (() => {
     if (!files || !files?.length) return [];
     if (sortBy == "name")
       return files.sort((a, b) => a.fileName.localeCompare(b.fileName));
@@ -121,8 +129,7 @@ function Files({
     if (sortBy == "size")
       return files.sort((a, b) => Number(a.size) - Number(b.size));
     return files.sort((a, b) => a.mimeType.localeCompare(b.mimeType));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy]);
+  })();
 
   if (!sortedFiles?.length)
     return (
@@ -171,22 +178,55 @@ function EachFile({
 }) {
   const client = getTgClient(user?.telegramSession as string);
   const [url, setURL] = useState<string | null>(null);
+  const [downloadAbleFile, setFile] = useState<File>();
 
-  useEffect(() => {
-    if (file.mimeType !== "image") return;
-    downlaodFile();
-  }, []);
-
-  async function downlaodFile() {
-    const blob = await downloadMedia(user, file?.fileTelegramId, setProgress);
+  const downlaodFile = async (size: "large" | "small", category: string) => {
+    const blob = await downloadMedia(
+      user,
+      file?.fileTelegramId,
+      setProgress,
+      size,
+      category
+    );
 
     const url = URL.createObjectURL(blob!);
     setURL(url);
-  }
+    return;
+  };
+
   const router = useRouter();
-  
+
+  useEffect(() => {
+    downlaodFile("small", file.category);
+
+    requestIdleCallback((e) => {
+      downlaodFile("large", file.category);
+    });
+
+    return () => {
+      URL.revokeObjectURL(url as string);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file.category]);
+
   const fileContextMenuActions = [
-    { actionName: "save", onClick: async () => downlaodFile() },
+    {
+      actionName: "save",
+      onClick: async () => {
+        if (!downloadAbleFile) removeEventListener;
+
+        const link = document.createElement("a");
+        link.href = url!;
+        link.download = file.fileName!;
+
+        link.click();
+      },
+      Icon: CloudDownload,
+      className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${
+        !url ? "cursor-not-allowed opacity-50" : ""
+      }`,
+    },
     {
       actionName: "delete",
       onClick: async () => {
@@ -204,24 +244,26 @@ function EachFile({
           position: "top-center",
         }).then(() => router.refresh());
       },
+      Icon: Trash2Icon,
+      className:
+        "flex items-center text-red-500 gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-red-600",
     },
   ];
 
-
-
-
   return (
-    <FileContextMenu fileContextMenuAction={fileContextMenuActions}>
-      <Card className="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md">
+    <FileContextMenu fileContextMenuActions={fileContextMenuActions}>
+      <Card className="group relative overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md">
         <Link target="_blank" href={file.url} prefetch={false}>
           <span className="sr-only">View file</span>
-          <Image
-            src={url ?? "/placeholder.svg"}
-            alt={file.fileName}
-            width={299}
-            height={199}
-            className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
-          />
+          {file.category == "image" ? (
+            <ImageRender fileName={file.fileName} url={url!} />
+          ) : (
+            <div className="w-full text-center">
+              <span className="text-center font-bold">
+                {file.mimeType.split("/")[1]}
+              </span>
+            </div>
+          )}
         </Link>
 
         <CardContent className="p-5 relative">
@@ -269,43 +311,14 @@ function FileDownloadProgress({
   );
 }
 
-function ConfirmDeleteAction({
-  onConfirm,
-  children,
-}: {
-  onConfirm: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  children: React.ReactNode;
-}) {
+function ImageRender({ url, fileName }: { url: string; fileName: string }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline">{children}</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your file
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <Button onClick={onConfirm} autoFocus>
-            Continue
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-function UserItemActions({ children }: { children: React.ReactNode }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger>...</DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem>{children}</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Image
+      src={url ?? "/placeholder.svg"}
+      alt={fileName}
+      width={299}
+      height={199}
+      className="h-41 aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
+    />
   );
 }
