@@ -80,6 +80,7 @@ async function getPhoneNumber() {
   return await Swal.fire({
     title: "Enter your phone number",
     input: "text",
+
     inputLabel: "Phone Number",
     inputPlaceholder: "Please Input Your Phone Number",
     showCancelButton: true,
@@ -260,11 +261,11 @@ export default function Component({
         .then(async (res) => {
           await saveUserName(username);
           await Swal.fire({
-            icon:'success', 
-            title:'Update success', 
-            text:'you have update channle username now we will redirect you to dashborad in a minute', 
-            timer:2000
-          })
+            icon: "success",
+            title: "Update success",
+            text: "you have update channel username now we will redirect you to dashborad in a minute",
+            timer: 2000,
+          });
           router.push("/files");
         });
       console.log("Username updated successfully.");

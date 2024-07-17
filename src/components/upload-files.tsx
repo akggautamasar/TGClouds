@@ -54,7 +54,7 @@ export const UploadFiles = ({
     }
     const isFirstUpload = Number(localStorage.getItem("isUploaded") ?? "1");
 
-    promiseToast({
+await promiseToast({
       cb: () =>
         uploadFiles(
           formData,
