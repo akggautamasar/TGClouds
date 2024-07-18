@@ -184,3 +184,29 @@ export const blobCache = new TTLCache<string, Blob>({
   max: 100,
   ttl: 1000 * 60 * 60 * 24 * 7, // 1 week
 });
+
+
+export function getBannerURL(filename: string, isDarkMode: boolean) {
+  const width = 600;
+  const height = 500;
+  const lightBackgroundColor = "ffffff"; 
+  const lightTextColor = "000000"; 
+  const darkBackgroundColor = "000000";
+  const darkTextColor = "ffffff"; 
+
+  const backgroundColor = isDarkMode
+    ? darkBackgroundColor
+    : lightBackgroundColor;
+  const textColor = isDarkMode ? darkTextColor : lightTextColor;
+
+  const bannerUrl = `https://via.placeholder.com/${width}x${height}/${backgroundColor}/${textColor}?text=${filename}`;
+  return bannerUrl;
+}
+
+export function isDarkMode() {
+  return (
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+}
+
