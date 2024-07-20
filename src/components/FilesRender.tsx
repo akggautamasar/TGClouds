@@ -47,7 +47,7 @@ const downloadMedia = async function (
 ): Promise<Blob | null> {
   const cacheKey = `${user?.channelId}-${message_id}`;
   if (blobCache.has(cacheKey)) {
-    // return blobCache.get(cacheKey)!;
+    return blobCache.get(cacheKey)!;
   }
 
   const client = getTgClient(user?.telegramSession!);
