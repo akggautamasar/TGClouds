@@ -8,6 +8,11 @@ import { userFiles, usersTable } from "./db/schema";
 import { revalidatePath } from "next/cache";
 import { User } from "./lib/types";
 
+import { Resend } from "resend";
+import Email from "@/components/email";
+import React from "react";
+import { env } from "./env";
+
 export async function saveTelegramCredentials({
   accessHash,
   channelId,
@@ -304,7 +309,7 @@ export async function uploadFile(file: {
         url: file.url,
         date: new Date().toDateString(),
         fileTelegramId: String(file.fileTelegramId),
-        category:file?.mimeType?.split('/')[0]
+        category: file?.mimeType?.split("/")[0],
       })
       .returning();
     revalidatePath("/files");
@@ -386,3 +391,52 @@ export const updateHasPublicChannelStatus = async (isPublic: boolean) => {
   }
   throw new Error("There was an error while updating status");
 };
+
+function addDays(date: Date, days: number): Date {
+  const newDate = new Date(date);
+  newDate.setDate(newDate.getDate() + days);
+  return newDate;
+}
+
+export async function subscribeToPro() {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("Failed to get user");
+
+    let currentExpirationDate = user.subscriptionDate
+      ? new Date(user.subscriptionDate)
+      : new Date();
+    if (currentExpirationDate < new Date()) {
+      currentExpirationDate = new Date();
+    }
+
+    const newExpirationDate = addDays(currentExpirationDate, 30).toISOString();
+
+    const result = await db
+      .update(usersTable)
+      .set({ isSubscribedToPro: true, subscriptionDate: newExpirationDate })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+
+    await sendEmail(user, newExpirationDate);
+
+    return { isDone: true, result };
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function sendEmail(user: User, expirationDate: string) {
+  const resend = new Resend(env.RESEND_API_KEY);
+
+  await resend.emails.send({
+    from: "onboarding@resend.dev",
+    to: user?.email!,
+    subject: "Pro Activated",
+    react: React.createElement(Email, {
+      expirationDate,
+      userName: user?.name!,
+    }),
+  });
+}
