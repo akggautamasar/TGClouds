@@ -28,6 +28,7 @@ import Upload from "./uploadWrapper";
 import Pricing from "./pricing";
 import { db } from "@/db";
 import { usersTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function Dashboard({
   children,
@@ -38,10 +39,6 @@ export async function Dashboard({
   user: User;
   total: number;
 }) {
-  // await db
-  //   .update(usersTable)
-  //   .set({ isSubscribedToPro: false, subscriptionDate: null });
-
   const calculateRemainingDays = (subscriptionDate: string) => {
     const currentDate = new Date();
     const expirationDate = new Date(subscriptionDate);

@@ -409,6 +409,10 @@ export async function subscribeToPro({ tx_ref }: { tx_ref: string }) {
 
     if (otherSubscriptionWithThisTxRef) return;
 
+    const data = await verifyPayment({ tx_ref });
+
+    if (data.status !== "success") throw new Error(data.message);
+
     const user = await getUser();
     if (!user) throw new Error("Failed to get user");
 
@@ -436,7 +440,11 @@ export async function subscribeToPro({ tx_ref }: { tx_ref: string }) {
     return { isDone: true, result };
   } catch (err) {
     console.error(err);
+    if(err instanceof Error){
+      throw new Error()
+    }
     return null;
+
   }
 }
 
@@ -467,16 +475,16 @@ export async function initailizePayment({
 
     const tx_ref = crypto.randomUUID();
 
-    const body = JSON.stringify({
+    const body = {
       amount,
       currency,
       email: user.email,
       first_name: user.name,
       tx_ref,
-      return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/files/subscribe/success/${tx_ref}`,
+      return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/subscribe/success/${tx_ref}`,
       "customization[title]": "Payment for my favourite merchant",
       "customization[description]": "I love online payments",
-    });
+    };
     const resonse = await fetch(
       "https://api.chapa.co/v1/transaction/initialize",
       {
@@ -485,7 +493,7 @@ export async function initailizePayment({
           Authorization: `Bearer ${env.CHAPA_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body,
+        body: JSON.stringify(body),
       }
     );
 
@@ -498,4 +506,31 @@ export async function initailizePayment({
     };
     return data;
   } catch (err) {}
+}
+
+async function verifyPayment({ tx_ref }: { tx_ref: string }) {
+  const response = await fetch(
+    `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
+    {
+      method: "get",
+      headers: {
+        Authorization: `Bearer ${env.CHAPA_API_KEY}`,
+      },
+    }
+  );
+  const result = (await response.json()) as {
+    message: string;
+    status: string;
+    data: {
+      amount: string;
+      currency: string;
+      email: string;
+      first_name: string;
+      tx_ref: `${string}-${string}-${string}-${string}-${string}`;
+      return_url: string;
+      "customization[title]": string;
+      "customization[description]": string;
+    };
+  };
+  return result;
 }

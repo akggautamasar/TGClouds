@@ -6,7 +6,7 @@ export default async function Component({
 }: {
   params: { tx_ref: string };
 }) {
-  const result = await subscribeToPro();
+  const result = await subscribeToPro({tx_ref});
 
   if (result?.isDone)
     return (
