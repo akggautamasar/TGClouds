@@ -22,6 +22,7 @@ export const usersTable = pgTable(
     hasPublicTgChannel: boolean("hasPublicChannel"),
     isSubscribedToPro: boolean("is_subscribed_to_pro").default(false),
     subscriptionDate: date("subscription_date"),
+    tx_ref: text("chapa_tx_ref"),
   },
   (table) => ({
     emailIdx: uniqueIndex("email_idx").on(table.email),

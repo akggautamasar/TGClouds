@@ -38,21 +38,25 @@ export async function Dashboard({
   user: User;
   total: number;
 }) {
+  // await db
+  //   .update(usersTable)
+  //   .set({ isSubscribedToPro: false, subscriptionDate: null });
+
   const calculateRemainingDays = (subscriptionDate: string) => {
-   const currentDate = new Date();
-   const expirationDate = new Date(subscriptionDate);
-   const differenceInTime = expirationDate.getTime() - currentDate.getTime();
-   const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-   return differenceInDays;
- };
+    const currentDate = new Date();
+    const expirationDate = new Date(subscriptionDate);
+    const differenceInTime = expirationDate.getTime() - currentDate.getTime();
+    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+    return differenceInDays;
+  };
 
- const isSubscribedToPro = user?.isSubscribedToPro;
- const subscriptionDate = user?.subscriptionDate;
+  const isSubscribedToPro = user?.isSubscribedToPro;
+  const subscriptionDate = user?.subscriptionDate;
 
- let remainingDays = 0;
- if (isSubscribedToPro && subscriptionDate) {
-   remainingDays = calculateRemainingDays(subscriptionDate);
- }
+  let remainingDays = 0;
+  if (isSubscribedToPro && subscriptionDate) {
+    remainingDays = calculateRemainingDays(subscriptionDate);
+  }
 
   return (
     <div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">

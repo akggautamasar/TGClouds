@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { initailizePayment } from "@/actions";
+import { errorToast } from "@/lib/notify";
 
 export default function Component() {
   const router = useRouter();
@@ -39,10 +41,17 @@ export default function Component() {
       </CardContent>
       <CardFooter>
         <Button
-          onClick={() => {
-            //TODO: handle paymen processing
+          onClick={async () => {
+            const data = await initailizePayment({
+              amount: "150",
+              currency: "ETB",
+            });
 
-            router.push("/subscribe/success");
+            if (data?.status == "success") {
+              router.push(data.data.checkout_url);
+              return;
+            }
+            errorToast(data?.message ?? "failed to process ayment");
           }}
           variant="secondary"
           className="w-full"

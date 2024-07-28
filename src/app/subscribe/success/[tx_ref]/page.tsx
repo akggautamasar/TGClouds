@@ -1,7 +1,11 @@
 import { subscribeToPro } from "@/actions";
 import { Button } from "@/components/ui/button";
 
-export default async function Component() {
+export default async function Component({
+  params: { tx_ref },
+}: {
+  params: { tx_ref: string };
+}) {
   const result = await subscribeToPro();
 
   if (result?.isDone)

@@ -7,6 +7,7 @@ import { db } from "./db";
 import { userFiles, usersTable } from "./db/schema";
 import { revalidatePath } from "next/cache";
 import { User } from "./lib/types";
+import crypto from "node:crypto";
 
 import { Resend } from "resend";
 import Email from "@/components/email";
@@ -398,8 +399,16 @@ function addDays(date: Date, days: number): Date {
   return newDate;
 }
 
-export async function subscribeToPro() {
+export async function subscribeToPro({ tx_ref }: { tx_ref: string }) {
   try {
+    const otherSubscriptionWithThisTxRef = await db.query.usersTable.findFirst({
+      where(fields, { eq }) {
+        return eq(fields.tx_ref, tx_ref);
+      },
+    });
+
+    if (otherSubscriptionWithThisTxRef) return;
+
     const user = await getUser();
     if (!user) throw new Error("Failed to get user");
 
@@ -414,7 +423,11 @@ export async function subscribeToPro() {
 
     const result = await db
       .update(usersTable)
-      .set({ isSubscribedToPro: true, subscriptionDate: newExpirationDate })
+      .set({
+        isSubscribedToPro: true,
+        subscriptionDate: newExpirationDate,
+        tx_ref,
+      })
       .where(eq(usersTable.id, user.id))
       .returning();
 
@@ -439,4 +452,50 @@ async function sendEmail(user: User, expirationDate: string) {
       userName: user?.name!,
     }),
   });
+}
+
+export async function initailizePayment({
+  amount,
+  currency,
+}: {
+  amount: string;
+  currency: string;
+}) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("user needs to be loggedin");
+
+    const tx_ref = crypto.randomUUID();
+
+    const body = JSON.stringify({
+      amount,
+      currency,
+      email: user.email,
+      first_name: user.name,
+      tx_ref,
+      return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/files/subscribe/success/${tx_ref}`,
+      "customization[title]": "Payment for my favourite merchant",
+      "customization[description]": "I love online payments",
+    });
+    const resonse = await fetch(
+      "https://api.chapa.co/v1/transaction/initialize",
+      {
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${env.CHAPA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body,
+      }
+    );
+
+    const data = (await resonse.json()) as {
+      message: string;
+      status: string;
+      data: {
+        checkout_url: string;
+      };
+    };
+    return data;
+  } catch (err) {}
 }

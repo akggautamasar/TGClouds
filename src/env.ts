@@ -7,6 +7,7 @@ export const env = createEnv({
     TELEGRAM_API_HASH: z.string(),
     DATABASE_URL: z.string(),
     RESEND_API_KEY: z.string(),
+    CHAPA_API_KEY: z.string(),
   },
   client: {
     NEXT_PUBLIC_PUBLISHABLE_KEY: z.string().min(1),
@@ -23,5 +24,6 @@ export const env = createEnv({
     NEXT_PUBLIC_TELEGRAM_API_ID: process.env.NEXT_PUBLIC_TELEGRAM_API_ID,
     NEXT_PUBLIC_TELEGRAM_API_HASH: process.env.NEXT_PUBLIC_TELEGRAM_API_HASH,
     NEXT_PUBLIC_SENTRY_AUTH_TOKEN: process.env.NEXT_PUBLIC_SENTRY_AUTH_TOKEN,
+    CHAPA_API_KEY: process.env.CHAPA_API_KEY,
   },
 });
