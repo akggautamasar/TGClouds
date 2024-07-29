@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { userFiles, usersTable } from "./db/schema";
 import { revalidatePath } from "next/cache";
-import { User } from "./lib/types";
+import { ChapaInitializePaymentRequestBody, User } from "./lib/types";
 import crypto from "node:crypto";
 
 import { Resend } from "resend";
@@ -475,15 +475,17 @@ export async function initailizePayment({
 
     const tx_ref = crypto.randomUUID();
 
-    const body = {
+    const body: ChapaInitializePaymentRequestBody = {
       amount,
       currency,
       email: user.email,
       first_name: user.name,
       tx_ref,
       return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/subscribe/success/${tx_ref}`,
-      "customization[title]": "Payment for my favourite merchant",
-      "customization[description]": "I love online payments",
+      customization: {
+        title: "Payment for my favourite merchant",
+        description : "I love online payments",,
+      },
     };
     const resonse = await fetch(
       "https://api.chapa.co/v1/transaction/initialize",
@@ -521,16 +523,7 @@ async function verifyPayment({ tx_ref }: { tx_ref: string }) {
   const result = (await response.json()) as {
     message: string;
     status: string;
-    data: {
-      amount: string;
-      currency: string;
-      email: string;
-      first_name: string;
-      tx_ref: `${string}-${string}-${string}-${string}-${string}`;
-      return_url: string;
-      "customization[title]": string;
-      "customization[description]": string;
-    };
+    data: ChapaInitializePaymentRequestBody;
   };
   return result;
 }
