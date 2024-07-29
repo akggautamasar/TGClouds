@@ -1,12 +1,15 @@
 import {
   bigint,
+  boolean,
   date,
   foreignKey,
+  pgEnum,
   pgTable,
   text,
   uniqueIndex,
-  boolean,
 } from "drizzle-orm/pg-core";
+
+export const planEnum = pgEnum("plan", ["ANNUAL", "MONTHLY"]);
 
 export const usersTable = pgTable(
   "usersTable",
@@ -22,10 +25,52 @@ export const usersTable = pgTable(
     hasPublicTgChannel: boolean("hasPublicChannel"),
     isSubscribedToPro: boolean("is_subscribed_to_pro").default(false),
     subscriptionDate: date("subscription_date"),
-    tx_ref: text("chapa_tx_ref"),
+    plan: planEnum("plan"),
   },
   (table) => ({
     emailIdx: uniqueIndex("email_idx").on(table.email),
+  })
+);
+
+export const sharedFilesTable = pgTable(
+  "sharedFiles",
+  {
+    id: text("id").primaryKey(),
+    fileId: text("fileId"),
+    userId: text("userId").notNull(),
+  },
+  (table) => ({
+    fkUserId: foreignKey({
+      columns: [table.userId],
+      foreignColumns: [usersTable.id],
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+  })
+);
+
+export const paymentsTable = pgTable(
+  "paymentsTable",
+  {
+    id: text("id").primaryKey(),
+    amount: text("amount").notNull(),
+    currency: text("currency").notNull(),
+    userId: text("userId").notNull(),
+    tx_ref: text("tx_ref").notNull().unique(),
+    customizationTitle: text("customizationTitle"),
+    customizationDescription: text("customizationDescription"),
+    customizationLogo: text("customizationLogo"),
+    paymentDate: date("paymentDate").$defaultFn(() => new Date().toISOString()),
+    isPaymentDONE: boolean("isPaymentDONE").default(false),
+    plan: planEnum("plan"),
+  },
+  (table) => ({
+    fkUserId: foreignKey({
+      columns: [table.userId],
+      foreignColumns: [usersTable.id],
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
   })
 );
 
@@ -48,6 +93,8 @@ export const userFiles = pgTable(
     userFk: foreignKey({
       columns: [table.userId],
       foreignColumns: [usersTable.id],
-    }).onDelete("cascade"),
+    })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
   })
 );

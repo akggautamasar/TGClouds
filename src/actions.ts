@@ -4,10 +4,16 @@ import { currentUser } from "@clerk/nextjs/server";
 import { and, asc, count, desc, eq, ilike } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { userFiles, usersTable } from "./db/schema";
+import {
+  paymentsTable,
+  userFiles,
+  usersTable,
+  sharedFilesTable,
+} from "./db/schema";
 import { revalidatePath } from "next/cache";
 import { ChapaInitializePaymentRequestBody, User } from "./lib/types";
 import crypto from "node:crypto";
+import { PLANS } from "@/components/farmui/TGCloudPricing";
 
 import { Resend } from "resend";
 import Email from "@/components/email";
@@ -44,6 +50,7 @@ export async function saveTelegramCredentials({
 
     if (!existinguser) {
       const name = user.fullName ?? `${user.firstName} ${user.lastName}`;
+      const subscriptionDate = addDays(new Date(), 7).toISOString();
       const data = await db
         .insert(usersTable)
         .values({
@@ -54,6 +61,8 @@ export async function saveTelegramCredentials({
           accessHash: accessHash,
           channelId: channelId,
           channelTitle: channelTitle,
+          isSubscribedToPro: true,
+          subscriptionDate,
         })
         .returning();
       return user.id;
@@ -399,15 +408,43 @@ function addDays(date: Date, days: number): Date {
   return newDate;
 }
 
-export async function subscribeToPro({ tx_ref }: { tx_ref: string }) {
-  try {
-    const otherSubscriptionWithThisTxRef = await db.query.usersTable.findFirst({
-      where(fields, { eq }) {
-        return eq(fields.tx_ref, tx_ref);
-      },
-    });
+type PeymentResult = Awaited<
+  ReturnType<typeof db.query.paymentsTable.findFirst>
+>;
 
-    if (otherSubscriptionWithThisTxRef) return;
+type UserPaymentSubscriptionResult =
+  | {
+      isDone: true;
+      data: PeymentResult;
+      status: "success";
+    }
+  | {
+      isDone: false;
+      status: "failed";
+      message: string;
+      data?: PeymentResult;
+    };
+
+export async function subscribeToPro({
+  tx_ref,
+}: {
+  tx_ref: string;
+}): Promise<UserPaymentSubscriptionResult> {
+  try {
+    const otherSubscriptionWithThisTxRef =
+      await db.query.paymentsTable.findFirst({
+        where(fields, { eq, and }) {
+          return eq(fields.tx_ref, tx_ref);
+        },
+      });
+
+    if (otherSubscriptionWithThisTxRef?.isPaymentDONE)
+      return {
+        isDone: false,
+        data: otherSubscriptionWithThisTxRef,
+        status: "failed",
+        message: "payment already made before",
+      };
 
     const data = await verifyPayment({ tx_ref });
 
@@ -423,28 +460,50 @@ export async function subscribeToPro({ tx_ref }: { tx_ref: string }) {
       currentExpirationDate = new Date();
     }
 
-    const newExpirationDate = addDays(currentExpirationDate, 30).toISOString();
+    const plan = otherSubscriptionWithThisTxRef?.plan;
+
+    if (!plan)
+      throw new Error(
+        "FAILED GOT GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER"
+      );
+
+    const newExpirationDate = addDays(
+      currentExpirationDate,
+      plan == "ANNUAL" ? 365 : 30
+    ).toISOString();
 
     const result = await db
       .update(usersTable)
       .set({
         isSubscribedToPro: true,
         subscriptionDate: newExpirationDate,
-        tx_ref,
+        plan: plan,
       })
       .where(eq(usersTable.id, user.id))
       .returning();
 
-    await sendEmail(user, newExpirationDate);
+    await db
+      .update(paymentsTable)
+      .set({
+        isPaymentDONE: true,
+      })
+      .where(eq(paymentsTable.tx_ref, tx_ref))
+      .returning()
+      .execute();
 
-    return { isDone: true, result };
+    sendEmail(user, newExpirationDate);
+
+    return {
+      isDone: true,
+      data: otherSubscriptionWithThisTxRef,
+      status: "success",
+    };
   } catch (err) {
-    console.error(err);
-    if(err instanceof Error){
-      throw new Error()
-    }
-    return null;
-
+    return {
+      isDone: false,
+      message: "there was an error while proccessin payment",
+      status: "failed",
+    };
   }
 }
 
@@ -465,9 +524,11 @@ async function sendEmail(user: User, expirationDate: string) {
 export async function initailizePayment({
   amount,
   currency,
+  plan,
 }: {
   amount: string;
   currency: string;
+  plan: PLANS;
 }) {
   try {
     const user = await getUser();
@@ -482,11 +543,22 @@ export async function initailizePayment({
       first_name: user.name,
       tx_ref,
       return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/subscribe/success/${tx_ref}`,
-      customization: {
-        title: "Payment for my favourite merchant",
-        description : "I love online payments",,
-      },
     };
+
+    await db
+      .insert(paymentsTable)
+      .values({
+        id: crypto.randomUUID(),
+        amount: amount,
+        currency: currency,
+        userId: user.id,
+        tx_ref,
+        isPaymentDONE: false,
+        plan: plan,
+      })
+      .returning()
+      .execute();
+
     const resonse = await fetch(
       "https://api.chapa.co/v1/transaction/initialize",
       {
@@ -506,8 +578,12 @@ export async function initailizePayment({
         checkout_url: string;
       };
     };
+    console.log(data);
+
     return data;
-  } catch (err) {}
+  } catch (err) {
+    throw err;
+  }
 }
 
 async function verifyPayment({ tx_ref }: { tx_ref: string }) {
@@ -526,4 +602,41 @@ async function verifyPayment({ tx_ref }: { tx_ref: string }) {
     data: ChapaInitializePaymentRequestBody;
   };
   return result;
+}
+
+export async function shareFile({ fileID }: { fileID: string }) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("you need to be sined in to share ur files");
+    const newShare = await db
+      .insert(sharedFilesTable)
+      .values({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        fileId: fileID,
+      })
+      .returning()
+      .execute();
+    return newShare;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export async function getSharedFiles(id: string) {
+  try {
+    const result = await db
+      .select()
+      .from(sharedFilesTable)
+      .leftJoin(
+        usersTable,
+        and(
+          eq(usersTable.id, sharedFilesTable.userId),
+          eq(sharedFilesTable.id, id)
+        )
+      );
+    return result;
+  } catch (err) {
+    console.error(err);
+  }
 }

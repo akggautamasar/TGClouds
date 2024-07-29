@@ -1,14 +1,19 @@
 import { subscribeToPro } from "@/actions";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { SVGProps } from "react";
 
 export default async function Component({
   params: { tx_ref },
 }: {
   params: { tx_ref: string };
 }) {
-  const result = await subscribeToPro({tx_ref});
+  const result = await subscribeToPro({ tx_ref });
 
-  if (result?.isDone)
+  if (result?.isDone) {
+    const data = result.data;
+    const formattedAmount = `${data?.currency} ${data?.amount}`;
+    const planType = data?.plan === "ANNUAL" ? "Annual" : "Monthly";
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-primary text-primary-foreground">
         <div className="max-w-md w-full p-6 bg-primary rounded-lg shadow-lg">
@@ -16,19 +21,23 @@ export default async function Component({
             <CircleCheckIcon className="w-16 h-16 fill-primary-foreground" />
             <div className="text-3xl font-bold">Payment Successful</div>
             <p className="text-lg text-center">
-              Thank you for your purchase! Your Pro plan is now active.
+              Thank you for your purchase! Your {planType} plan is now active.
+            </p>
+            <p className="text-lg text-center">
+              Amount Paid: <span className="font-bold">{formattedAmount}</span>
             </p>
             <Button variant="secondary" className="w-full">
-              Continue to Dashboard
+              <Link href="/files">Continue to Dashboard</Link>
             </Button>
           </div>
         </div>
       </div>
     );
+  }
   return <PaymentError />;
 }
 
-function CircleCheckIcon(props) {
+function CircleCheckIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -47,27 +56,6 @@ function CircleCheckIcon(props) {
     </svg>
   );
 }
-
-function XIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}
-
 function PaymentError() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-primary text-primary-foreground">
@@ -88,7 +76,7 @@ function PaymentError() {
   );
 }
 
-function TriangleAlertIcon(props) {
+function TriangleAlertIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

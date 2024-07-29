@@ -9,7 +9,6 @@ import { usersTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 async function Page() {
-  console.log("user clekr");
   const userClerk = await currentUser();
   if (!userClerk) return redirect("/login");
   const user = await getUser();

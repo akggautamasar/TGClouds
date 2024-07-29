@@ -31,7 +31,7 @@ const ProPlanActivatedEmail = ({ userName, expirationDate }:{userName:string, ex
               Hello {userName},
             </Text>
             <Text className="text-lg text-gray-700 mt-2">
-              We&apos;'re excited to inform you that your Pro plan is now active.
+              We&apos;re excited to inform you that your Pro plan is now active.
               Enjoy all the exclusive features and unlimited access to our
               support team.
             </Text>

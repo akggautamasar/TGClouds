@@ -22,13 +22,10 @@ import {
   VideoIcon,
 } from "./Icons/icons";
 import Paginate from "./pagination";
+import Pricing from "./pricing";
 import SearchItems from "./searchItems";
 import SortBy from "./SortBy";
 import Upload from "./uploadWrapper";
-import Pricing from "./pricing";
-import { db } from "@/db";
-import { usersTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export async function Dashboard({
   children,
@@ -254,22 +251,44 @@ export async function Dashboard({
               </div>
 
               <div className="mt-auto">
-                <Pricing user={user}>
+                {user?.isSubscribedToPro ? (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Upgrade to Pro</CardTitle>
-                      <CardDescription>
-                        Unlock all features and get unlimited access to our
-                        support team.
-                      </CardDescription>
+                      <CardTitle>Pro Activated</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Button size="sm" className="w-full">
-                        Upgrade
-                      </Button>
+                      {!isSubscribedToPro ? (
+                        <Button size="sm" className="w-full">
+                          Upgrade
+                        </Button>
+                      ) : (
+                        <div>
+                          <p>
+                            {remainingDays} days remaining until your Pro
+                            subscription expires.
+                          </p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-                </Pricing>
+                ) : (
+                  <Pricing user={user}>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Upgrade to Pro</CardTitle>
+                        <CardDescription>
+                          Unlock all features and get unlimited access to our
+                          support team.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button size="sm" className="w-full">
+                          Upgrade
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Pricing>
+                )}
               </div>
             </SheetContent>
           </Sheet>

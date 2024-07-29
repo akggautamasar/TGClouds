@@ -22,7 +22,10 @@ export default async function Component() {
           </p>
         </div>
         <div className="w-full max-w-md">
-          <SignIn forceRedirectUrl="/connect-telegram" />
+          <SignIn
+            signUpForceRedirectUrl="/connect-telegram"
+            forceRedirectUrl="/connect-telegram"
+          />
         </div>
       </div>
     </section>
