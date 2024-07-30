@@ -5,151 +5,73 @@ import { getTgClient } from "@/lib/getTgClient";
 import fluidPlayer from "fluid-player";
 
 import {
-  blobCache,
   delelteItem,
+  downloadMedia,
+  downloadVideoThumbnail,
   formatBytes,
   getBannerURL,
-  getChannelEntity,
-  isDarkMode,
+  getMessage,
+  isDarkMode
 } from "@/lib/utils";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import FileContextMenu from "./fileContextMenu";
 
 import {
   Dispatch,
   SetStateAction,
-  Suspense,
   use,
   useEffect,
   useRef,
   useState,
 } from "react";
 
-import { Api } from "telegram";
-
-import { deleteFile } from "@/actions";
+import { deleteFile, shareFile } from "@/actions";
 import { SortByContext } from "@/lib/context";
 import { promiseToast } from "@/lib/notify";
-import Message, { FilesData, MessageMediaPhoto, User } from "@/lib/types";
+import Message, { FilesData, User } from "@/lib/types";
+import { Play, Share2 } from "lucide-react";
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from "./Icons/icons";
 import { FileModalView } from "./fileModalView";
 import Upload from "./uploadWrapper";
+
+type MediaSize = "large" | "small";
+type MediaCategory = "video" | "photo" | "document";
+
+
 import Swal from "sweetalert2";
 
-const downloadMedia = async function (
-  user: User,
-  message_id: number | string,
-  setProgress: Dispatch<SetStateAction<number>>,
-  size: "large" | "small",
-  setURL: Dispatch<SetStateAction<string | null>>,
-  category: string
-): Promise<Blob | null> {
-  const cacheKey = `${user?.channelId}-${message_id}`;
-  if (blobCache.has(cacheKey)) {
-    // return blobCache.get(cacheKey)!;
-  }
+export function showSharableURL(url: string) {
+  Swal.fire({
+    title: "Your Sharable Link",
+    html: `
+      <div>
+        <input id="sharable-url" class="swal2-input" value="${url}" readonly>
+        <button id="copy-button" class="swal2-confirm swal2-styled" style="margin-top: 10px;">Copy Link</button>
+      </div>
+    `,
+    showConfirmButton: false,
+    didOpen: () => {
+      const copyButton = document.getElementById("copy-button");
+      const sharableUrlInput = document.getElementById(
+        "sharable-url"
+      ) as HTMLInputElement;
 
-  const client = getTgClient(user?.telegramSession!);
-
-  try {
-    if (!client.connected) await client?.connect();
-
-    const message = (await client.getMessages(
-      getChannelEntity(user?.channelId!, user?.accessHash!),
-      {
-        ids: [Number(message_id)],
-      }
-    )) as unknown as Message[];
-
-    const media = message[0].media as Message["media"] | MessageMediaPhoto;
-
-    if (category == "video") {
-      const mediaSource = new MediaSource();
-      let sourceBuffer: SourceBuffer;
-      const url = URL.createObjectURL(mediaSource);
-      setURL(url);
-
-      mediaSource.onsourceopen = async () => {
-        const mimeCodec = 'video/mp4; codecs="avc1.64001F"';
-
-        sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
-
-        const buffers: Buffer[] = [];
-
-        for await (const buffer of client.iterDownload({
-          file: media as unknown as Api.TypeMessageMedia,
-          requestSize: (1024 * 1024) / 1,
-        })) {
-          buffers.push(buffer);
-
-          const blob = new Blob(buffers);
-
-          setURL(URL.createObjectURL(blob));
-
-          // sourceBuffer.appendBuffer(buffer);
-
-          await new Promise((resolve) => {
-            sourceBuffer.addEventListener("updateend", resolve, {
-              once: true,
-            });
-          });
-        }
-        sourceBuffer.addEventListener("updateend", () => {
-          if (!sourceBuffer.updating && mediaSource.readyState === "open") {
-            mediaSource.endOfStream();
-          }
+      copyButton?.addEventListener("click", () => {
+        sharableUrlInput.select();
+        document.execCommand("copy");
+        Swal.fire({
+          icon: "success",
+          title: "Copied!",
+          showConfirmButton: false,
+          timer: 1500,
         });
-      };
+      });
+    },
+  });
+}
 
-      return null;
-    }
-    if (media) {
-      if (size == "small") {
-        const buffer = await client.downloadMedia(
-          media as unknown as Api.TypeMessageMedia,
-          {
-            progressCallback: (progress, total) => {
-              const percent = (Number(progress) / Number(total)) * 100;
-              setProgress(Number(percent?.toFixed(2)));
-            },
-            thumb: 0,
-          }
-        );
 
-        const blob = new Blob([buffer as unknown as Buffer]);
-        blobCache.set(cacheKey, blob);
-
-        setURL(URL.createObjectURL(blob));
-
-        return blob;
-      }
-      const buffer = await client.downloadMedia(
-        media as unknown as Api.TypeMessageMedia,
-        {
-          progressCallback: (progress, total) => {
-            const percent = (Number(progress) / Number(total)) * 100;
-            setProgress(Number(percent?.toFixed(2)));
-          },
-        }
-      );
-
-      const blob = new Blob([buffer as unknown as Buffer]);
-
-      blobCache.set(cacheKey, blob);
-
-      setURL(URL.createObjectURL(blob));
-
-      return blob;
-    }
-  } catch (err) {
-    console.log(err);
-  } finally {
-    await client.disconnect();
-  }
-
-  return null;
-};
 
 function Files({
   user,
@@ -194,12 +116,7 @@ function Files({
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {sortedFiles?.map((file, index) => (
-        <EachFile
-          key={file.id}
-          setProgress={setProgress}
-          file={file}
-          user={user}
-        />
+        <EachFile key={file.id} file={file} user={user} />
       ))}
     </div>
   );
@@ -207,33 +124,44 @@ function Files({
 
 export default Files;
 
-function EachFile({
-  file,
-  setProgress,
-  user,
-}: {
-  file: FilesData[number];
-  user: User;
-  setProgress: Dispatch<SetStateAction<number>>;
-}) {
+function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
   const client = getTgClient(user?.telegramSession as string);
   const [url, setURL] = useState<string | null>(null);
-  const searchParams = useSearchParams();
+  const [thumbNailURL, setThumbnailURL] = useState("/placeholder.svg");
 
   const downlaodFile = async (size: "large" | "small", category: string) => {
-    const blob = await downloadMedia(
-      user,
-      file?.fileTelegramId,
-      setProgress,
+    await downloadMedia({
+      user: user as NonNullable<User>,
+      messageId: file?.fileTelegramId,
       size,
       setURL,
-      file.category
-    );
+      category: file.category as MediaCategory,
+    });
   };
 
   const router = useRouter();
 
   useEffect(() => {
+    file.category == "video"
+      ? (async () => {
+          const client = getTgClient(user?.telegramSession!);
+          const media = (await getMessage({
+            client,
+            messageId: file.fileTelegramId,
+            user: user as NonNullable<User>,
+          })) as Message["media"];
+          const buffer = await downloadVideoThumbnail(user, client, media);
+          if (buffer) {
+            const blob = new Blob([buffer]);
+            const url = URL.createObjectURL(blob);
+            setThumbnailURL(url);
+            return;
+          }
+          const url = getBannerURL("No Thumbnail Available", isDarkMode());
+          setThumbnailURL(url);
+        })()
+      : null;
+
     downlaodFile("small", file.category);
 
     requestIdleCallback((e) => {
@@ -285,6 +213,17 @@ function EachFile({
       className:
         "flex items-center text-red-500 gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-red-600",
     },
+    {
+      actionName: "share",
+      onClick: async () => {
+        const result = await shareFile({ fileID: file.fileTelegramId });
+        const url = `${location.host}/share/${result?.[0].id}`;
+        showSharableURL(url);
+      },
+      Icon: Share2 as typeof Trash2Icon,
+      className:
+        "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ",
+    },
   ];
 
   const bannerURL =
@@ -326,10 +265,15 @@ function EachFile({
                 />
               )}
             >
-              <ImageRender
-                fileName={file.fileName}
-                url={"https://via.placeholder.com/299*199"}
-              />
+              <div className="w-full h-full relative">
+                <ImageRender fileName={file.fileName} url={thumbNailURL} />
+                <div className="absolute top-[45%] left-[45%] transform translate-x-[-50%] translate-y-[-50%]">
+                  <Play
+                    className="text-black bg-white p-2 rounded-full
+                   h-14 w-14"
+                  />
+                </div>
+              </div>
             </FileModalView>
           </>
         ) : null}
@@ -479,50 +423,3 @@ function ImagePreviewModal({
     </div>
   );
 }
-
-// useEffect(() => {
-//   const fetchMedia = async () => {
-//     await client.connect();
-
-//     const message = (await client.getMessages(
-//       getChannelEntity(user?.channelId!, user?.accessHash!),
-//       {
-//         ids: [Number(file.fileTelegramId)],
-//       }
-//     )) as unknown as Message[];
-//     const media = message[0].media;
-
-//     if (!media) {
-//       console.log("No media found in the message");
-//       return;
-//     }
-
-//     setURL(url);
-
-//     mediaSource.addEventListener("sourceopen", async () => {
-//       const sourceBuffer = mediaSource.addSourceBuffer(
-//         'video/mp4; codecs="avc1.42E01E, mp4a.40.2"'
-//       );
-
-//       for await (const chunk of client.iterDownload({
-//         file: media as unknown as Api.TypeMessageMedia,
-//         requestSize: (1024 * 1024) / 2, // 512 KB chunks
-//       })) {
-//         confirm("comming");
-
-//         sourceBuffer.appendBuffer(chunk);
-//         await new Promise((resolve) => {
-//           sourceBuffer.addEventListener("updateend", resolve, {
-//             once: true,
-//           });
-//         });
-//       }
-
-//
-//     });
-
-//     await client.disconnect();
-//   };
-
-//   fetchMedia();
-// }, [user?.channelId, file.fileTelegramId]);

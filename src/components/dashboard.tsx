@@ -19,14 +19,15 @@ import {
   FileTextIcon,
   ImageIcon,
   Music2Icon,
-  VideoIcon
+  VideoIcon,
 } from "./Icons/icons";
 import Paginate from "./pagination";
+import Pricing from "./pricing";
 import SearchItems from "./searchItems";
 import SortBy from "./SortBy";
 import Upload from "./uploadWrapper";
 
-export function Dashboard({
+export async function Dashboard({
   children,
   user,
   total,
@@ -35,6 +36,22 @@ export function Dashboard({
   user: User;
   total: number;
 }) {
+  const calculateRemainingDays = (subscriptionDate: string) => {
+    const currentDate = new Date();
+    const expirationDate = new Date(subscriptionDate);
+    const differenceInTime = expirationDate.getTime() - currentDate.getTime();
+    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+    return differenceInDays;
+  };
+
+  const isSubscribedToPro = user?.isSubscribedToPro;
+  const subscriptionDate = user?.subscriptionDate;
+
+  let remainingDays = 0;
+  if (isSubscribedToPro && subscriptionDate) {
+    remainingDays = calculateRemainingDays(subscriptionDate);
+  }
+
   return (
     <div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden max-h-svh  sticky top-0 overflow-y-hidden border-r bg-muted/40 md:block">
@@ -111,20 +128,44 @@ export function Dashboard({
           </div>
 
           <div className="mt-auto p-2">
-            <Card x-chunk="dashboard-02-chunk-0">
-              <CardHeader className="p-2 pt-0 md:p-4">
-                <CardTitle>Upgrade to Pro</CardTitle>
-                <CardDescription>
-                  Unlock all features and get unlimited access to our support
-                  team.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                <Button size="sm" className="w-full">
-                  Upgrade
-                </Button>
-              </CardContent>
-            </Card>
+            {user?.isSubscribedToPro ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pro Activated</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!isSubscribedToPro ? (
+                    <Button size="sm" className="w-full">
+                      Upgrade
+                    </Button>
+                  ) : (
+                    <div>
+                      <p>
+                        {remainingDays} days remaining until your Pro
+                        subscription expires.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Pricing user={user}>
+                <Card x-chunk="dashboard-02-chunk-0">
+                  <CardHeader className="p-2 pt-0 md:p-4">
+                    <CardTitle>Upgrade to Pro</CardTitle>
+                    <CardDescription>
+                      Unlock all features and get unlimited access to our
+                      support team.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+                    <Button size="sm" className="w-full">
+                      Upgrade
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Pricing>
+            )}
           </div>
         </div>
       </div>
@@ -210,20 +251,44 @@ export function Dashboard({
               </div>
 
               <div className="mt-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Upgrade to Pro</CardTitle>
-                    <CardDescription>
-                      Unlock all features and get unlimited access to our
-                      support team.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button size="sm" className="w-full">
-                      Upgrade
-                    </Button>
-                  </CardContent>
-                </Card>
+                {user?.isSubscribedToPro ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Pro Activated</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {!isSubscribedToPro ? (
+                        <Button size="sm" className="w-full">
+                          Upgrade
+                        </Button>
+                      ) : (
+                        <div>
+                          <p>
+                            {remainingDays} days remaining until your Pro
+                            subscription expires.
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Pricing user={user}>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Upgrade to Pro</CardTitle>
+                        <CardDescription>
+                          Unlock all features and get unlimited access to our
+                          support team.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button size="sm" className="w-full">
+                          Upgrade
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Pricing>
+                )}
               </div>
             </SheetContent>
           </Sheet>

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { UploadIcon } from "./Icons/icons";
 import { UploadFiles } from "./upload-files";
 import { User } from "@/lib/types";
+import TGCloudPricing from "./farmui/TGCloudPricing";
 
 export default function DrawerDialogDemo({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +30,11 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
         </DialogTrigger>
         <DialogContent className="w-[700px]">
           <DialogTitle className="sr-only">upload file</DialogTitle>
-          <UploadFiles setOpen={setOpen} user={user} />
+          {user?.isSubscribedToPro ? (
+            <UploadFiles setOpen={setOpen} user={user} />
+          ) : (
+            <TGCloudPricing />
+          )}
         </DialogContent>
       </Dialog>
     );
@@ -47,7 +52,11 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
         </DialogTrigger>
       </DrawerTrigger>
       <DrawerContent className="h-4/5">
-        <UploadFiles setOpen={setOpen} user={user} />
+        {user?.isSubscribedToPro ? (
+          <UploadFiles setOpen={setOpen} user={user} />
+        ) : (
+          <TGCloudPricing />
+        )}
       </DrawerContent>
     </Drawer>
   );

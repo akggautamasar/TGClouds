@@ -4,9 +4,21 @@ import { currentUser } from "@clerk/nextjs/server";
 import { and, asc, count, desc, eq, ilike } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { userFiles, usersTable } from "./db/schema";
+import {
+  paymentsTable,
+  userFiles,
+  usersTable,
+  sharedFilesTable,
+} from "./db/schema";
 import { revalidatePath } from "next/cache";
-import { User } from "./lib/types";
+import { ChapaInitializePaymentRequestBody, User } from "./lib/types";
+import crypto from "node:crypto";
+import { PLANS } from "@/components/farmui/TGCloudPricing";
+
+import { Resend } from "resend";
+import Email from "@/components/email";
+import React from "react";
+import { env } from "./env";
 
 export async function saveTelegramCredentials({
   accessHash,
@@ -38,6 +50,7 @@ export async function saveTelegramCredentials({
 
     if (!existinguser) {
       const name = user.fullName ?? `${user.firstName} ${user.lastName}`;
+      const subscriptionDate = addDays(new Date(), 7).toISOString();
       const data = await db
         .insert(usersTable)
         .values({
@@ -48,6 +61,8 @@ export async function saveTelegramCredentials({
           accessHash: accessHash,
           channelId: channelId,
           channelTitle: channelTitle,
+          isSubscribedToPro: true,
+          subscriptionDate,
         })
         .returning();
       return user.id;
@@ -304,7 +319,7 @@ export async function uploadFile(file: {
         url: file.url,
         date: new Date().toDateString(),
         fileTelegramId: String(file.fileTelegramId),
-        category:file?.mimeType?.split('/')[0]
+        category: file?.mimeType?.split("/")[0],
       })
       .returning();
     revalidatePath("/files");
@@ -386,3 +401,242 @@ export const updateHasPublicChannelStatus = async (isPublic: boolean) => {
   }
   throw new Error("There was an error while updating status");
 };
+
+function addDays(date: Date, days: number): Date {
+  const newDate = new Date(date);
+  newDate.setDate(newDate.getDate() + days);
+  return newDate;
+}
+
+type PeymentResult = Awaited<
+  ReturnType<typeof db.query.paymentsTable.findFirst>
+>;
+
+type UserPaymentSubscriptionResult =
+  | {
+      isDone: true;
+      data: PeymentResult;
+      status: "success";
+    }
+  | {
+      isDone: false;
+      status: "failed";
+      message: string;
+      data?: PeymentResult;
+    };
+
+export async function subscribeToPro({
+  tx_ref,
+}: {
+  tx_ref: string;
+}): Promise<UserPaymentSubscriptionResult> {
+  try {
+    const otherSubscriptionWithThisTxRef =
+      await db.query.paymentsTable.findFirst({
+        where(fields, { eq, and }) {
+          return eq(fields.tx_ref, tx_ref);
+        },
+      });
+
+    if (otherSubscriptionWithThisTxRef?.isPaymentDONE)
+      return {
+        isDone: false,
+        data: otherSubscriptionWithThisTxRef,
+        status: "failed",
+        message: "payment already made before",
+      };
+
+    const data = await verifyPayment({ tx_ref });
+
+    if (data.status !== "success") throw new Error(data.message);
+
+    const user = await getUser();
+    if (!user) throw new Error("Failed to get user");
+
+    let currentExpirationDate = user.subscriptionDate
+      ? new Date(user.subscriptionDate)
+      : new Date();
+    if (currentExpirationDate < new Date()) {
+      currentExpirationDate = new Date();
+    }
+
+    const plan = otherSubscriptionWithThisTxRef?.plan;
+
+    if (!plan)
+      throw new Error(
+        "FAILED GOT GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER"
+      );
+
+    const newExpirationDate = addDays(
+      currentExpirationDate,
+      plan == "ANNUAL" ? 365 : 30
+    ).toISOString();
+
+    const result = await db
+      .update(usersTable)
+      .set({
+        isSubscribedToPro: true,
+        subscriptionDate: newExpirationDate,
+        plan: plan,
+      })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+
+    await db
+      .update(paymentsTable)
+      .set({
+        isPaymentDONE: true,
+      })
+      .where(eq(paymentsTable.tx_ref, tx_ref))
+      .returning()
+      .execute();
+
+    sendEmail(user, newExpirationDate);
+
+    return {
+      isDone: true,
+      data: otherSubscriptionWithThisTxRef,
+      status: "success",
+    };
+  } catch (err) {
+    return {
+      isDone: false,
+      message: "there was an error while proccessin payment",
+      status: "failed",
+    };
+  }
+}
+
+async function sendEmail(user: User, expirationDate: string) {
+  const resend = new Resend(env.RESEND_API_KEY);
+
+  await resend.emails.send({
+    from: "onboarding@resend.dev",
+    to: user?.email!,
+    subject: "Pro Activated",
+    react: React.createElement(Email, {
+      expirationDate,
+      userName: user?.name!,
+    }),
+  });
+}
+
+export async function initailizePayment({
+  amount,
+  currency,
+  plan,
+}: {
+  amount: string;
+  currency: string;
+  plan: PLANS;
+}) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("user needs to be loggedin");
+
+    const tx_ref = crypto.randomUUID();
+
+    const body: ChapaInitializePaymentRequestBody = {
+      amount,
+      currency,
+      email: user.email,
+      first_name: user.name,
+      tx_ref,
+      return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/subscribe/success/${tx_ref}`,
+    };
+
+    await db
+      .insert(paymentsTable)
+      .values({
+        id: crypto.randomUUID(),
+        amount: amount,
+        currency: currency,
+        userId: user.id,
+        tx_ref,
+        isPaymentDONE: false,
+        plan: plan,
+      })
+      .returning()
+      .execute();
+
+    const resonse = await fetch(
+      "https://api.chapa.co/v1/transaction/initialize",
+      {
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${env.CHAPA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const data = (await resonse.json()) as {
+      message: string;
+      status: string;
+      data: {
+        checkout_url: string;
+      };
+    };
+    console.log(data);
+
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function verifyPayment({ tx_ref }: { tx_ref: string }) {
+  const response = await fetch(
+    `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
+    {
+      method: "get",
+      headers: {
+        Authorization: `Bearer ${env.CHAPA_API_KEY}`,
+      },
+    }
+  );
+  const result = (await response.json()) as {
+    message: string;
+    status: string;
+    data: ChapaInitializePaymentRequestBody;
+  };
+  return result;
+}
+
+export async function shareFile({ fileID }: { fileID: string }) {
+  try {
+    const user = await getUser();
+    if (!user) throw new Error("you need to be sined in to share ur files");
+    const newShare = await db
+      .insert(sharedFilesTable)
+      .values({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        fileId: fileID,
+      })
+      .returning()
+      .execute();
+    return newShare;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export async function getSharedFiles(id: string) {
+  try {
+    const result = await db
+      .select()
+      .from(sharedFilesTable)
+      .leftJoin(
+        usersTable,
+        and(
+          eq(usersTable.id, sharedFilesTable.userId),
+          eq(sharedFilesTable.id, id)
+        )
+      );
+    return result;
+  } catch (err) {
+    console.error(err);
+  }
+}

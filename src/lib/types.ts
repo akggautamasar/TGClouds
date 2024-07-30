@@ -156,3 +156,18 @@ interface PhotoSize {
   size?: number;
   sizes?: number[];
 }
+
+export type ChapaInitializePaymentRequestBody = {
+  amount: string;
+  currency: string;
+  email: string;
+  first_name: string;
+  last_name?: string;
+  tx_ref: `${string}-${string}-${string}-${string}-${string}`;
+  return_url: string;
+  customization?: {
+    title?: string;
+    description?: string;
+    logo?: string;
+  };
+};
