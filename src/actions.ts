@@ -57,6 +57,7 @@ export async function saveTelegramCredentials({
           email,
           name,
           id: user.id,
+          imageUrl: user.imageUrl,
           telegramSession: session,
           accessHash: accessHash,
           channelId: channelId,
@@ -167,8 +168,8 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
         .where(
           and(
             ilike(userFiles.fileName, `%${searchItem}%`),
-            eq(userFiles.userId, user.id)
-          )
+            eq(userFiles.userId, user.id),
+          ),
         )
         .orderBy(asc(userFiles.id))
         .limit(8)
@@ -182,8 +183,8 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
           .where(
             and(
               ilike(userFiles.fileName, `%${searchItem}%`),
-              eq(userFiles.userId, user.id)
-            )
+              eq(userFiles.userId, user.id),
+            ),
           )
           .execute()
       )[0].count;
@@ -240,8 +241,8 @@ export async function getFilesFromSpecificType({
           and(
             ilike(userFiles.fileName, `%${searchItem}%`),
             eq(userFiles.category, fileType),
-            eq(userFiles.userId, user.id)
-          )
+            eq(userFiles.userId, user.id),
+          ),
         )
         .orderBy(asc(userFiles.id))
         .limit(8)
@@ -256,8 +257,8 @@ export async function getFilesFromSpecificType({
             and(
               ilike(userFiles.fileName, `%${searchItem}%`),
               eq(userFiles.category, fileType),
-              eq(userFiles.userId, user.id)
-            )
+              eq(userFiles.userId, user.id),
+            ),
           )
           .execute()
       )[0].count;
@@ -269,7 +270,7 @@ export async function getFilesFromSpecificType({
       .select()
       .from(userFiles)
       .where(
-        and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id))
+        and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id)),
       )
       .orderBy(asc(userFiles.id))
       .limit(8)
@@ -281,7 +282,7 @@ export async function getFilesFromSpecificType({
         .select({ count: count() })
         .from(userFiles)
         .where(
-          and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id))
+          and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id)),
         )
         .execute()
     )[0].count;
@@ -340,7 +341,7 @@ export async function deleteFile(fileId: number) {
     const deletedFile = await db
       .delete(userFiles)
       .where(
-        and(eq(userFiles.userId, user.id), eq(userFiles.id, Number(fileId)))
+        and(eq(userFiles.userId, user.id), eq(userFiles.id, Number(fileId))),
       )
       .returning();
     return deletedFile;
@@ -464,12 +465,12 @@ export async function subscribeToPro({
 
     if (!plan)
       throw new Error(
-        "FAILED GOT GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER"
+        "FAILED GOT GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER",
       );
 
     const newExpirationDate = addDays(
       currentExpirationDate,
-      plan == "ANNUAL" ? 365 : 30
+      plan == "ANNUAL" ? 365 : 30,
     ).toISOString();
 
     const result = await db
@@ -568,7 +569,7 @@ export async function initailizePayment({
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-      }
+      },
     );
 
     const data = (await resonse.json()) as {
@@ -594,7 +595,7 @@ async function verifyPayment({ tx_ref }: { tx_ref: string }) {
       headers: {
         Authorization: `Bearer ${env.CHAPA_API_KEY}`,
       },
-    }
+    },
   );
   const result = (await response.json()) as {
     message: string;
@@ -632,9 +633,18 @@ export async function getSharedFiles(id: string) {
         usersTable,
         and(
           eq(usersTable.id, sharedFilesTable.userId),
-          eq(sharedFilesTable.id, id)
-        )
+          eq(sharedFilesTable.id, id),
+        ),
+      )
+      .where(
+        and(
+          eq(usersTable.id, sharedFilesTable.userId),
+          eq(sharedFilesTable.id, id),
+        ),
       );
+
+    console.log(result);
+
     return result;
   } catch (err) {
     console.error(err);

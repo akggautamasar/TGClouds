@@ -17,6 +17,7 @@ export const usersTable = pgTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
+    imageUrl: text("imageUrl"),
     telegramSession: text("telegramSession"),
     channelUsername: text("channelName").unique(),
     channelId: text("channelId").unique(),
@@ -29,13 +30,13 @@ export const usersTable = pgTable(
   },
   (table) => ({
     emailIdx: uniqueIndex("email_idx").on(table.email),
-  })
+  }),
 );
 
 export const sharedFilesTable = pgTable(
   "sharedFiles",
   {
-    id: text("id").primaryKey(),
+    id: text("id").primaryKey().unique(),
     fileId: text("fileId"),
     userId: text("userId").notNull(),
   },
@@ -46,7 +47,7 @@ export const sharedFilesTable = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("cascade"),
-  })
+  }),
 );
 
 export const paymentsTable = pgTable(
@@ -71,7 +72,7 @@ export const paymentsTable = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("cascade"),
-  })
+  }),
 );
 
 export const userFiles = pgTable(
@@ -84,7 +85,7 @@ export const userFiles = pgTable(
     size: bigint("size", { mode: "bigint" }).notNull(),
     url: text("fileUrl").notNull(),
     date: date("date", { mode: "string" }).$defaultFn(() =>
-      new Date().toDateString()
+      new Date().toDateString(),
     ),
     fileTelegramId: text("fileTelegramId"),
     category: text("fileCategory"),
@@ -96,5 +97,5 @@ export const userFiles = pgTable(
     })
       .onDelete("cascade")
       .onUpdate("cascade"),
-  })
+  }),
 );

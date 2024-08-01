@@ -12,16 +12,15 @@ import { ChannelDetails, User } from "./types";
 import Message, { MessageMediaPhoto } from "@/lib/types";
 
 type MediaSize = "large" | "small";
-type MediaCategory = "video" | "photo" | "document";
+export type MediaCategory = "video" | "image" | "document";
 
 interface DownloadMediaOptions {
   user: NonNullable<User>;
   messageId: number | string;
   size: MediaSize;
-  setURL: Dispatch<SetStateAction<string | null>>;
+  setURL: Dispatch<SetStateAction<string>>;
   category: MediaCategory;
 }
-
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -52,7 +51,7 @@ export async function uploadFiles(
       | undefined
     >
   >,
-  client: TelegramClient | undefined
+  client: TelegramClient | undefined,
 ) {
   if (!client) {
     throw new Error("Failed to initialize Telegram client");
@@ -79,7 +78,7 @@ export async function uploadFiles(
         {
           file: toUpload,
           forceDocument: false,
-        }
+        },
       );
 
       const uploadToDbResult = await uploadFile({
@@ -111,7 +110,7 @@ export async function uploadFiles(
 export async function delelteItem(
   user: User,
   postId: number | string,
-  client: TelegramClient | undefined
+  client: TelegramClient | undefined,
 ) {
   if (!client) return alert("You are not connected to Telegram");
 
@@ -124,7 +123,7 @@ export async function delelteItem(
       [Number(postId)],
       {
         revoke: true,
-      }
+      },
     );
     return deleteMediaStatus;
   } catch (err) {
@@ -145,7 +144,7 @@ export async function delelteItem(
 
 export async function getChannelDetails(
   client: TelegramClient,
-  username: string
+  username: string,
 ) {
   if (!client) {
     alert("Telegram client is not initialized");
@@ -157,7 +156,7 @@ export async function getChannelDetails(
   }
 
   const entity = (await client.getEntity(
-    username
+    username,
   )) as unknown as ChannelDetails & {
     id: { value: string };
     broadcast: boolean;
@@ -177,7 +176,7 @@ export async function getChannelDetails(
 }
 
 export function useCreateQueryString(
-  searchParams: ReadonlyURLSearchParams
+  searchParams: ReadonlyURLSearchParams,
 ): (name: string, value: string) => string {
   return (name: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -200,14 +199,13 @@ export const blobCache = new TTLCache<string, Blob>({
   ttl: 1000 * 60 * 60 * 24 * 7, // 1 week
 });
 
-
 export function getBannerURL(filename: string, isDarkMode: boolean) {
   const width = 600;
   const height = 500;
-  const lightBackgroundColor = "ffffff"; 
-  const lightTextColor = "000000"; 
+  const lightBackgroundColor = "ffffff";
+  const lightTextColor = "000000";
   const darkBackgroundColor = "000000";
-  const darkTextColor = "ffffff"; 
+  const darkTextColor = "ffffff";
 
   const backgroundColor = isDarkMode
     ? darkBackgroundColor
@@ -225,8 +223,6 @@ export function isDarkMode() {
   );
 }
 
-
-
 export const getMessage = async ({
   messageId,
   client,
@@ -239,7 +235,7 @@ export const getMessage = async ({
     getChannelEntity(user?.channelId!, user?.accessHash!),
     {
       ids: [Number(messageId)],
-    }
+    },
   )) as unknown as Message[];
 
   const media = messages?.[0]?.media as Message["media"] | MessageMediaPhoto;
@@ -270,7 +266,7 @@ export const downloadMedia = async ({
       return await handleVideoDownload(
         client,
         media as Message["media"],
-        setURL
+        setURL,
       );
     }
 
@@ -289,7 +285,7 @@ export const downloadMedia = async ({
 export const handleVideoDownload = async (
   client: TelegramClient,
   media: Message["media"],
-  setURL: Dispatch<SetStateAction<string | null>>
+  setURL: Dispatch<SetStateAction<string>>,
 ): Promise<null> => {
   const mediaSource = new MediaSource();
   const url = URL.createObjectURL(mediaSource);
@@ -328,7 +324,7 @@ export const handleMediaDownload = async (
   media: Message["media"] | MessageMediaPhoto,
   size: MediaSize,
   cacheKey: string,
-  setURL: Dispatch<SetStateAction<string | null>>
+  setURL: Dispatch<SetStateAction<string | null>>,
 ): Promise<Blob | null> => {
   const buffer = await client.downloadMedia(
     media as unknown as Api.TypeMessageMedia,
@@ -338,7 +334,7 @@ export const handleMediaDownload = async (
         console.log(percent);
       },
       thumb: size === "small" ? 0 : undefined,
-    }
+    },
   );
   const blob = new Blob([buffer as unknown as Buffer]);
   blobCache.set(cacheKey, blob);
@@ -350,7 +346,7 @@ export const handleMediaDownload = async (
 export const downloadVideoThumbnail = async (
   user: User,
   client: TelegramClient,
-  media: Message["media"]
+  media: Message["media"],
 ) => {
   if (!client.connected) await client.connect();
   const thumbnail = media.document.thumbs;
@@ -361,7 +357,7 @@ export const downloadVideoThumbnail = async (
     media as unknown as Api.TypeMessageMedia,
     {
       thumb: 1,
-    }
+    },
   );
 
   if (!buffer) return;

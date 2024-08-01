@@ -1,10 +1,10 @@
-import Link from "next/link"
-import { SVGProps } from "react"
+import Link from "next/link";
+import { SVGProps } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 
 export default async function Header() {
-  const user = await currentUser();
+  const user = null;
   return (
     <header className="bg-primary text-primary-foreground px-4 lg:px-6 h-14 flex items-center">
       <div className="max-w-6xl mx-auto w-full flex items-center">
@@ -32,7 +32,6 @@ export default async function Header() {
   );
 }
 
-
 function CloudIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -49,5 +48,5 @@ function CloudIcon(props: SVGProps<SVGSVGElement>) {
     >
       <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
     </svg>
-  )
+  );
 }

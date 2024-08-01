@@ -13,6 +13,11 @@ const nextConfig = {
         hostname: "img.freepik.com",
         port: "",
       },
+      {
+        hostname: "api.dicebear.com",
+        protocol: "https",
+        port: "",
+      },
     ],
   },
   compiler: {

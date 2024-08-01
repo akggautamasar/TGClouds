@@ -11,7 +11,8 @@ import {
   formatBytes,
   getBannerURL,
   getMessage,
-  isDarkMode
+  isDarkMode,
+  MediaCategory,
 } from "@/lib/utils";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -36,8 +37,6 @@ import { FileModalView } from "./fileModalView";
 import Upload from "./uploadWrapper";
 
 type MediaSize = "large" | "small";
-type MediaCategory = "video" | "photo" | "document";
-
 
 import Swal from "sweetalert2";
 
@@ -54,7 +53,7 @@ export function showSharableURL(url: string) {
     didOpen: () => {
       const copyButton = document.getElementById("copy-button");
       const sharableUrlInput = document.getElementById(
-        "sharable-url"
+        "sharable-url",
       ) as HTMLInputElement;
 
       copyButton?.addEventListener("click", () => {
@@ -70,8 +69,6 @@ export function showSharableURL(url: string) {
     },
   });
 }
-
-
 
 function Files({
   user,
@@ -126,7 +123,7 @@ export default Files;
 
 function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
   const client = getTgClient(user?.telegramSession as string);
-  const [url, setURL] = useState<string | null>(null);
+  const [url, setURL] = useState<string>("/placeholder.svg");
   const [thumbNailURL, setThumbnailURL] = useState("/placeholder.svg");
 
   const downlaodFile = async (size: "large" | "small", category: string) => {

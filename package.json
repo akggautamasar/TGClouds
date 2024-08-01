@@ -11,7 +11,7 @@
     "db:generate": "dotenv -e .env.development -- drizzle-kit generate",
     "db:migrate": "dotenv -e .env.development  -- drizzle-kit migrate",
     "migrate": "pnpm db:generate && pnpm db:migrate",
-    "db:push": "drizzle-kit push",
+    "db:push": "dotenv -e .env.development -- drizzle-kit push",
     "nodestart": "NODE_ENV=production tsx server.js"
   },
   "dependencies": {

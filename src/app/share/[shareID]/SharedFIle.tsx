@@ -1,40 +1,66 @@
 "use client";
-
+import Image from "next/image";
 import { User } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { downloadMedia } from "@/lib/utils";
 
-function SharedFIle({ user, fileID }: { user: User; fileID: string }) {
+function SharedFile({ user, fileID }: { user: User; fileID: string }) {
   const [url, setURL] = useState("");
 
   useEffect(() => {
+    if (!user) {
+      throw new Error("Failed to get user");
+    }
+
+    if (!fileID) {
+      throw new Error("Failed to get file ID");
+    }
+
     downloadMedia({
-      //@ts-ignore
       user,
       messageId: fileID,
-      //@ts-ignore
-
       category: "image",
-      //@ts-ignore
-
       size: "large",
-      //@ts-ignore
-
-      setURL: "setURL",
+      setURL,
     });
 
     return () => {
       URL.revokeObjectURL(url as string);
     };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user, fileID, url]);
 
   return (
-    <div>
-      <img src={url} alt="fafjalj" />
+    <div className="w-full my-3 min-h-[100dvh] md:w-[600px] lg:w-[900px] mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="flex items-center p-4 w-full">
+        <img
+          width={300}
+          height={300}
+          src={
+            user?.imageUrl ??
+            `https://api.dicebear.com/9.x/initials/svg?seed=${user?.name}`
+          }
+          alt={user?.name ?? ""}
+          className="w-12 h-12 rounded-full"
+        />
+        <div className="ml-4">
+          <p className="text-lg text-gray-600 font-semibold">
+            Shared by {user?.name}
+          </p>
+        </div>
+      </div>
+      <div className="p-4">
+        {url && (
+          <Image
+            width={1000}
+            height={1000}
+            src={url}
+            alt="Shared file"
+            className="w-full h-auto rounded-lg"
+          />
+        )}
+      </div>
     </div>
   );
 }
 
-export default SharedFIle;
+export default SharedFile;

@@ -6,13 +6,22 @@ export default async function Component({
 }: {
   params: { shareID: string };
 }) {
-  const sharedFIle = await getSharedFiles(shareID);
+  const file = await getSharedFiles(shareID);
+
+  const fileID = file?.[0].sharedFiles.fileId;
+  const user = file?.[0].usersTable;
+
+  if (!fileID) {
+    return <div>fialed to get file id that you are looking for</div>;
+  }
+
+  if (!user) {
+    return <div>failed to get user that shard the file</div>;
+  }
+
   return (
     <div>
-      <SharedFIle
-        fileID={sharedFIle?.[0].sharedFiles.fileId}
-        user={sharedFIle[0].usersTable}
-      />
+      <SharedFIle fileID={fileID} user={user} />
     </div>
   );
 }
