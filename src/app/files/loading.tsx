@@ -1,8 +1,8 @@
-import { LoadingFiles } from "@/components/loading-files";
-import React from "react";
+import { LoadingFiles } from '@/components/loading-files';
+import React from 'react';
 
 function loading() {
-  return <LoadingFiles />;
+	return <LoadingFiles />;
 }
 
 export default loading;

@@ -1,31 +1,31 @@
-"use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React from "react";
+'use client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React from 'react';
 
 function CustomLInk({
-  children,
-  href,
-  ...props
+	children,
+	href,
+	...props
 }: {
-  children: React.ReactNode;
-  href: string;
+	children: React.ReactNode;
+	href: string;
 } & React.ComponentPropsWithoutRef<typeof Link>) {
-  const router = useRouter();
+	const router = useRouter();
 
-  return (
-    <Link
-      onMouseOver={(e) => {
-        if (!href.startsWith("/")) return;
-        router.prefetch(href);
-      }}
-      {...props}
-      href={href}
-      prefetch={false}
-    >
-      {children}
-    </Link>
-  );
+	return (
+		<Link
+			onMouseOver={(e) => {
+				if (!href.startsWith('/')) return;
+				router.prefetch(href);
+			}}
+			{...props}
+			href={href}
+			prefetch={false}
+		>
+			{children}
+		</Link>
+	);
 }
 
 export default CustomLInk;
