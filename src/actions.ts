@@ -572,7 +572,7 @@ async function verifyPayment({ tx_ref }: { tx_ref: string }) {
 export async function shareFile({ fileID }: { fileID: string }) {
 	try {
 		const user = await getUser();
-		if (!user) throw new Error('you need to be sined in to share ur files');
+		if (!user) throw new Error('you need to be singed in to share ur files');
 		const newShare = await db
 			.insert(sharedFilesTable)
 			.values({

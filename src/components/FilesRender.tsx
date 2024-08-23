@@ -3,6 +3,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getTgClient } from '@/lib/getTgClient';
 import fluidPlayer from 'fluid-player';
+import { env } from '@/env';
+import {
+	useQuery,
+	useMutation,
+	useQueryClient,
+	QueryClient,
+	QueryClientProvider
+} from '@tanstack/react-query';
 
 import {
 	delelteItem,
@@ -12,14 +20,14 @@ import {
 	getBannerURL,
 	getMessage,
 	isDarkMode,
-	MediaCategory
+	MediaCategory,
+	getChannelEntity
 } from '@/lib/utils';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import FileContextMenu from './fileContextMenu';
-import { TelegramClient } from 'telegram';
 
-import { Dispatch, SetStateAction, use, useEffect, useRef, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 
 import { deleteFile, shareFile } from '@/actions';
 import { SortByContext } from '@/lib/context';
@@ -30,9 +38,8 @@ import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
 
-type MediaSize = 'large' | 'small';
-
 import Swal from 'sweetalert2';
+import { TelegramClient, Api } from 'telegram';
 
 export function showSharableURL(url: string) {
 	Swal.fire({
@@ -70,7 +77,6 @@ export function showSharableURL(url: string) {
 function Files({ user, files }: { user: User; mimeType?: string; files: FilesData | undefined }) {
 	const { sortBy } = use(SortByContext)!;
 
-	const [progress, setProgress] = useState(0);
 	const sortedFiles = (() => {
 		if (!files || !files?.length) return [];
 		if (sortBy == 'name') return files.sort((a, b) => a.fileName.localeCompare(b.fileName));
@@ -98,26 +104,64 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 
 	return (
 		<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{sortedFiles?.map((file, index) => <EachFile key={file.id} file={file} user={user} />)}
+			{sortedFiles?.map((file, index) => (
+				<EachFile key={file.id} file={file} user={user} />
+			))}
 		</div>
 	);
 }
 
 export default Files;
 
+const addBotToChannel = async (client: TelegramClient, user: User) => {
+	if (!client.connected) await client.connect();
+	if (!user?.channelId || !user.accessHash) throw Error('Failed to create sharable url');
+
+	const adminRights = new Api.ChatAdminRights({
+		changeInfo: true,
+		postMessages: true,
+		editMessages: true,
+		deleteMessages: true,
+		banUsers: true,
+		inviteUsers: true,
+		pinMessages: true,
+		addAdmins: true,
+		manageCall: true,
+		anonymous: true,
+		manageTopics: true
+	});
+
+	const result = await client.invoke(
+		new Api.channels.EditAdmin({
+			channel: getChannelEntity(user?.channelId, user?.accessHash),
+			userId: env.NEXT_PUBLIC_BOT_USERNAME,
+			rank: 'admin',
+			adminRights
+		})
+	);
+};
+
 function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	const client = getTgClient(user?.telegramSession as string);
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
+	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);
 
 	const downlaodFile = async (size: 'large' | 'small', category: string) => {
-		await downloadMedia({
+		const result = await downloadMedia({
 			user: user as NonNullable<User>,
 			messageId: file?.fileTelegramId,
 			size,
 			setURL,
 			category: file.category as MediaCategory
 		});
+		if (
+			result &&
+			typeof result === 'object' &&
+			'fileExists' in result &&
+			result.fileExists === false
+		) {
+		}
 	};
 
 	const router = useRouter();
@@ -140,7 +184,7 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 					}
 					const url = getBannerURL('No Thumbnail Available', isDarkMode());
 					setThumbnailURL(url);
-				})()
+			  })()
 			: null;
 
 		downlaodFile('small', file.category);
@@ -194,9 +238,14 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 		{
 			actionName: 'share',
 			onClick: async () => {
-				const result = await shareFile({ fileID: file.fileTelegramId });
-				const url = `${location.host}/share/${result?.[0].id}`;
-				showSharableURL(url);
+				try {
+					await addBotToChannel(client, user);
+					const result = await shareFile({ fileID: file.fileTelegramId });
+					const url = `${location.host}/share/${result?.[0].id}`;
+					showSharableURL(url);
+				} catch (err) {
+					console.error(err);
+				}
 			},
 			Icon: Share2 as typeof Trash2Icon,
 			className:
@@ -270,6 +319,7 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 function ImageRender({ url, fileName }: { url: string; fileName: string }) {
 	return (
 		<Image
+			priority
 			src={url ?? '/placeholder.svg'}
 			alt={fileName}
 			width={299}
@@ -361,6 +411,7 @@ function ImagePreviewModal({
 			<div className="flex-1 overflow-y-auto">
 				<div className="relative aspect-video">
 					<Image
+						property
 						src={url}
 						alt={fileData.fileName}
 						width={1920}

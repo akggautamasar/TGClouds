@@ -28,6 +28,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { error } from 'console';
 import { User } from '@/lib/types';
+import toast from 'react-hot-toast';
 
 interface Chat {
 	id: string;
@@ -170,7 +171,7 @@ export default function Component({
 	user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
 }) {
 	const [isLoading, setIsLoading] = useState<boolean>();
-	const [session, setSession] = useState<string | null>(user?.telegramSession);
+	const session = user?.telegramSession;
 
 	const client = getTgClient(session ?? '');
 	const router = useRouter();
@@ -186,11 +187,18 @@ export default function Component({
 				await client.connect();
 			}
 
+			const tgUserSession = newSession ?? session;
+
+			if (!tgUserSession) {
+				toast.error('There was an error while connetion to telegram');
+				return;
+			}
+
 			const data = await createTelegramChannel()!;
 			if (data) {
 				const { accessHash, channelTitle, id } = data;
 				await saveTelegramCredentials({
-					session: newSession!,
+					session: tgUserSession,
 					accessHash,
 					channelId: id,
 					channelTitle
@@ -511,7 +519,7 @@ const UpdateUsernameForm = <T extends { channelTitle: string; channelId: string 
 					</p>
 				),
 				header: 'Telegram Channel Visiblity warning'
-			}
+		  }
 		: {
 				message: (
 					<p>
@@ -521,7 +529,7 @@ const UpdateUsernameForm = <T extends { channelTitle: string; channelId: string 
 					</p>
 				),
 				header: 'Your channel is private by default'
-			};
+		  };
 
 	return (
 		<div className="h-screen flex justify-center items-center bg-gray-100 p-4">

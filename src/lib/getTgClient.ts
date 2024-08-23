@@ -1,11 +1,6 @@
-import { StringSession } from 'telegram/sessions';
-import { TelegramClient } from 'telegram';
 import { env } from '@/env';
-import React from 'react';
-
-const stringSession = '';
-const BOT_USERNAME = 'TGCLoudShareFileBot';
-const BOT_TOKEN = '6995045431:AAGGAb8yc_22q2yPRzBLhS_TE0NEC-B64y4';
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
 
 export function getTgClient(telegramSession: string) {
 	const session = new StringSession(telegramSession);
@@ -31,7 +26,7 @@ export const getBotClient = async () => {
 
 	if (session) return client;
 	await client.start({
-		botAuthToken: BOT_TOKEN
+		botAuthToken: env.NEXT_PUBLIC_BOT_TOKEN
 	});
 	const botSession = client.session.save() as unknown as string;
 	sessionStorage.setItem('bot-session', botSession);

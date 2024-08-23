@@ -26,7 +26,6 @@ export default async function RootLayout({
 	return (
 		<html lang="en">
 			<body className={inter.className}>
-				<script></script>
 				<Providers>
 					<ClerkProvider
 						afterSignOutUrl={'/login'}
