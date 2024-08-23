@@ -3,6 +3,13 @@ import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
 import { LoadingItems } from '@/components/loading-files';
 import { Suspense } from 'react';
+import { Metadata } from 'next';
+
+export const generateMetadata = async (): Promise<Metadata> => {
+	return {
+		title: 'Files'
+	};
+};
 
 export default async function Home({ searchParams }: { searchParams: Record<string, string> }) {
 	const user = await useUserProtected();

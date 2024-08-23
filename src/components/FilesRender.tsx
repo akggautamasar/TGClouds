@@ -161,6 +161,7 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 			'fileExists' in result &&
 			result.fileExists === false
 		) {
+			setFileNotFoundInTelegram(true);
 		}
 	};
 
@@ -256,23 +257,32 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	const bannerURL =
 		file.category == 'application' ? getBannerURL(file.fileName, isDarkMode()) : null;
 
+	const fileNotFoundBannerURL = isFileNotFoundInTelegram
+		? getBannerURL('File Not Found In Telegram', isDarkMode())
+		: null;
+
 	return (
 		<FileContextMenu fileContextMenuActions={fileContextMenuActions}>
-			<Card className="group relative overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md">
+			<Card
+				className={`group relative overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md `}
+			>
 				{/* <Link target="_blank" href={file.url} prefetch={false}> */}
 				<span className="sr-only">View file</span>
 				{file.category == 'image' ? (
 					<FileModalView
 						id={file.id}
 						ItemThatWillShowOnModal={() => (
-							<ImagePreviewModal fileData={{ ...file, category: 'image' }} url={url!} />
+							<ImagePreviewModal
+								fileData={{ ...file, category: 'image' }}
+								url={fileNotFoundBannerURL ?? url!}
+							/>
 						)}
 					>
-						<ImageRender fileName={file.fileName} url={url!} />
+						<ImageRender fileName={file.fileName} url={fileNotFoundBannerURL ?? url!} />
 					</FileModalView>
 				) : null}
 				{file.category == 'application' ? (
-					<ImageRender fileName={file.fileName} url={bannerURL!} />
+					<ImageRender fileName={file.fileName} url={fileNotFoundBannerURL ?? bannerURL!} />
 				) : null}
 				{/* </Link> */}
 
@@ -411,7 +421,7 @@ function ImagePreviewModal({
 			<div className="flex-1 overflow-y-auto">
 				<div className="relative aspect-video">
 					<Image
-						property
+						property="1"
 						src={url}
 						alt={fileData.fileName}
 						width={1920}
