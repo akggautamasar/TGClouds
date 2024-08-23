@@ -352,9 +352,9 @@ export const useUserProtected = async () => {
 	if (hasNotDecidedToHavePrivateChannle || hasNotHaveNeccessaryDetails)
 		return redirect('/connect-telegram');
 
-	if (!user.channelUsername && (!user.channelId || !user.accessHash)) {
+	if (!user.channelUsername && (!user.channelId || !user.accessHash))
 		throw new Error('There was something wrong');
-	}
+	
 
 	return user as User;
 };

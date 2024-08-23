@@ -2,7 +2,6 @@
 
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import React, { Dispatch, SetStateAction, useState } from 'react';
-import { TelegramClient } from 'telegram';
 const Providers = ({ children }: { children: React.ReactNode }) => {
 	return (
 		<>

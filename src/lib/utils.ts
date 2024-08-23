@@ -141,14 +141,9 @@ export async function delelteItem(
 }
 
 export async function getChannelDetails(client: TelegramClient, username: string) {
-	if (!client) {
-		alert('Telegram client is not initialized');
-		throw new Error('Telegram client is not initialized');
-	}
+	if (!client) throw new Error('Telegram client is not initialized');
 
-	if (!client?.connected) {
-		await client.connect();
-	}
+	if (!client?.connected) await client.connect();
 
 	const entity = (await client.getEntity(username)) as unknown as ChannelDetails & {
 		id: { value: string };
@@ -246,7 +241,7 @@ export const downloadMedia = async ({
 	if (blobCache.has(cacheKey)) {
 		return blobCache.get(cacheKey)!;
 	}
-	const client = isShare ? getBotClient() : getTgClient(user?.telegramSession);
+	const client = isShare ? await getBotClient() : getTgClient(user?.telegramSession);
 	const media = await getMessage({ client, messageId, user });
 	try {
 		if (!client.connected) await client.connect();
