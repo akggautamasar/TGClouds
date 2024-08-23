@@ -503,6 +503,7 @@ export async function initailizePayment({
 }) {
 	try {
 		const user = await getUser();
+
 		if (!user) throw new Error('user needs to be loggedin');
 
 		const tx_ref = crypto.randomUUID();
@@ -530,7 +531,7 @@ export async function initailizePayment({
 			.returning()
 			.execute();
 
-		const resonse = await fetch('https://api.chapa.co/v1/transaction/initialize', {
+		const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
 			method: 'post',
 			headers: {
 				Authorization: `Bearer ${env.CHAPA_API_KEY}`,
@@ -539,17 +540,17 @@ export async function initailizePayment({
 			body: JSON.stringify(body)
 		});
 
-		const data = (await resonse.json()) as {
+		const data = (await response.json()) as {
 			message: string;
 			status: string;
 			data: {
 				checkout_url: string;
 			};
 		};
-		console.log(data);
 
 		return data;
 	} catch (err) {
+		console.error(err);
 		throw err;
 	}
 }
@@ -572,7 +573,7 @@ async function verifyPayment({ tx_ref }: { tx_ref: string }) {
 export async function shareFile({ fileID }: { fileID: string }) {
 	try {
 		const user = await getUser();
-		if (!user) throw new Error('you need to be sined in to share ur files');
+		if (!user) throw new Error('you need to be singed in to share ur files');
 		const newShare = await db
 			.insert(sharedFilesTable)
 			.values({

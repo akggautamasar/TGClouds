@@ -2,11 +2,18 @@
 
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import React, { Dispatch, SetStateAction, useState } from 'react';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
 const Providers = ({ children }: { children: React.ReactNode }) => {
 	return (
 		<>
-			{children}
-			<ProgressBar height="4px" color="#c21333" options={{ showSpinner: true }} shallowRouting />
+			<QueryClientProvider client={queryClient}>
+				{children}
+				<ProgressBar height="4px" color="#c21333" options={{ showSpinner: true }} shallowRouting />
+			</QueryClientProvider>
 		</>
 	);
 };

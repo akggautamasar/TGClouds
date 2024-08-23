@@ -214,14 +214,16 @@ export const getMessage = async ({
 	client: TelegramClient;
 }) => {
 	if (!client.connected) await client.connect();
-	const messages = (await client.getMessages(
-		getChannelEntity(user?.channelId!, user?.accessHash!),
-		{
-			ids: [Number(messageId)]
-		}
-	)) as unknown as Message[];
 
-	const media = messages?.[0]?.media as Message['media'] | MessageMediaPhoto;
+	const result = (
+		(await client.getMessages(getChannelEntity(user?.channelId!, user?.accessHash!), {
+			ids: [Number(messageId)]
+		})) as unknown as Message[]
+	)[0];
+
+	if (!result) return null;
+
+	const media = result.media as Message['media'] | MessageMediaPhoto;
 	return media;
 };
 
@@ -232,7 +234,7 @@ export const downloadMedia = async ({
 	setURL,
 	category,
 	isShare
-}: DownloadMediaOptions): Promise<Blob | null> => {
+}: DownloadMediaOptions): Promise<Blob | { fileExists: boolean } | null> => {
 	if (!user || !user?.telegramSession || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
@@ -241,18 +243,20 @@ export const downloadMedia = async ({
 	if (blobCache.has(cacheKey)) {
 		return blobCache.get(cacheKey)!;
 	}
-	const client = isShare ? await getBotClient() : getTgClient(user?.telegramSession);
+
+	const client = getTgClient(user?.telegramSession);
+
 	const media = await getMessage({ client, messageId, user });
+
+	if (!media) return { fileExists: false };
+
 	try {
 		if (!client.connected) await client.connect();
 
-		if (category === 'video') {
+		if (category === 'video')
 			return await handleVideoDownload(client, media as Message['media'], setURL);
-		}
 
-		if (media) {
-			return await handleMediaDownload(client, media, size, cacheKey, setURL);
-		}
+		if (media) return await handleMediaDownload(client, media, size, cacheKey, setURL);
 	} catch (err) {
 		console.error(err);
 	} finally {

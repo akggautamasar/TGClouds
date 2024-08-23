@@ -4,7 +4,7 @@ import { useUser, UserButton } from '@clerk/nextjs';
 import { currentUser } from '@clerk/nextjs/server';
 
 export default async function Header() {
-	const user = null;
+	const user = await currentUser();
 	return (
 		<header className="bg-primary text-primary-foreground px-4 lg:px-6 h-14 flex items-center">
 			<div className="max-w-6xl mx-auto w-full flex items-center">

@@ -13,6 +13,7 @@ import { errorToast } from '@/lib/notify';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { SVGProps, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 export type PLANS = 'ANNUAL' | 'MONTHLY';
 
@@ -45,7 +46,7 @@ export default function Component() {
 							});
 
 							if (data?.status == 'success') {
-								router.push(data.data.checkout_url);
+								location.assign(data.data.checkout_url);
 								return;
 							}
 						} catch (err) {
