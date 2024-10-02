@@ -435,8 +435,7 @@ export async function subscribeToPro({
 
 		const plan = otherSubscriptionWithThisTxRef?.plan;
 
-		if (!plan)
-			throw new Error('FAILED GOT GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER');
+		if (!plan) throw new Error('FAILED GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER');
 
 		const newExpirationDate = addDays(
 			currentExpirationDate,
@@ -514,7 +513,7 @@ export async function initailizePayment({
 			email: user.email,
 			first_name: user.name,
 			tx_ref,
-			return_url: `https://5000-kumnegerwon-tgcloudpriv-o2z4rclwa8e.ws-eu115.gitpod.io/subscribe/success/${tx_ref}`
+			return_url: `https://tgcloud-k.vercel.app/subscribe/success/${tx_ref}`
 		};
 
 		await db

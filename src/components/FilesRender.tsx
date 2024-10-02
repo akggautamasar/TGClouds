@@ -1,16 +1,9 @@
 'use client';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { env } from '@/env';
 import { getTgClient } from '@/lib/getTgClient';
 import fluidPlayer from 'fluid-player';
-import { env } from '@/env';
-import {
-	useQuery,
-	useMutation,
-	useQueryClient,
-	QueryClient,
-	QueryClientProvider
-} from '@tanstack/react-query';
 
 import {
 	delelteItem,
@@ -18,10 +11,10 @@ import {
 	downloadVideoThumbnail,
 	formatBytes,
 	getBannerURL,
+	getChannelEntity,
 	getMessage,
 	isDarkMode,
-	MediaCategory,
-	getChannelEntity
+	MediaCategory
 } from '@/lib/utils';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -39,7 +32,7 @@ import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
 
 import Swal from 'sweetalert2';
-import { TelegramClient, Api } from 'telegram';
+import { Api, TelegramClient } from 'telegram';
 
 export function showSharableURL(url: string) {
 	Swal.fire({
