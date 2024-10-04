@@ -1,5 +1,5 @@
 import { uploadFile } from '@/actions';
-import { getTgClient, getBotClient } from '@/lib/getTgClient';
+import { getTgClient } from '@/lib/getTgClient';
 import TTLCache from '@isaacs/ttlcache';
 import { type ClassValue, clsx } from 'clsx';
 import { ReadonlyURLSearchParams } from 'next/navigation';

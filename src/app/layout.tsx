@@ -14,8 +14,9 @@ import { Toaster } from 'react-hot-toast';
 import Providers, { SortByContext, SortByContextWrapper } from '@/lib/context';
 
 export const metadata: Metadata = {
-	metadataBase: new URL('https://tgcloud-k.vercel.app/'),
+	metadataBase: new URL('https://yourtgcloud.vercel.app/'),
 	title: 'Unlimited Cloud Storage | TGCloud',
+
 	description:
 		'Enjoy unlimited cloud storage integrated with Telegram. Effortlessly store and manage your files with no limits.',
 	keywords: 'unlimited cloud storage, Telegram integration, file management, cloud storage app',
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 			'Enjoy unlimited cloud storage integrated with Telegram. Effortlessly store and manage your files with no limits.',
 		images: [
 			{
-				url: '/path-to-your-logo.png',
+				url: '/TGCloud.webp',
 				alt: 'Unlimited Cloud Storage',
 				width: 1200,
 				height: 630
@@ -48,6 +49,7 @@ export default async function RootLayout({
 }>) {
 	return (
 		<html lang="en">
+			<link rel="icon" href="/favicon.ico" sizes="any" />
 			<body className={inter.className}>
 				<Providers>
 					<ClerkProvider

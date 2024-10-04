@@ -114,7 +114,7 @@ export async function Dashboard({
 						</div>
 					</div>
 					<div className="mt-auto p-2">
-						{user?.isSubscribedToPro ? (
+						{/* {user?.isSubscribedToPro ? (
 							<Card>
 								<CardHeader>
 									<CardTitle>Pro Activated</CardTitle>
@@ -147,7 +147,7 @@ export async function Dashboard({
 									</CardContent>
 								</Card>
 							</Pricing>
-						)}
+						)} */}
 					</div>
 				</div>
 			</div>
@@ -226,7 +226,7 @@ export async function Dashboard({
 							</div>
 
 							<div className="mt-auto">
-								{user?.isSubscribedToPro ? (
+								{/* {user?.isSubscribedToPro ? (
 									<Card>
 										<CardHeader>
 											<CardTitle>Pro Activated</CardTitle>
@@ -259,7 +259,7 @@ export async function Dashboard({
 											</CardContent>
 										</Card>
 									</Pricing>
-								)}
+								)} */}
 							</div>
 						</SheetContent>
 					</Sheet>

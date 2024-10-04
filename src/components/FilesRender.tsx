@@ -123,15 +123,6 @@ const addBotToChannel = async (client: TelegramClient, user: User) => {
 		anonymous: true,
 		manageTopics: true
 	});
-
-	const result = await client.invoke(
-		new Api.channels.EditAdmin({
-			channel: getChannelEntity(user?.channelId, user?.accessHash),
-			userId: env.NEXT_PUBLIC_BOT_USERNAME,
-			rank: 'admin',
-			adminRights
-		})
-	);
 };
 
 function EachFile({ file, user }: { file: FilesData[number]; user: User }) {

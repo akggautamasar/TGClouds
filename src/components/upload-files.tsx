@@ -5,12 +5,10 @@ import { formatBytes, uploadFiles } from '@/lib/utils';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Dropzone from 'react-dropzone';
-
 import { promiseToast } from '@/lib/notify';
+import { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from './Icons/icons';
-import { User } from '@/lib/types';
-import { revalidatePath } from 'next/cache';
 
 interface DropedFile {
 	file: File;
