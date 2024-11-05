@@ -11,7 +11,9 @@ export const generateMetadata = async (): Promise<Metadata> => {
 	};
 };
 
-export default async function Home({ searchParams }: { searchParams: Record<string, string> }) {
+export default async function Home(props: { searchParams: Promise<Record<string, string>> }) {
+	const searchParams = await props.searchParams;
+	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const user = await useUserProtected();
 
 	const searchItem = searchParams.search;
@@ -21,10 +23,10 @@ export default async function Home({ searchParams }: { searchParams: Record<stri
 	const [files, total] = await getAllFiles(searchItem, (page - 1) * 8);
 
 	return (
-		<Dashboard total={total} user={user}>
-			<Suspense fallback={<LoadingItems />}>
-				<Files files={files} user={user} />
-			</Suspense>
-		</Dashboard>
-	);
+			<Dashboard total={total} user={user}>
+				<Suspense fallback={<LoadingItems />}>
+					<Files files={files} user={user} />
+				</Suspense>
+			</Dashboard>
+		);
 }

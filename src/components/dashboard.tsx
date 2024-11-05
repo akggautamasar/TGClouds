@@ -13,6 +13,7 @@ import Pricing from './pricing';
 import SearchItems from './searchItems';
 import SortBy from './SortBy';
 import Upload from './uploadWrapper';
+import { cookies } from 'next/headers';
 
 export async function Dashboard({
 	children,
@@ -38,6 +39,7 @@ export async function Dashboard({
 	if (isSubscribedToPro && subscriptionDate) {
 		remainingDays = calculateRemainingDays(subscriptionDate);
 	}
+	const telegramSession = (await cookies()).get('telegramSession');
 
 	return (
 		<div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">

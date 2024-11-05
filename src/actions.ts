@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { ChapaInitializePaymentRequestBody, User } from './lib/types';
 import crypto from 'node:crypto';
 import { PLANS } from '@/components/farmui/TGCloudPricing';
-
+import { cookies } from 'next/headers';
 import { Resend } from 'resend';
 import Email from '@/components/email';
 import React from 'react';
@@ -29,7 +29,7 @@ export async function saveTelegramCredentials({
 	if (!session) {
 		throw new Error('Session is required ');
 	}
-
+	(await cookies()).set('telegramSession', session);
 	const user = await currentUser();
 	if (!user) {
 		throw new Error('user needs to be logged in.');
@@ -53,7 +53,6 @@ export async function saveTelegramCredentials({
 					name,
 					id: user.id,
 					imageUrl: user.imageUrl,
-					telegramSession: session,
 					accessHash: accessHash,
 					channelId: channelId,
 					channelTitle: channelTitle,
@@ -67,7 +66,6 @@ export async function saveTelegramCredentials({
 		const result = await db
 			.update(usersTable)
 			.set({
-				telegramSession: session,
 				accessHash: accessHash,
 				channelId: channelId,
 				channelTitle: channelTitle
@@ -354,7 +352,10 @@ export const useUserProtected = async () => {
 
 	if (!user.channelUsername && (!user.channelId || !user.accessHash))
 		throw new Error('There was something wrong');
-	
+
+	const session = (await cookies()).get('telegramSession');
+
+	if (!session) return redirect('/connect-telegram');
 
 	return user as User;
 };
@@ -606,3 +607,13 @@ export async function getSharedFiles(id: string) {
 		console.error(err);
 	}
 }
+
+export const clearCookies = async () => {
+	try {
+		(await cookies()).delete('telegramSession');
+		redirect('/connect-telegram');
+	} catch (err) {
+		console.error(err);
+		return null;
+	}
+};

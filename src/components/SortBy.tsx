@@ -11,10 +11,10 @@ import {
 	DropdownMenuRadioItem
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { SortByContext } from '@/lib/context';
+import { useTGCloudGlobalContext } from '@/lib/context';
 
 function SortBy() {
-	const { setSortBy, sortBy } = use(SortByContext)!;
+	const { setSortBy, sortBy } = useTGCloudGlobalContext()!;
 
 	return (
 		<DropdownMenu>

@@ -1,4 +1,3 @@
-'use client';
 import { Button } from '@/components/ui/button';
 import { getTgClient } from '@/lib/getTgClient';
 import { formatBytes, uploadFiles } from '@/lib/utils';
@@ -23,10 +22,12 @@ interface UploadProgress {
 
 export const UploadFiles = ({
 	user,
-	setOpen
+	setOpen,
+	telegramSession
 }: {
 	user: User;
 	setOpen: Dispatch<SetStateAction<boolean>>;
+	telegramSession: string | undefined;
 }) => {
 	const router = useRouter();
 	const [dropedfiles, setFiles] = useState<DropedFile[]>([]);
@@ -44,12 +45,7 @@ export const UploadFiles = ({
 	const handleSubmit = async (formData: FormData) => {
 		await promiseToast({
 			cb: () =>
-				uploadFiles(
-					formData,
-					user,
-					setUploadProgress,
-					getTgClient(user?.telegramSession as string)
-				),
+				uploadFiles(formData, user, setUploadProgress, getTgClient(telegramSession as string)),
 			errMsg: 'Oops we fucked up we failed to upload your files',
 			successMsg: 'File Uploaded',
 			loadingMsg: 'please wait...',

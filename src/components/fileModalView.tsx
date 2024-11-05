@@ -4,7 +4,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useCreateQueryString } from '@/lib/utils';
 import { useMediaQuery } from '@uidotdev/usehooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ElementRef, useEffect, useRef, useState } from 'react';
+import { ElementRef, useEffect, useRef, useState, type JSX } from 'react';
 
 export function FileModalView({
 	children,

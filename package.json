@@ -4,7 +4,8 @@
 	"private": true,
 	"scripts": {
 		"node": "pnpm dlx tsx server.ts",
-		"dev": "dotenv -e .env.development -- next dev -p 3000",
+		"dev:turbo": "dotenv -e .env.development -- next dev --turbo -p 3000",
+		"dev": "dotenv -e .env.development -- next dev",
 		"build": "dotenv -e .env.production -- next build",
 		"start": "next start",
 		"lint": "next lint",
@@ -15,11 +16,11 @@
 		"nodestart": "NODE_ENV=production tsx server.js"
 	},
 	"dependencies": {
-		"@clerk/nextjs": "^5.2.8",
+		"@clerk/nextjs": "^6.2.0",
 		"@heroicons/react": "^2.1.5",
 		"@isaacs/ttlcache": "^1.4.1",
 		"@kinfe123/farm-ui": "^1.0.12",
-		"@next/env": "^14.2.5",
+		"@next/env": "15.0.0",
 		"@radix-ui/react-alert-dialog": "^1.1.1",
 		"@radix-ui/react-avatar": "^1.1.0",
 		"@radix-ui/react-context-menu": "^2.2.1",
@@ -33,7 +34,7 @@
 		"@radix-ui/react-slot": "^1.1.0",
 		"@radix-ui/react-toast": "^1.2.1",
 		"@react-email/components": "^0.0.22",
-		"@sentry/nextjs": "^8.26.0",
+		"@sentry/nextjs": "^8.37.1",
 		"@sentry/utils": "^8.26.0",
 		"@t3-oss/env-core": "^0.10.1",
 		"@t3-oss/env-nextjs": "^0.10.1",
@@ -47,14 +48,14 @@
 		"drizzle-orm": "^0.31.4",
 		"fluid-player": "^3.35.0",
 		"lucide-react": "^0.402.0",
-		"next": "14.2.4",
+		"next": "15.0.0",
 		"next-client-cookies": "^1.1.1",
 		"next-nprogress-bar": "^2.3.13",
 		"next-themes": "^0.3.0",
 		"pg": "^8.12.0",
 		"postgres": "^3.4.4",
-		"react": "^18.3.1",
-		"react-dom": "^18.3.1",
+		"react": "19.0.0-rc-65a56d0e-20241020",
+		"react-dom": "19.0.0-rc-65a56d0e-20241020",
 		"react-dropzone": "^14.2.3",
 		"react-hot-toast": "^2.4.1",
 		"resend": "^3.5.0",
@@ -69,13 +70,19 @@
 	},
 	"devDependencies": {
 		"@types/node": "^20.14.15",
-		"@types/react": "^18.3.3",
-		"@types/react-dom": "^18.3.0",
+		"@types/react": "npm:types-react@19.0.0-rc.1",
+		"@types/react-dom": "npm:types-react-dom@19.0.0-rc.1",
 		"drizzle-kit": "^0.22.8",
 		"eslint": "^8.57.0",
-		"eslint-config-next": "14.2.4",
+		"eslint-config-next": "15.0.0",
 		"postcss": "^8.4.41",
 		"tailwindcss": "^3.4.10",
 		"typescript": "^5.5.4"
+	},
+	"pnpm": {
+		"overrides": {
+			"@types/react": "npm:types-react@19.0.0-rc.1",
+			"@types/react-dom": "npm:types-react-dom@19.0.0-rc.1"
+		}
 	}
 }

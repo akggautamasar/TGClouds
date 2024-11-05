@@ -1,8 +1,7 @@
 'use client';
-import Image from 'next/image';
 import { User } from '@/lib/types';
-import React, { useEffect, useState } from 'react';
-import { downloadMedia } from '@/lib/utils';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 function SharedFile({ user, fileID }: { user: User; fileID: string }) {
 	const [url, setURL] = useState('');
@@ -16,14 +15,15 @@ function SharedFile({ user, fileID }: { user: User; fileID: string }) {
 			throw new Error('Failed to get file ID');
 		}
 
-		downloadMedia({
-			user,
-			messageId: fileID,
-			category: 'image',
-			size: 'large',
-			setURL,
-			isShare: true
-		});
+		//TODO:  implment sharing file in secure way
+		// downloadMedia({
+		// 	user,
+		// 	messageId: fileID,
+		// 	category: 'image',
+		// 	size: 'large',
+		// 	setURL,
+		// 	isShare: true
+		// });
 
 		return () => {
 			URL.revokeObjectURL(url as string);

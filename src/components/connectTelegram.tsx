@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button';
 import { db } from '@/db';
 import { getTgClient } from '@/lib/getTgClient';
 import Image from 'next/image';
-import { Dispatch, SetStateAction, SVGProps, useState } from 'react';
+import { Dispatch, SetStateAction, SVGProps, useState, type JSX } from 'react';
 import Swal from 'sweetalert2';
 import { Api } from 'telegram';
 import { RPCError } from 'telegram/errors';
 import { useDebouncedCallback } from 'use-debounce';
-
 import { LoadingSVG, TextIcon } from './Icons/icons';
-
 import {
 	Select,
 	SelectContent,
@@ -22,13 +20,13 @@ import {
 } from '@/components/ui/select';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTGCloudGlobalContext } from '@/lib/context';
 import { errorToast } from '@/lib/notify';
+import { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { error } from 'console';
-import { User } from '@/lib/types';
-import toast from 'react-hot-toast';
 
 interface Chat {
 	id: string;
@@ -171,8 +169,8 @@ export default function Component({
 	user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
 }) {
 	const [isLoading, setIsLoading] = useState<boolean>();
-	const session = user?.telegramSession;
-
+	const TGCloudGlobalContext = useTGCloudGlobalContext();
+	const session = TGCloudGlobalContext?.telegramSession;
 	const client = getTgClient(session ?? '');
 	const router = useRouter();
 	async function connectTelegram() {
@@ -194,9 +192,25 @@ export default function Component({
 				return;
 			}
 
-			const data = await createTelegramChannel()!;
-			if (data) {
-				const { accessHash, channelTitle, id } = data;
+			if (user.channelId && user.channelTitle && user.accessHash) {
+				await saveTelegramCredentials({
+					session: tgUserSession,
+					accessHash: user.accessHash,
+					channelId: user.channelId,
+					channelTitle: user.channelTitle
+				});
+				router.push('/files');
+				return;
+			}
+			const channelDetails = await createTelegramChannel()!;
+			Swal.fire({
+				title: 'Channel created',
+				text: 'We have created a channel in Telegram for you',
+				timer: 3000
+			});
+
+			if (channelDetails) {
+				const { accessHash, channelTitle, id } = channelDetails;
 				await saveTelegramCredentials({
 					session: tgUserSession,
 					accessHash,
@@ -204,11 +218,6 @@ export default function Component({
 					channelTitle
 				});
 
-				Swal.fire({
-					title: 'Channel created',
-					text: 'We have created a channel in Telegram for you',
-					timer: 3000
-				});
 				location.reload();
 			}
 		} catch (err) {
@@ -248,7 +257,7 @@ export default function Component({
 				new Api.channels.CreateChannel({
 					title: channelTitle,
 					about:
-						"Don't delete this channel or you will lose all your files in https://tg-cloud-k.vercel.app",
+						"Don't delete this channel or you will lose all your files in https://yourtgcloud.vercel.app/",
 					broadcast: true
 				})
 			);
@@ -387,15 +396,18 @@ export default function Component({
 		}
 	};
 
-	if (user && user?.accessHash && user?.channelTitle && user?.channelId) {
+	const hasRequiredTelegramData =
+		session && user?.accessHash && user?.channelTitle && user?.channelId;
+
+	if (hasRequiredTelegramData && user) {
 		const { channelId, channelTitle } = user;
 
 		return (
 			<UpdateUsernameForm
 				user={user}
 				onChange={checkUserNameOnChange}
-				channelId={channelId}
-				channelTitle={channelTitle}
+				channelId={channelId || ''}
+				channelTitle={channelTitle || ''}
 				onSubmit={connectChannel}
 			/>
 		);
@@ -403,7 +415,7 @@ export default function Component({
 
 	return (
 		<div className="w-full bg-white py-20 md:py-32 lg:py-40">
-			<div className="container flex flex-col items-center justify-between gap-10 px-4 md:flex-row md:gap-16">
+			<div className="container md:w-[85%]  flex flex-col items-center justify-between gap-10 px-4 md:flex-row md:gap-16">
 				<div className="max-w-md space-y-6 text-center md:text-left">
 					<h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl md:text-5xl">
 						Connect Your Telegram Account

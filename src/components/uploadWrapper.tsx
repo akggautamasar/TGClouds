@@ -7,10 +7,13 @@ import { UploadIcon } from './Icons/icons';
 import { UploadFiles } from './upload-files';
 import { User } from '@/lib/types';
 import TGCloudPricing from './farmui/TGCloudPricing';
+import { useTGCloudGlobalContext } from '@/lib/context';
 
 export default function DrawerDialogDemo({ user }: { user: User }) {
 	const [open, setOpen] = useState(false);
 	const isDesktop = useMediaQuery('(min-width: 768px)');
+	const TGCloudGlobalContext = useTGCloudGlobalContext();
+	const telegramSession = TGCloudGlobalContext?.telegramSession;
 
 	if (isDesktop) {
 		return (
@@ -26,7 +29,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
 				<DialogContent className="w-[700px]">
 					<DialogTitle className="sr-only">upload file</DialogTitle>
 					{/* {user?.isSubscribedToPro ? ( */}
-					<UploadFiles setOpen={setOpen} user={user} />
+					<UploadFiles telegramSession={telegramSession} setOpen={setOpen} user={user} />
 					{/* ) : ( */}
 					{/* <TGCloudPricing /> */}
 					{/* )} */}
@@ -48,7 +51,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
 			</DrawerTrigger>
 			<DrawerContent className="h-4/5">
 				{/* {user?.isSubscribedToPro ? ( */}
-				<UploadFiles setOpen={setOpen} user={user} />
+				<UploadFiles telegramSession={telegramSession} setOpen={setOpen} user={user} />
 				{/* ) : ( */}
 				{/* <TGCloudPricing /> */}
 				{/* )} */}

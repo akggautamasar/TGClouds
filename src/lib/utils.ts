@@ -8,7 +8,6 @@ import { twMerge } from 'tailwind-merge';
 import { Api, TelegramClient } from 'telegram';
 import { TypeNotFoundError } from 'telegram/errors';
 import { ChannelDetails, User } from './types';
-
 import Message, { MessageMediaPhoto } from '@/lib/types';
 
 type MediaSize = 'large' | 'small';
@@ -227,15 +226,11 @@ export const getMessage = async ({
 	return media;
 };
 
-export const downloadMedia = async ({
-	user,
-	messageId,
-	size,
-	setURL,
-	category,
-	isShare
-}: DownloadMediaOptions): Promise<Blob | { fileExists: boolean } | null> => {
-	if (!user || !user?.telegramSession || !user.channelId || !user.accessHash)
+export const downloadMedia = async (
+	{ user, messageId, size, setURL, category, isShare }: DownloadMediaOptions,
+	telegramSession: string | undefined
+): Promise<Blob | { fileExists: boolean } | null> => {
+	if (!user || !telegramSession || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
 	const cacheKey = `${user?.channelId}-${messageId}`;
@@ -244,7 +239,7 @@ export const downloadMedia = async ({
 		return blobCache.get(cacheKey)!;
 	}
 
-	const client = getTgClient(user?.telegramSession);
+	const client = getTgClient(telegramSession);
 
 	const media = await getMessage({ client, messageId, user });
 

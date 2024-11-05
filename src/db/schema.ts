@@ -10,7 +10,6 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const planEnum = pgEnum('plan', ['ANNUAL', 'MONTHLY']);
-
 export const usersTable = pgTable(
 	'usersTable',
 	{
@@ -18,7 +17,6 @@ export const usersTable = pgTable(
 		name: text('name').notNull(),
 		email: text('email').notNull().unique(),
 		imageUrl: text('imageUrl'),
-		telegramSession: text('telegramSession'),
 		channelUsername: text('channelName').unique(),
 		channelId: text('channelId').unique(),
 		accessHash: text('accessHash'),
@@ -36,7 +34,7 @@ export const usersTable = pgTable(
 export const sharedFilesTable = pgTable(
 	'sharedFiles',
 	{
-		id: text('id').primaryKey().unique(),
+		id: text('id').primaryKey(),
 		fileId: text('fileId'),
 		userId: text('userId').notNull()
 	},

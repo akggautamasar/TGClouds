@@ -1,39 +1,33 @@
 'use client';
+import { clearCookies, deleteFile, shareFile } from '@/actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { env } from '@/env';
+import { useTGCloudGlobalContext } from '@/lib/context';
 import { getTgClient } from '@/lib/getTgClient';
-import fluidPlayer from 'fluid-player';
-
+import { promiseToast } from '@/lib/notify';
+import Message, { FilesData, User } from '@/lib/types';
 import {
 	delelteItem,
 	downloadMedia,
 	downloadVideoThumbnail,
 	formatBytes,
 	getBannerURL,
-	getChannelEntity,
 	getMessage,
 	isDarkMode,
 	MediaCategory
 } from '@/lib/utils';
+import fluidPlayer from 'fluid-player';
+import { Play, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import FileContextMenu from './fileContextMenu';
-
-import { use, useEffect, useRef, useState } from 'react';
-
-import { deleteFile, shareFile } from '@/actions';
-import { SortByContext } from '@/lib/context';
-import { promiseToast } from '@/lib/notify';
-import Message, { FilesData, User } from '@/lib/types';
-import { Play, Share2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
+import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
 
 import Swal from 'sweetalert2';
 import { Api, TelegramClient } from 'telegram';
-
 export function showSharableURL(url: string) {
 	Swal.fire({
 		title: 'Your Sharable Link',
@@ -67,8 +61,45 @@ export function showSharableURL(url: string) {
 	});
 }
 
+
+
+const checkSessionStatus = async (client: TelegramClient) => {
+	try {
+		const isAuthorized = await client.isUserAuthorized();
+		if (!isAuthorized) {
+			clearCookies();
+			console.log('Session is not active. Please log in again.');
+		}
+	} catch (error) {
+		console.error('Error checking session status:', error);
+	}
+}
+
+
 function Files({ user, files }: { user: User; mimeType?: string; files: FilesData | undefined }) {
-	const { sortBy } = use(SortByContext)!;
+	const { sortBy, telegramSession } = useTGCloudGlobalContext()!;
+	const [sessionChecked, setSessionChecked] = useState(false);
+
+	useEffect(() => {
+		if (!telegramSession) {
+			return;
+		}
+		const tgClient = getTgClient(telegramSession);
+		checkSessionStatus(tgClient).then(() => {
+			setSessionChecked(true);
+		});
+	}, [telegramSession]);
+
+	if (!sessionChecked) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="text-center">
+					<h2 className="text-xl font-semibold">Checking session...</h2>
+					<p className="text-muted-foreground">Please wait while we verify your Telegram session</p>
+				</div>
+			</div>
+		);
+	}
 
 	const sortedFiles = (() => {
 		if (!files || !files?.length) return [];
@@ -97,7 +128,7 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 
 	return (
 		<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{sortedFiles?.map((file, index) => (
+			{sortedFiles?.map((file) => (
 				<EachFile key={file.id} file={file} user={user} />
 			))}
 		</div>
@@ -126,19 +157,24 @@ const addBotToChannel = async (client: TelegramClient, user: User) => {
 };
 
 function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
-	const client = getTgClient(user?.telegramSession as string);
+	const TGCloudGlobalContext = useTGCloudGlobalContext();
+	const telegramSession = TGCloudGlobalContext?.telegramSession;
+	const client = getTgClient(telegramSession as string);
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);
 
 	const downlaodFile = async (size: 'large' | 'small', category: string) => {
-		const result = await downloadMedia({
-			user: user as NonNullable<User>,
-			messageId: file?.fileTelegramId,
-			size,
-			setURL,
-			category: file.category as MediaCategory
-		});
+		const result = await downloadMedia(
+			{
+				user: user as NonNullable<User>,
+				messageId: file?.fileTelegramId,
+				size,
+				setURL,
+				category: file.category as MediaCategory
+			},
+			telegramSession
+		);
 		if (
 			result &&
 			typeof result === 'object' &&
@@ -154,7 +190,7 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
-					const client = getTgClient(user?.telegramSession!);
+					const client = getTgClient(telegramSession!);
 					const media = (await getMessage({
 						client,
 						messageId: file.fileTelegramId,
@@ -173,7 +209,6 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 			: null;
 
 		downlaodFile('small', file.category);
-
 		requestIdleCallback((e) => {
 			downlaodFile('large', file.category);
 		});
@@ -190,11 +225,9 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 			actionName: 'save',
 			onClick: async () => {
 				if (!url) return;
-
 				const link = document.createElement('a');
 				link.href = url!;
 				link.download = file.fileName!;
-
 				link.click();
 			},
 			Icon: CloudDownload,
@@ -331,7 +364,7 @@ function VideoMediaView({
 	url: string;
 }) {
 	let self = useRef<HTMLVideoElement>(null);
-	const playerRef = useRef<FluidPlayerInstance>();
+	const playerRef = useRef<FluidPlayerInstance>(undefined);
 
 	useEffect(() => {
 		if (!playerRef.current) {
@@ -418,23 +451,26 @@ function ImagePreviewModal({
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<ImageIcon className="w-5 h-5" />
 						<span>{formatBytes(Number(fileData.size))}</span>
-					</div>
+					</div>{' '}
 					<div className="grid gap-2 mt-4">
+						{' '}
 						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground">File Name:</span>
-							<span>{fileData.fileName}</span>
-						</div>
+							{' '}
+							<span className="text-muted-foreground">File Name:</span>{' '}
+							<span>{fileData.fileName}</span>{' '}
+						</div>{' '}
 						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground">File Size:</span>
-							<span>{formatBytes(Number(fileData.size))}</span>
-						</div>
+							{' '}
+							<span className="text-muted-foreground">File Size:</span>{' '}
+							<span>{formatBytes(Number(fileData.size))}</span>{' '}
+						</div>{' '}
 						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground">Resolution:</span>
-							<span>1920 x 1080</span>
-						</div>
-					</div>
-				</div>
-			</div>
+							{' '}
+							<span className="text-muted-foreground">Resolution:</span> <span>1920 x 1080</span>{' '}
+						</div>{' '}
+					</div>{' '}
+				</div>{' '}
+			</div>{' '}
 		</div>
 	);
 }

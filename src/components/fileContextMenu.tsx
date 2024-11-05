@@ -4,7 +4,7 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger
 } from '@/components/ui/context-menu';
-import React, { SVGProps } from 'react';
+import React, { SVGProps, type JSX } from 'react';
 
 function FileContextMenu({
 	children,

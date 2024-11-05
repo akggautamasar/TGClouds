@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
 import '../../patch-global-alert-polyfill';
+import './globals.css';
 
 import { ThemeProvider } from '@/components/theme-provider';
 import { env } from '@/env';
@@ -9,9 +9,10 @@ import { ClerkProvider } from '@clerk/nextjs';
 
 const inter = Inter({ subsets: ['latin'] });
 
+import { cookies } from 'next/headers';
 import { Toaster } from 'react-hot-toast';
 
-import Providers, { SortByContext, SortByContextWrapper } from '@/lib/context';
+import Providers, { TGCloudGlobalContextWrapper } from '@/lib/context';
 
 export const metadata: Metadata = {
 	metadataBase: new URL('https://yourtgcloud.vercel.app/'),
@@ -47,6 +48,8 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const telegramSession = (await cookies()).get('telegramSession');
+
 	return (
 		<html lang="en">
 			<link rel="icon" href="/favicon.ico" sizes="any" />
@@ -64,7 +67,9 @@ export default async function RootLayout({
 							enableSystem
 							disableTransitionOnChange
 						>
-							<SortByContextWrapper>{children}</SortByContextWrapper>
+							<TGCloudGlobalContextWrapper telegramSession={telegramSession?.value}>
+								{children}
+							</TGCloudGlobalContextWrapper>
 						</ThemeProvider>
 					</ClerkProvider>
 				</Providers>

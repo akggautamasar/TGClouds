@@ -1,6 +1,6 @@
 import { HomePage } from '@/components/home-page';
-import { db } from '@/db';
-import { userFiles, usersTable } from '@/db/schema';
+import { unstable_after as after } from 'next/server';
+
 
 export default async function Home() {
 	return (
