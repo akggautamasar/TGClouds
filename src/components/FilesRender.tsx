@@ -25,6 +25,8 @@ import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
+import { RPCError } from 'telegram/errors';
+import { Button } from '@/components/ui/button';
 
 import Swal from 'sweetalert2';
 import { Api, TelegramClient } from 'telegram';
@@ -61,33 +63,38 @@ export function showSharableURL(url: string) {
 	});
 }
 
-
-
 const checkSessionStatus = async (client: TelegramClient) => {
 	try {
-		const isAuthorized = await client.isUserAuthorized();
-		if (!isAuthorized) {
-			clearCookies();
-			console.log('Session is not active. Please log in again.');
-		}
+		if (!client.connected) await client.connect();
+		const isAuthorized = await client.getMe();
+		return isAuthorized;
 	} catch (error) {
+		if (error instanceof RPCError) {
+			if (error.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+				console.error(error.errorMessage);
+			}
+		}
 		console.error('Error checking session status:', error);
+		return false;
 	}
-}
-
+};
 
 function Files({ user, files }: { user: User; mimeType?: string; files: FilesData | undefined }) {
 	const { sortBy, telegramSession } = useTGCloudGlobalContext()!;
 	const [sessionChecked, setSessionChecked] = useState(false);
+	const [isValidSession, setIsValidSession] = useState(true);
+	const router = useRouter();
 
 	useEffect(() => {
 		if (!telegramSession) {
 			return;
 		}
 		const tgClient = getTgClient(telegramSession);
-		checkSessionStatus(tgClient).then(() => {
+		(async () => {
+			const isValid = await checkSessionStatus(tgClient);
 			setSessionChecked(true);
-		});
+			setIsValidSession(!!isValid);
+		})();
 	}, [telegramSession]);
 
 	if (!sessionChecked) {
@@ -96,6 +103,23 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 				<div className="text-center">
 					<h2 className="text-xl font-semibold">Checking session...</h2>
 					<p className="text-muted-foreground">Please wait while we verify your Telegram session</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (!isValidSession) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="text-center space-y-4">
+					<h2 className="text-xl font-semibold">Unable to Access Your Telegram Account</h2>
+					<p className="text-muted-foreground">
+						We&apos;ve lost access to your Telegram account. This can happen if you logged out of
+						Telegram or revoked access. Please re-authorize TGCloud to continue using the service.
+					</p>
+					<Button onClick={() => clearCookies()} variant="default">
+						Authorize TGCloud
+					</Button>
 				</div>
 			</div>
 		);
