@@ -617,3 +617,24 @@ export const clearCookies = async () => {
 		return null;
 	}
 };
+
+
+export const deleteChannelDetail = async () => {
+	// try {
+	const user = await getUser();
+	if (!user) throw new Error('Failed to get user');
+	const updateTable = await db
+		.update(usersTable)
+		.set({
+			channelId: null,
+			accessHash: null,
+			channelTitle: null
+		})
+		.where(eq(usersTable.id, user.id));
+	redirect('/connect-telegram');
+	// } catch (err) {
+	// console.error(err);
+	// }
+};
+
+

@@ -5,7 +5,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { ReadonlyURLSearchParams } from 'next/navigation';
 import { Dispatch, SetStateAction } from 'react';
 import { twMerge } from 'tailwind-merge';
-import { Api, TelegramClient } from 'telegram';
+import { Api, TelegramClient, client } from 'telegram';
 import { TypeNotFoundError } from 'telegram/errors';
 import { ChannelDetails, User } from './types';
 import Message, { MessageMediaPhoto } from '@/lib/types';
@@ -204,6 +204,17 @@ export function getBannerURL(filename: string, isDarkMode: boolean) {
 export function isDarkMode() {
 	return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
+
+export const canWeAccessTheChannel = async (client: TelegramClient, user: User) => {
+	try {
+		const entity = await client.getEntity(getChannelEntity(user?.channelId!, user?.accessHash!));
+		return !!entity;
+	} catch (err) {
+		console.error(err);
+		return false;
+	}
+};
+
 
 export const getMessage = async ({
 	messageId,

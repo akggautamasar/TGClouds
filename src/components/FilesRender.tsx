@@ -1,5 +1,5 @@
 'use client';
-import { clearCookies, deleteFile, shareFile } from '@/actions';
+import { clearCookies, deleteFile, shareFile, deleteChannelDetail } from '@/actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTGCloudGlobalContext } from '@/lib/context';
@@ -14,7 +14,8 @@ import {
 	getBannerURL,
 	getMessage,
 	isDarkMode,
-	MediaCategory
+	MediaCategory,
+	canWeAccessTheChannel
 } from '@/lib/utils';
 import fluidPlayer from 'fluid-player';
 import { Play, Share2 } from 'lucide-react';
@@ -30,6 +31,7 @@ import { Button } from '@/components/ui/button';
 
 import Swal from 'sweetalert2';
 import { Api, TelegramClient } from 'telegram';
+
 export function showSharableURL(url: string) {
 	Swal.fire({
 		title: 'Your Sharable Link',
@@ -83,6 +85,7 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 	const { sortBy, telegramSession } = useTGCloudGlobalContext()!;
 	const [sessionChecked, setSessionChecked] = useState(false);
 	const [isValidSession, setIsValidSession] = useState(true);
+	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
 	const router = useRouter();
 
 	useEffect(() => {
@@ -94,6 +97,8 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 			const isValid = await checkSessionStatus(tgClient);
 			setSessionChecked(true);
 			setIsValidSession(!!isValid);
+			const result = await canWeAccessTheChannel(tgClient, user);
+			setCanWeAccessTGChannel(result);
 		})();
 	}, [telegramSession]);
 
@@ -124,6 +129,26 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 			</div>
 		);
 	}
+
+	if (canWeAccessTGChannel !== 'INITIAL' && !canWeAccessTGChannel)
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="text-center space-y-4">
+					<h2 className="text-xl font-semibold">Unable to Access Channel</h2>
+					<p className="text-muted-foreground">
+						We cannot access the Telegram channel. Have you deleted the channel?
+					</p>
+					<div className="flex gap-4 justify-center">
+						<Button onClick={() => deleteChannelDetail()} variant="destructive">
+							Yes, I deleted it
+						</Button>
+						<Button onClick={() => router.push('/')} variant="outline">
+							No, I didn&apos;t
+						</Button>
+					</div>
+				</div>
+			</div>
+		);
 
 	const sortedFiles = (() => {
 		if (!files || !files?.length) return [];
