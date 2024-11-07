@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# TGCloud - Unlimited Cloud Storage on Telegram
 
-## Getting Started
+TGCloud is a cloud storage solution that provides **unlimited storage** by leveraging Telegram's API. Built with **Next.js**, **Drizzle ORM**, **PostgreSQL**, and **Clerk** for authentication, TGCloud offers a simple, secure, and free way to store and manage files.
 
-First, run the development server:
+## 📖 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Unlimited Storage**: Store as many files as you need—TGCloud utilizes Telegram's channel storage without restrictions.
+- **Secure and Private**: Each user has a unique, private Telegram channel, ensuring their files are only accessible to them.
+- **Telegram Integration**: Sign in securely with your Telegram account to access or upload files.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 How It Works
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Create an Account**: Sign up on TGCloud and connect your Telegram account when prompted.
+2. **Private Storage Channel**: Once connected, TGCloud automatically creates a private Telegram channel for you.
+3. **Store Files Securely**: All uploaded files are sent to this private channel, where they remain accessible only to you.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## 🛠️ Technologies Used
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- Next.js
+- Drizzle ORM
+- PostgreSQL
+- Clerk
