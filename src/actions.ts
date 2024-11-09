@@ -337,7 +337,7 @@ async function generateId() {
 	return newId;
 }
 
-export const useUserProtected = async () => {
+export const requireUserAuthentication = async () => {
 	const userClerk = await currentUser();
 	if (!userClerk) return redirect('/login');
 	const user = await getUser();

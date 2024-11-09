@@ -1,7 +1,6 @@
 'use client';
 
-import { Api, client, TelegramClient } from 'telegram';
-import { getTgClient } from './lib/getTgClient';
+import { Api, TelegramClient } from 'telegram';
 import Message, { User } from './lib/types';
 import { blobCache, getChannelEntity } from './lib/utils';
 

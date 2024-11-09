@@ -98,7 +98,7 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 			setSessionChecked(true);
 			setIsValidSession(!!isValid);
 			const result = await canWeAccessTheChannel(tgClient, user);
-			setCanWeAccessTGChannel(result);
+			setCanWeAccessTGChannel(!!result);
 		})();
 	}, [telegramSession]);
 
@@ -330,7 +330,8 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	return (
 		<FileContextMenu fileContextMenuActions={fileContextMenuActions}>
 			<Card
-				className={`group relative overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md `}
+				id={url}
+				className={`group relative  overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md `}
 			>
 				{/* <Link target="_blank" href={file.url} prefetch={false}> */}
 				<span className="sr-only">View file</span>
@@ -393,14 +394,25 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 }
 
 function ImageRender({ url, fileName }: { url: string; fileName: string }) {
+	const [width, setWidth] = useState<number | null>(null);
+	useEffect(() => {
+		const element = document.getElementById(url);
+		if (!element) {
+			return;
+		}
+		const width = element.clientWidth;
+		setWidth(width);
+	}, []);
 	return (
 		<Image
-			priority
 			src={url ?? '/placeholder.svg'}
 			alt={fileName}
-			width={299}
-			height={199}
-			className="aspect-square object-center w-full object-cover transition-opacity group-hover:opacity-50"
+			width={1920}
+			height={1080}
+			style={{
+				minWidth: width ? width + 'px' : 'inhrit'
+			}}
+			className={`object-center w-full h-auto object-cover transition-opacity group-hover:opacity-50`}
 		/>
 	);
 }

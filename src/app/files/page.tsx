@@ -1,7 +1,7 @@
-import { getAllFiles, useUserProtected } from '@/actions';
+import { getAllFiles, requireUserAuthentication } from '@/actions';
 import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
-import { LoadingItems } from '@/components/loading-files';
+import { LoadingFiles, LoadingItems } from '@/components/loading-files';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 
@@ -14,7 +14,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 export default async function Home(props: { searchParams: Promise<Record<string, string>> }) {
 	const searchParams = await props.searchParams;
 	// eslint-disable-next-line react-hooks/rules-of-hooks
-	const user = await useUserProtected();
+	const user = await requireUserAuthentication();
 
 	const searchItem = searchParams.search;
 	const page = parseInt(searchParams.page || '1');
@@ -23,10 +23,10 @@ export default async function Home(props: { searchParams: Promise<Record<string,
 	const [files, total] = await getAllFiles(searchItem, (page - 1) * 8);
 
 	return (
-			<Dashboard total={total} user={user}>
-				<Suspense fallback={<LoadingItems />}>
-					<Files files={files} user={user} />
-				</Suspense>
-			</Dashboard>
-		);
+		<Dashboard total={total} user={user}>
+			<Suspense fallback={<LoadingItems />}>
+				<Files files={files} user={user} />
+			</Suspense>
+		</Dashboard>
+	);
 }

@@ -9,6 +9,7 @@ import { Api, TelegramClient, client } from 'telegram';
 import { TypeNotFoundError } from 'telegram/errors';
 import { ChannelDetails, User } from './types';
 import Message, { MessageMediaPhoto } from '@/lib/types';
+import { RPCError } from 'telegram/errors';
 
 type MediaSize = 'large' | 'small';
 export type MediaCategory = 'video' | 'image' | 'document';
@@ -210,8 +211,9 @@ export const canWeAccessTheChannel = async (client: TelegramClient, user: User) 
 		const entity = await client.getEntity(getChannelEntity(user?.channelId!, user?.accessHash!));
 		return !!entity;
 	} catch (err) {
-		console.error(err);
-		return false;
+		if (err instanceof RPCError) {
+			if (err.errorMessage == 'CHANNEL_INVALID') return false;
+		}
 	}
 };
 

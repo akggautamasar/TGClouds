@@ -1,23 +1,23 @@
-import { getFilesFromSpecificType, useUserProtected } from '@/actions';
+import { getFilesFromSpecificType, requireUserAuthentication } from '@/actions';
 import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
 import { LoadingItems } from '@/components/loading-files';
 import { Suspense } from 'react';
 export default async function Home(props: { searchParams: Promise<Record<string, string>> }) {
-    const searchParams = await props.searchParams;
-    const user = await useUserProtected();
+	const searchParams = await props.searchParams;
+	const user = await requireUserAuthentication();
 
-    const page = parseInt(searchParams.page || '1');
+	const page = parseInt(searchParams.page || '1');
 
-    const searchItem = searchParams.search;
+	const searchItem = searchParams.search;
 
-    //@ts-ignore
-    const [files, total] = await getFilesFromSpecificType({
+	//@ts-ignore
+	const [files, total] = await getFilesFromSpecificType({
 		fileType: 'audio',
 		searchItem,
 		offset: (page - 1) * 8
 	});
-    return (
+	return (
 		<Dashboard total={total} user={user}>
 			<Suspense fallback={<LoadingItems />}>
 				<Files files={files} user={user} />
