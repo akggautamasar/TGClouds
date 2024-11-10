@@ -105,10 +105,7 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 	if (!sessionChecked) {
 		return (
 			<div className="flex items-center justify-center h-full">
-				<div className="text-center">
-					<h2 className="text-xl font-semibold">Checking session...</h2>
-					<p className="text-muted-foreground">Please wait while we verify your Telegram session</p>
-				</div>
+				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
 			</div>
 		);
 	}
@@ -410,7 +407,10 @@ function ImageRender({ url, fileName }: { url: string; fileName: string }) {
 			width={1920}
 			height={1080}
 			style={{
-				minWidth: width ? width + 'px' : 'inhrit'
+				minWidth: width ? width + 'px' : 'inhrit',
+				aspectRatio: '1/1',
+				objectFit: 'cover',
+				objectPosition: 'center'
 			}}
 			className={`object-center w-full h-auto object-cover transition-opacity group-hover:opacity-50`}
 		/>
@@ -472,14 +472,6 @@ function VideoMediaView({
 							<span className="text-muted-foreground">File Size:</span>
 							<span>{formatBytes(Number(fileData.size))}</span>
 						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground">Resolution:</span>
-							<span>1920 x 1080</span>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-muted-foreground">Duration:</span>
-							<span>10 min 3 sec</span>
-						</div>
 					</div>
 				</div>
 			</div>
@@ -524,10 +516,6 @@ function ImagePreviewModal({
 							{' '}
 							<span className="text-muted-foreground">File Size:</span>{' '}
 							<span>{formatBytes(Number(fileData.size))}</span>{' '}
-						</div>{' '}
-						<div className="flex items-center justify-between">
-							{' '}
-							<span className="text-muted-foreground">Resolution:</span> <span>1920 x 1080</span>{' '}
 						</div>{' '}
 					</div>{' '}
 				</div>{' '}

@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import posthog from 'posthog-js';
 
 interface Chat {
 	id: string;
@@ -199,6 +200,7 @@ export default function Component({
 					channelId: user.channelId,
 					channelTitle: user.channelTitle
 				});
+				posthog.capture('userTelegramAccountConnect', { property: user.email });
 				router.push('/files');
 				return;
 			}

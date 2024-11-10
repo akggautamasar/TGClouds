@@ -1,184 +1,193 @@
-import Footer from '@/components/footer';
-import Header from '@/components/Header';
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger
+} from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowRight, Cloud, Lock, Play, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 export function HomePage() {
 	return (
 		<div className="flex flex-col min-h-[100dvh]">
-			<Header />
 			<main className="flex-1">
-				<section className="w-full py-12 md:py-24 lg:py-32">
-					<div className="container space-y-12 px-4 md:px-6">
-						<div className="flex flex-col items-center justify-center space-y-4 text-center">
-							<div className="space-y-2">
-								<div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
-									Introducing TGCloud
-								</div>
-								<h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-									Secure and Reliable Cloud Storage
-								</h1>
-								<p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-									TGCloud is a powerful cloud storage solution that provides a nice user experience
-									to access and share files. A mobile app is coming soon.
-								</p>
-							</div>
-						</div>
-						<div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
-							<Link
-								href="/files"
-								className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								prefetch={false}
-							>
-								Get Started
-							</Link>
-							<Link
-								href="#"
-								className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								prefetch={false}
-							>
-								Learn More
-							</Link>
-						</div>
-					</div>
-				</section>
-				<section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-					<div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 lg:gap-10">
-						<div className="space-y-3">
-							<h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-								Seamless File Sharing and Searching
-							</h2>
-							<p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-								TGCloud provides a seamless experience to access, share, and search your files. You
-								can easily collaborate with others and find what you need quickly.
-							</p>
-						</div>
-						<div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
-							<Link
-								href="#"
-								className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								prefetch={false}
-							>
-								Explore File Sharing
-							</Link>
-							<Link
-								href="#"
-								className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								prefetch={false}
-							>
-								Learn More
-							</Link>
-						</div>
-					</div>
-				</section>
-				<section className="w-full py-12 md:py-24 lg:py-32">
-					<div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 lg:gap-10">
-						<div className="space-y-3">
-							<h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-								Secure and Reliable Storage
-							</h2>
-							<p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-								TGCloud is built on top of Telegram&apos;s robust infrastructure, ensuring your data
-								is secure and protected. With a video player for your videos, you can access and
-								watch your files directly within the app.
-							</p>
-						</div>
-						<div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
-							<Link
-								href="#"
-								className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								prefetch={false}
-							>
-								Learn More
-							</Link>
-							<Link
-								href="/files"
-								className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								prefetch={false}
-							>
-								Get Started
-							</Link>
-						</div>
-					</div>
-				</section>
-				<section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-					<div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 lg:gap-10">
-						<div className="space-y-3">
-							<h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-								Powerful Features
-							</h2>
-							<p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-								TGCloud offers a wide range of features to make your cloud storage experience
-								seamless and efficient.
-							</p>
-						</div>
-						<div className="grid max-w-sm items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl lg:grid-cols-3">
-							<div className="grid gap-1">
-								<h3 className="text-lg font-bold">Seamless Sharing</h3>
-								<p className="text-sm text-muted-foreground">
-									Easily share files and folders with your team or friends with just a few clicks.
-								</p>
-							</div>
-							<div className="grid gap-1">
-								<h3 className="text-lg font-bold">Powerful Search</h3>
-								<p className="text-sm text-muted-foreground">
-									Find what you need quickly with TGCloud&apos;s advanced search capabilities.
-								</p>
-							</div>
-							<div className="grid gap-1">
-								<h3 className="text-lg font-bold">Mobile Access</h3>
-								<p className="text-sm text-muted-foreground">
-									Access your files from anywhere with the TGCloud mobile app.
-								</p>
-							</div>
-							<div className="grid gap-1">
-								<h3 className="text-lg font-bold">Video Player</h3>
-								<p className="text-sm text-muted-foreground">
-									Watch your videos directly within the TGCloud app.
-								</p>
-							</div>
-						</div>
-					</div>
-				</section>
-				<section className="w-full py-12 md:py-24 lg:py-32 border-t">
+				<section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
 					<div className="container px-4 md:px-6">
-						<div className="grid gap-10 px-10 md:gap-16 lg:grid-cols-2">
-							<div className="space-y-4">
-								<div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
-									Trusted by Millions
-								</div>
-								<h2 className="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem]">
-									Join the TGCloud Community
-								</h2>
-								<Link
-									href="/files"
-									className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-									prefetch={false}
-								>
-									Get Started
-								</Link>
-							</div>
-							<div className="flex flex-col items-start space-y-4">
-								<div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
-									Secure and Reliable
-								</div>
-								<p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed">
-									TGCloud is built on top of Telegram&apos;s robust infrastructure, ensuring your
-									data is always safe and accessible. With a video player and seamless sharing, you
-									can trust that your files are in good hands.
+						<div className="flex flex-col items-center space-y-4 text-center">
+							<div className="space-y-2">
+								<h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
+									Unlimited Storage Solution
+								</h1>
+								<p className="text-2xl font-semibold text-primary mt-4 mb-6">
+									Storage limits got you down? We&apos;ve got your back!
 								</p>
-								<Link
-									href="#"
-									className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-									prefetch={false}
-								>
-									Contact Sales
-								</Link>
+								<p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+									Securely store all your files with our innovative Telegram-powered solution.
+									Experience unlimited storage capacity.
+								</p>
 							</div>
+							<div className="space-x-4">
+								<Button asChild>
+									<Link href="/files">Get Started</Link>
+								</Button>
+								<Button asChild variant="outline">
+									<Link href="#features">Learn More</Link>
+								</Button>
+							</div>
+						</div>
+					</div>
+				</section>
+				<section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
+					<div className="container px-4 md:px-6">
+						<h2
+							id="features"
+							className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12"
+						>
+							What We&apos;ve Got for You
+						</h2>
+						<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+							<Card>
+								<CardHeader>
+									<CardTitle>Unlimited Storage</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<Cloud className="w-12 h-12 mb-4" />
+									<p>
+										Store as much data as you need without any restrictions. Enjoy truly unlimited
+										storage capacity.
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>Enhanced Security</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<Lock className="w-12 h-12 mb-4" />
+									<p>
+										Your files are securely stored in a private Telegram channel, ensuring maximum
+										data protection.
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>Speedy Gonzales Fast</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<Zap className="w-12 h-12 mb-4" />
+									<p>
+										Upload and download at the speed of light. Well, almost. Thank Telegram for the
+										rocket boost!
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>Built-in Netflix (Sort of)</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<Play className="w-12 h-12 mb-4" />
+									<p>
+										Watch your videos right here, right now. No need to download. It&apos;s like
+										having a mini cinema in your pocket!
+									</p>
+								</CardContent>
+							</Card>
+						</div>
+					</div>
+				</section>
+				<section className="w-full py-12 md:py-24 lg:py-32">
+					<div className="container px-4 md:px-6">
+						<h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
+							Getting Started
+						</h2>
+						<ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+							<li className="flex flex-col items-center text-center">
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+									1
+								</div>
+								<h3 className="mt-4 font-semibold">Sign Up</h3>
+								<p className="mt-2 text-sm">
+									Create an account quickly and easily on our platform.
+								</p>
+							</li>
+							<li className="flex flex-col items-center text-center">
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+									2
+								</div>
+								<h3 className="mt-4 font-semibold">Connect Telegram</h3>
+								<p className="mt-2 text-sm">Securely link your Telegram account to our service.</p>
+							</li>
+							<li className="flex flex-col items-center text-center">
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+									3
+								</div>
+								<h3 className="mt-4 font-semibold">Start Hoarding</h3>
+								<p className="mt-2 text-sm">Upload all your digital treasures. Go nuts!</p>
+							</li>
+						</ol>
+					</div>
+				</section>
+				<section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
+					<div className="container px-4 md:px-6">
+						<h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
+							Frequently Asked Questions
+						</h2>
+						<Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
+							<AccordionItem value="item-1">
+								<AccordionTrigger>Is the storage truly unlimited?</AccordionTrigger>
+								<AccordionContent>
+									Yes, our service leverages Telegram&apos;s storage capabilities to provide
+									unlimited storage. You can store as much data as you need without any restrictions
+									or hidden fees.
+								</AccordionContent>
+							</AccordionItem>
+							<AccordionItem value="item-2">
+								<AccordionTrigger>How secure is the data storage?</AccordionTrigger>
+								<AccordionContent>
+									Your data is highly secure. All files are stored in a private Telegram channel
+									that only you can access, ensuring maximum data protection and privacy.
+								</AccordionContent>
+							</AccordionItem>
+							<AccordionItem value="item-3">
+								<AccordionTrigger>Do I need Telegram?</AccordionTrigger>
+								<AccordionContent>
+									Yep, you&apos;ll need a Telegram account. But don&apos;t sweat it, it&apos;s free
+									and easy to set up. Just grab the Telegram app and you&apos;re good to go!
+								</AccordionContent>
+							</AccordionItem>
+							<AccordionItem value="item-4">
+								<AccordionTrigger>What can I stash here?</AccordionTrigger>
+								<AccordionContent>
+									Anything digital! Docs, pics, videos, your secret recipe collection... If
+									it&apos;s a file, we can store it. No judgment here!
+								</AccordionContent>
+							</AccordionItem>
+						</Accordion>
+					</div>
+				</section>
+				<section className="w-full py-12 md:py-24 lg:py-32">
+					<div className="container px-4 md:px-6">
+						<div className="flex flex-col items-center space-y-4 text-center">
+							<div className="space-y-2">
+								<h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Begin?</h2>
+								<p className="mx-auto max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
+									Join numerous users who are already benefiting from unlimited storage. Sign up now
+									to optimize your data storage solution.
+								</p>
+							</div>
+							<Button asChild>
+								<Link href="/files" className="inline-flex items-center">
+									Get Started <ArrowRight className="ml-2 h-4 w-4" />
+								</Link>
+							</Button>
 						</div>
 					</div>
 				</section>
 			</main>
-			<Footer />
 		</div>
 	);
 }

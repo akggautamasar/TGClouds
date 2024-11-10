@@ -1,10 +1,29 @@
 import { SignIn } from '@clerk/nextjs';
 import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { getUser } from '@/actions';
+
+function checkUserCredetials(user: Awaited<ReturnType<typeof getUser>>, telegramSession?: string) {
+	if (!user?.channelId || !user?.accessHash) {
+		return redirect('/connect-telegram');
+	}
+
+	if (user?.hasPublicTgChannel === null || user?.hasPublicTgChannel === undefined)
+		return redirect('/connect-telegram');
+
+	if (user.accessHash && user.channelId && telegramSession) {
+		return redirect('/files');
+	}
+}
 
 export default async function Component() {
-	const user = await currentUser();
-	if (user) return redirect('/connect-telegram');
+	const user = await getUser();
+	const telegramSession = (await cookies()).get('telegramSession');
+	if (user) {
+		checkUserCredetials(user, telegramSession?.value);
+		return;
+	}
 
 	return (
 		<section className="w-full bg-white py-20 md:py-32 lg:py-40">
@@ -19,7 +38,15 @@ export default async function Component() {
 					</p>
 				</div>
 				<div className="w-full max-w-md min-h-[400px]">
-					<SignIn signUpForceRedirectUrl="/connect-telegram" forceRedirectUrl="/connect-telegram" />
+					<SignIn
+						appearance={{
+							elements: {
+								alertText: 'Terms of Service'
+							}
+						}}
+						signUpForceRedirectUrl="/connect-telegram"
+						forceRedirectUrl="/connect-telegram"
+					/>
 				</div>
 			</div>
 		</section>

@@ -1,8 +1,20 @@
 'use client';
 
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
-import React, { Dispatch, SetStateAction, useState } from 'react';
-import { use } from 'react';
+import posthog from 'posthog-js';
+import { PostHogProvider } from 'posthog-js/react';
+import React, { Dispatch, SetStateAction, use, useState } from 'react';
+import { env } from '../env';
+
+if (typeof window !== 'undefined') {
+	posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
+		api_host: env.NEXT_PUBLIC_POSTHOG_HOST,
+		person_profiles: 'always'
+	});
+}
+export function CSPostHogProvider({ children }: { children: React.ReactNode }) {
+	return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
+}
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
 	return (

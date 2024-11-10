@@ -3,6 +3,8 @@ import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
 import { LoadingItems } from '@/components/loading-files';
 import { Suspense } from 'react';
+
+export const experimental_ppr = true;
 export default async function Home(props: { searchParams: Promise<Record<string, string>> }) {
 	const searchParams = await props.searchParams;
 	const user = await requireUserAuthentication();

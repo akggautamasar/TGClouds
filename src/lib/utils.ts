@@ -257,6 +257,7 @@ export const downloadMedia = async (
 	const media = await getMessage({ client, messageId, user });
 
 	if (!media) return { fileExists: false };
+	  console.log('media', media);
 
 	try {
 		if (!client.connected) await client.connect();
@@ -326,6 +327,7 @@ export const handleMediaDownload = async (
 		thumb: size === 'small' ? 0 : undefined
 	});
 	const blob = new Blob([buffer as unknown as Buffer]);
+
 	blobCache.set(cacheKey, blob);
 	setURL(URL.createObjectURL(blob));
 

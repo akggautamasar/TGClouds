@@ -1,9 +1,9 @@
 import { getAllFiles, requireUserAuthentication } from '@/actions';
 import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
-import { LoadingFiles, LoadingItems } from '@/components/loading-files';
-import { Suspense } from 'react';
+import { LoadingItems } from '@/components/loading-files';
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -17,6 +17,7 @@ export default async function Home(props: { searchParams: Promise<Record<string,
 	const user = await requireUserAuthentication();
 
 	const searchItem = searchParams.search;
+
 	const page = parseInt(searchParams.page || '1');
 
 	//@ts-ignore

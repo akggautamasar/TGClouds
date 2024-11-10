@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 import { cookies } from 'next/headers';
 import { Toaster } from 'react-hot-toast';
 
-import Providers, { TGCloudGlobalContextWrapper } from '@/lib/context';
+import Providers, { TGCloudGlobalContextWrapper, CSPostHogProvider } from '@/lib/context';
 
 export const metadata: Metadata = {
 	metadataBase: new URL('https://yourtgcloud.vercel.app/'),
@@ -49,32 +49,39 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }>) {
 	const telegramSession = (await cookies()).get('telegramSession');
-
 	return (
 		<html lang="en">
 			<link rel="icon" href="/favicon.ico" sizes="any" />
-			<body className={inter.className}>
-				<Providers>
-					<ClerkProvider
-						afterSignOutUrl={'/login'}
-						publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
-						signUpForceRedirectUrl={'/connect-telegram'}
-						signInForceRedirectUrl={'/connect-telegram'}
-					>
-						<ThemeProvider
-							attribute="class"
-							defaultTheme="system"
-							enableSystem
-							disableTransitionOnChange
+			<CSPostHogProvider>
+				<body className={inter.className}>
+					<Providers>
+						<ClerkProvider
+							appearance={{
+								layout: {
+									privacyPageUrl: '/privacy',
+									termsPageUrl: '/terms'
+								}
+							}}
+							afterSignOutUrl={'/login'}
+							publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
+							signUpForceRedirectUrl={'/connect-telegram'}
+							signInForceRedirectUrl={'/connect-telegram'}
 						>
-							<TGCloudGlobalContextWrapper telegramSession={telegramSession?.value}>
-								{children}
-							</TGCloudGlobalContextWrapper>
-						</ThemeProvider>
-					</ClerkProvider>
-				</Providers>
-				<Toaster />
-			</body>
+							<ThemeProvider
+								attribute="class"
+								defaultTheme="system"
+								enableSystem
+								disableTransitionOnChange
+							>
+								<TGCloudGlobalContextWrapper telegramSession={telegramSession?.value}>
+									{children}
+								</TGCloudGlobalContextWrapper>
+							</ThemeProvider>
+						</ClerkProvider>
+					</Providers>
+					<Toaster />
+				</body>
+			</CSPostHogProvider>
 		</html>
 	);
 }

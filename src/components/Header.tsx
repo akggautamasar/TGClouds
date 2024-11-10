@@ -1,10 +1,8 @@
 import Link from 'next/link';
 import { SVGProps } from 'react';
-import { useUser, UserButton } from '@clerk/nextjs';
-import { currentUser } from '@clerk/nextjs/server';
+import { ModeToggle } from '@/components/darkmodeToggle';
 
 export default async function Header() {
-	const user = await currentUser();
 	return (
 		<header className="bg-primary text-primary-foreground px-4 lg:px-6 h-14 flex items-center">
 			<div className="max-w-6xl mx-auto w-full flex items-center">
@@ -14,18 +12,15 @@ export default async function Header() {
 						TG <span className="text-red-800">Cloud</span>
 					</span>
 				</Link>
-				<div className="ml-auto">
-					{user ? (
-						<UserButton />
-					) : (
-						<Link
-							href="/login"
-							className="inline-flex h-9 items-center justify-center rounded-md bg-primary-foreground px-4 py-2 text-sm font-medium text-primary shadow transition-colors  focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-							prefetch={false}
-						>
-							Login
-						</Link>
-					)}
+				<div className="ml-auto flex items-center gap-4">
+					<Link
+						href="/login"
+						className="inline-flex h-9 items-center justify-center rounded-md bg-primary-foreground px-4 py-2 text-sm font-medium text-primary shadow transition-colors hover:bg-primary-foreground/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+						prefetch={false}
+					>
+						Login
+					</Link>
+					<ModeToggle />
 				</div>
 			</div>
 		</header>

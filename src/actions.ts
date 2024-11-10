@@ -29,7 +29,11 @@ export async function saveTelegramCredentials({
 	if (!session) {
 		throw new Error('Session is required ');
 	}
-	(await cookies()).set('telegramSession', session);
+	(await cookies()).set('telegramSession', session, {
+		maxAge: 60 * 60 * 24 * 365,
+		httpOnly: true,
+		secure: true
+	});
 	const user = await currentUser();
 	if (!user) {
 		throw new Error('user needs to be logged in.');
@@ -123,9 +127,7 @@ export const saveUserName = async (username: string) => {
 
 export async function getUser() {
 	const user = await currentUser();
-	if (!user) {
-		throw new Error('user needs to be logged in.');
-	}
+	if (!user) return null;
 
 	const email = user.emailAddresses?.[0]?.emailAddress;
 	if (!email) {

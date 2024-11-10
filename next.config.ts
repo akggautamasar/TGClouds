@@ -22,7 +22,6 @@ const nextConfig: NextConfig = {
 	},
 
 	experimental: {
-		reactCompiler: true,
 		turbo: {
 			resolveAlias: {
 				'~fluid-player/src/css/fluidplayer.css': 'node_modules/fluid-player/src/css/fluidplayer.css'
