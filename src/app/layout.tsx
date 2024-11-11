@@ -39,7 +39,11 @@ export const metadata: Metadata = {
 		title: 'Unlimited Cloud Storage | Your Cloud App',
 		description:
 			'Enjoy unlimited cloud storage integrated with Telegram. Effortlessly store and manage your files with no limits.',
-		images: [{ url: '/path-to-your-logo.png' }]
+		images: [
+			{
+				url: '/TGCloud.webp'
+			}
+		]
 	}
 };
 

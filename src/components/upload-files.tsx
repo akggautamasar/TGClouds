@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
-import { getTgClient } from '@/lib/getTgClient';
+import { getGlobalTGCloudContext } from '@/lib/context';
+import { promiseToast } from '@/lib/notify';
+import { User } from '@/lib/types';
 import { formatBytes, uploadFiles } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Dropzone from 'react-dropzone';
-import { promiseToast } from '@/lib/notify';
-import { User } from '@/lib/types';
-import { useRouter } from 'next/navigation';
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from './Icons/icons';
 
 interface DropedFile {
@@ -32,6 +32,7 @@ export const UploadFiles = ({
 	const router = useRouter();
 	const [dropedfiles, setFiles] = useState<DropedFile[]>([]);
 	const [uploadProgress, setUploadProgress] = useState<UploadProgress>();
+	const client = getGlobalTGCloudContext()?.TGClient;
 
 	const handleDrop = (acceptedFiles: File[]) => {
 		console.log(acceptedFiles);
@@ -44,8 +45,7 @@ export const UploadFiles = ({
 
 	const handleSubmit = async (formData: FormData) => {
 		await promiseToast({
-			cb: () =>
-				uploadFiles(formData, user, setUploadProgress, getTgClient(telegramSession as string)),
+			cb: () => uploadFiles(formData, user, setUploadProgress, client),
 			errMsg: 'Oops we fucked up we failed to upload your files',
 			successMsg: 'File Uploaded',
 			loadingMsg: 'please wait...',

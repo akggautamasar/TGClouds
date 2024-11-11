@@ -1,15 +1,13 @@
 import { uploadFile } from '@/actions';
-import { getTgClient } from '@/lib/getTgClient';
+import Message, { MessageMediaPhoto } from '@/lib/types';
 import TTLCache from '@isaacs/ttlcache';
 import { type ClassValue, clsx } from 'clsx';
 import { ReadonlyURLSearchParams } from 'next/navigation';
 import { Dispatch, SetStateAction } from 'react';
 import { twMerge } from 'tailwind-merge';
-import { Api, TelegramClient, client } from 'telegram';
-import { TypeNotFoundError } from 'telegram/errors';
+import { Api, TelegramClient } from 'telegram';
+import { RPCError, TypeNotFoundError } from 'telegram/errors';
 import { ChannelDetails, User } from './types';
-import Message, { MessageMediaPhoto } from '@/lib/types';
-import { RPCError } from 'telegram/errors';
 
 type MediaSize = 'large' | 'small';
 export type MediaCategory = 'video' | 'image' | 'document';
@@ -217,7 +215,6 @@ export const canWeAccessTheChannel = async (client: TelegramClient, user: User) 
 	}
 };
 
-
 export const getMessage = async ({
 	messageId,
 	client,
@@ -241,7 +238,8 @@ export const getMessage = async ({
 
 export const downloadMedia = async (
 	{ user, messageId, size, setURL, category, isShare }: DownloadMediaOptions,
-	telegramSession: string | undefined
+	telegramSession: string | undefined,
+	client:TelegramClient
 ): Promise<Blob | { fileExists: boolean } | null> => {
 	if (!user || !telegramSession || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
@@ -252,12 +250,12 @@ export const downloadMedia = async (
 		return blobCache.get(cacheKey)!;
 	}
 
-	const client = getTgClient(telegramSession);
+	if (!client) throw new Error('Failed to get Telegram client');
 
 	const media = await getMessage({ client, messageId, user });
 
 	if (!media) return { fileExists: false };
-	  console.log('media', media);
+	console.log('media', media);
 
 	try {
 		if (!client.connected) await client.connect();

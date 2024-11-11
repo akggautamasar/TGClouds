@@ -1,10 +1,11 @@
 'use client';
-
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import React, { Dispatch, SetStateAction, use, useState } from 'react';
+import React, { Dispatch, SetStateAction, use, useState, useEffect } from 'react';
 import { env } from '../env';
+import { TelegramClient } from 'telegram';
+import { getTgClient } from './getTgClient';
 
 if (typeof window !== 'undefined') {
 	posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
@@ -28,12 +29,16 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 export default Providers;
 
 type SortBy = 'name' | 'size' | 'type' | 'date';
+type connectionState = 'connected' | 'disconnected' | 'connecting' | 'reconnecting';
 
 export const TGCloudGlobalContext = React.createContext<
 	| {
 			sortBy: SortBy;
 			setSortBy: Dispatch<SetStateAction<SortBy>>;
 			telegramSession: string | undefined;
+			TGClient: TelegramClient;
+			connectionStatus: connectionState;
+			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
 	  }
 	| undefined
 >(undefined);
@@ -46,14 +51,35 @@ export const TGCloudGlobalContextWrapper = ({
 	telegramSession: string | undefined;
 }) => {
 	const [sortBy, setSortBy] = useState<SortBy>('name');
+	const client = getTgClient(telegramSession ?? '');
+	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
+
+	useEffect(() => {
+		const cleanup = () => {
+			if (client) {
+				client?.disconnect();
+			}
+		};
+		return cleanup;
+	}, [client]);
 
 	return (
-		<TGCloudGlobalContext.Provider value={{ setSortBy, sortBy, telegramSession }}>
+		<TGCloudGlobalContext.Provider
+			value={{
+				setSortBy,
+				sortBy,
+				telegramSession,
+				TGClient: client,
+				connectionStatus,
+				setConnectionStatus
+			}}
+		>
 			{children}
 		</TGCloudGlobalContext.Provider>
 	);
 };
 
-export const useTGCloudGlobalContext = () => {
+export const getGlobalTGCloudContext = () => {
+	// eslint-disable-next-line react-hooks/rules-of-hooks
 	return use(TGCloudGlobalContext);
 };

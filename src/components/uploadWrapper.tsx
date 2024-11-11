@@ -7,12 +7,12 @@ import { UploadIcon } from './Icons/icons';
 import { UploadFiles } from './upload-files';
 import { User } from '@/lib/types';
 import TGCloudPricing from './farmui/TGCloudPricing';
-import { useTGCloudGlobalContext } from '@/lib/context';
+import { getGlobalTGCloudContext } from '@/lib/context';
 
 export default function DrawerDialogDemo({ user }: { user: User }) {
 	const [open, setOpen] = useState(false);
 	const isDesktop = useMediaQuery('(min-width: 768px)');
-	const TGCloudGlobalContext = useTGCloudGlobalContext();
+	const TGCloudGlobalContext = getGlobalTGCloudContext();
 	const telegramSession = TGCloudGlobalContext?.telegramSession;
 
 	if (isDesktop) {

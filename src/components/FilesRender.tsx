@@ -2,8 +2,7 @@
 import { clearCookies, deleteFile, shareFile, deleteChannelDetail } from '@/actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTGCloudGlobalContext } from '@/lib/context';
-import { getTgClient } from '@/lib/getTgClient';
+import { getGlobalTGCloudContext } from '@/lib/context';
 import { promiseToast } from '@/lib/notify';
 import Message, { FilesData, User } from '@/lib/types';
 import {
@@ -68,7 +67,7 @@ export function showSharableURL(url: string) {
 const checkSessionStatus = async (client: TelegramClient) => {
 	try {
 		if (!client.connected) await client.connect();
-		const isAuthorized = await client.getMe();
+		const isAuthorized = await client.checkAuthorization();
 		return isAuthorized;
 	} catch (error) {
 		if (error instanceof RPCError) {
@@ -82,7 +81,10 @@ const checkSessionStatus = async (client: TelegramClient) => {
 };
 
 function Files({ user, files }: { user: User; mimeType?: string; files: FilesData | undefined }) {
-	const { sortBy, telegramSession } = useTGCloudGlobalContext()!;
+	const TGCloudGlobalContext = getGlobalTGCloudContext();
+	const sortBy = TGCloudGlobalContext?.sortBy;
+	const client = TGCloudGlobalContext?.TGClient as TelegramClient;
+	const telegramSession = TGCloudGlobalContext?.telegramSession;
 	const [sessionChecked, setSessionChecked] = useState(false);
 	const [isValidSession, setIsValidSession] = useState(true);
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
@@ -92,13 +94,34 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 		if (!telegramSession) {
 			return;
 		}
-		const tgClient = getTgClient(telegramSession);
 		(async () => {
-			const isValid = await checkSessionStatus(tgClient);
+			client.on((ev) => {
+				alert(JSON.stringify(ev));
+			});
+
+			const isValid = await checkSessionStatus(client);
+			const connStatus = client.connected ? 'connected' : 'disconnected';
+
+			TGCloudGlobalContext.setConnectionStatus(connStatus);
 			setSessionChecked(true);
 			setIsValidSession(!!isValid);
-			const result = await canWeAccessTheChannel(tgClient, user);
+			const result = await canWeAccessTheChannel(client, user);
 			setCanWeAccessTGChannel(!!result);
+
+			client.addEventHandler((event: { name: string }) => {
+				alert(event.name);
+				switch (event.name) {
+					case 'ready':
+						console.log('Connected successfully');
+						break;
+					case 'disconnected':
+						console.log('Disconnected');
+						break;
+					case 'message':
+						console.log('Received message:', event.message);
+						break;
+				}
+			});
 		})();
 	}, [telegramSession]);
 
@@ -203,9 +226,9 @@ const addBotToChannel = async (client: TelegramClient, user: User) => {
 };
 
 function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
-	const TGCloudGlobalContext = useTGCloudGlobalContext();
+	const TGCloudGlobalContext = getGlobalTGCloudContext();
 	const telegramSession = TGCloudGlobalContext?.telegramSession;
-	const client = getTgClient(telegramSession as string);
+	const client = TGCloudGlobalContext?.TGClient as TelegramClient;
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);
@@ -219,7 +242,8 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 				setURL,
 				category: file.category as MediaCategory
 			},
-			telegramSession
+			telegramSession,
+			client
 		);
 		if (
 			result &&
@@ -236,7 +260,6 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
-					const client = getTgClient(telegramSession!);
 					const media = (await getMessage({
 						client,
 						messageId: file.fileTelegramId,

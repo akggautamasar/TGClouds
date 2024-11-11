@@ -1,10 +1,11 @@
 'use client';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useCreateQueryString } from '@/lib/utils';
 import { useMediaQuery } from '@uidotdev/usehooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ElementRef, useEffect, useRef, useState, type JSX } from 'react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
 export function FileModalView({
 	children,
@@ -39,6 +40,9 @@ export function FileModalView({
 			<Dialog open={open} onOpenChange={handleOpenChange}>
 				<DialogTrigger className="w-full">{children}</DialogTrigger>
 				<DialogContent className="md:min-w-[760px] lg:min-w-[1000px] w-full max-h-[90dvh] h-full overflow-y-auto">
+					<VisuallyHidden.Root>
+						<DialogTitle>Menu</DialogTitle>
+					</VisuallyHidden.Root>
 					<ItemThatWillShowOnModal />
 				</DialogContent>
 			</Dialog>
