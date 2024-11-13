@@ -1,19 +1,19 @@
 'use server';
 
-import { currentUser } from '@clerk/nextjs/server';
-import { and, asc, count, desc, eq, ilike } from 'drizzle-orm';
-import { redirect } from 'next/navigation';
-import { db } from './db';
-import { paymentsTable, userFiles, usersTable, sharedFilesTable } from './db/schema';
-import { revalidatePath } from 'next/cache';
-import { ChapaInitializePaymentRequestBody, User } from './lib/types';
-import crypto from 'node:crypto';
-import { PLANS } from '@/components/farmui/TGCloudPricing';
-import { cookies } from 'next/headers';
-import { Resend } from 'resend';
 import Email from '@/components/email';
+import { PLANS } from '@/components/farmui/TGCloudPricing';
+import { auth } from '@/lib/auth';
+import { and, asc, count, desc, eq, ilike } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import crypto from 'node:crypto';
 import React from 'react';
+import { Resend } from 'resend';
+import { db } from './db';
+import { paymentsTable, sharedFilesTable, userFiles, usersTable } from './db/schema';
 import { env } from './env';
+import { ChapaInitializePaymentRequestBody, User } from './lib/types';
 
 export async function saveTelegramCredentials({
 	accessHash,
@@ -34,39 +34,13 @@ export async function saveTelegramCredentials({
 		httpOnly: true,
 		secure: true
 	});
-	const user = await currentUser();
+	const user = await getUser();
+
 	if (!user) {
 		throw new Error('user needs to be logged in.');
 	}
 
-	const email = user.emailAddresses?.[0]?.emailAddress;
-	if (!email) {
-		throw new Error('user email is not available.');
-	}
-
 	try {
-		const existinguser = await getUser();
-
-		if (!existinguser) {
-			const name = user.fullName ?? `${user.firstName} ${user.lastName}`;
-			const subscriptionDate = addDays(new Date(), 7).toISOString();
-			const data = await db
-				.insert(usersTable)
-				.values({
-					email,
-					name,
-					id: user.id,
-					imageUrl: user.imageUrl,
-					accessHash: accessHash,
-					channelId: channelId,
-					channelTitle: channelTitle,
-					isSubscribedToPro: true,
-					subscriptionDate
-				})
-				.returning();
-			return user.id;
-		}
-
 		const result = await db
 			.update(usersTable)
 			.set({
@@ -74,7 +48,7 @@ export async function saveTelegramCredentials({
 				channelId: channelId,
 				channelTitle: channelTitle
 			})
-			.where(eq(usersTable.email, email))
+			.where(eq(usersTable.id, user.id))
 			.returning();
 		return session;
 	} catch (error) {
@@ -84,39 +58,33 @@ export async function saveTelegramCredentials({
 }
 
 export const saveUserName = async (username: string) => {
-	const user = await currentUser();
+	const user = await getUser();
 	if (!user) {
 		throw new Error('user needs to be logged in.');
 	}
-
-	const email = user.emailAddresses?.[0]?.emailAddress;
-	if (!email) {
-		throw new Error('user email is not available.');
-	}
-
 	try {
 		const existinguser = await getUser();
 
-		if (!existinguser) {
-			const name = user?.fullName ?? `${user.firstName} ${user.lastName}`;
-			const data = await db
-				.insert(usersTable)
-				.values({
-					email,
-					name,
-					id: user.id,
-					channelUsername: username
-				})
-				.returning();
-			return data;
-		}
+		// if (!existinguser) {
+		// 	const name = user?.fullName ?? `${user.firstName} ${user.lastName}`;
+		// 	const data = await db
+		// 		.insert(usersTable)
+		// 		.values({
+		// 			email,
+		// 			name,
+		// 			id: user.id,
+		// 			channelUsername: username
+		// 		})
+		// 		.returning();
+		// 	return data;
+		// }
 
 		const result = await db
 			.update(usersTable)
 			.set({
 				channelUsername: username
 			})
-			.where(eq(usersTable.email, email))
+			.where(eq(usersTable.id, user.id))
 			.returning();
 		return result;
 	} catch (error) {
@@ -126,18 +94,17 @@ export const saveUserName = async (username: string) => {
 };
 
 export async function getUser() {
-	const user = await currentUser();
-	if (!user) return null;
+	const session = await auth.api.getSession({
+		headers: await headers()
+	});
 
-	const email = user.emailAddresses?.[0]?.emailAddress;
-	if (!email) {
-		throw new Error('user email is not available.');
-	}
+	if (!session) return null;
+	const user = session.user;
 
 	try {
 		const result = await db.query.usersTable.findFirst({
 			where(fields, { eq }) {
-				return eq(fields.email, email);
+				return eq(fields.id, user.id);
 			}
 		});
 
@@ -340,8 +307,6 @@ async function generateId() {
 }
 
 export const requireUserAuthentication = async () => {
-	const userClerk = await currentUser();
-	if (!userClerk) return redirect('/login');
 	const user = await getUser();
 
 	const hasNotDecidedToHavePrivateChannle =
@@ -620,7 +585,6 @@ export const clearCookies = async () => {
 	}
 };
 
-
 export const deleteChannelDetail = async () => {
 	// try {
 	const user = await getUser();
@@ -638,5 +602,3 @@ export const deleteChannelDetail = async () => {
 	// console.error(err);
 	// }
 };
-
-

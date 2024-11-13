@@ -31,6 +31,52 @@ export const usersTable = pgTable(
 	})
 );
 
+
+export const session = pgTable(
+	'session',
+	{
+		id: text('id').primaryKey(),
+		expiresAt: date('expiresAt'),
+		ipAddress: text('ipAddress'),
+		userAgent: text('userAgent'),
+		userId: text('userId')
+	},
+	(table) => ({
+		fkUserId: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [usersTable.id]
+		}).onDelete('cascade')
+	})
+);
+
+export const account = pgTable(
+	'account',
+	{
+		id: text('id').primaryKey(),
+		accountId: text('accountId'),
+		providerId: text('providerId'),
+		userId: text('userId'),
+		accessToken: text('accessToken'),
+		refreshToken: text('refreshToken'),
+		idToken: text('idToken'),
+		expiresAt: date('expiresAt'),
+		password: text('password')
+	},
+	(table) => ({
+		fkUserId: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [usersTable.id]
+		}).onDelete('cascade')
+	})
+);
+
+export const verification = pgTable('verification', {
+	id: text('id').primaryKey(),
+	identifier: text('identifier'),
+	value: text('value'),
+	expiresAt: date('expiresAt')
+});
+
 export const sharedFilesTable = pgTable(
 	'sharedFiles',
 	{
@@ -95,3 +141,7 @@ export const userFiles = pgTable(
 			.onUpdate('cascade')
 	})
 );
+
+
+
+

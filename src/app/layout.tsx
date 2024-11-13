@@ -5,7 +5,6 @@ import './globals.css';
 
 import { ThemeProvider } from '@/components/theme-provider';
 import { env } from '@/env';
-import { ClerkProvider } from '@clerk/nextjs';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -59,29 +58,16 @@ export default async function RootLayout({
 			<CSPostHogProvider>
 				<body className={inter.className}>
 					<Providers>
-						<ClerkProvider
-							appearance={{
-								layout: {
-									privacyPageUrl: '/privacy',
-									termsPageUrl: '/terms'
-								}
-							}}
-							afterSignOutUrl={'/login'}
-							publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
-							signUpForceRedirectUrl={'/connect-telegram'}
-							signInForceRedirectUrl={'/connect-telegram'}
+						<ThemeProvider
+							attribute="class"
+							defaultTheme="system"
+							enableSystem
+							disableTransitionOnChange
 						>
-							<ThemeProvider
-								attribute="class"
-								defaultTheme="system"
-								enableSystem
-								disableTransitionOnChange
-							>
-								<TGCloudGlobalContextWrapper telegramSession={telegramSession?.value}>
-									{children}
-								</TGCloudGlobalContextWrapper>
-							</ThemeProvider>
-						</ClerkProvider>
+							<TGCloudGlobalContextWrapper telegramSession={telegramSession?.value}>
+								{children}
+							</TGCloudGlobalContextWrapper>
+						</ThemeProvider>
 					</Providers>
 					<Toaster />
 				</body>

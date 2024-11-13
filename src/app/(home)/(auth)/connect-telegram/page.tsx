@@ -1,14 +1,15 @@
 import { getUser } from '@/actions';
 import ConnectTelegram from '@/components/connectTelegram';
 import { User } from '@/lib/types';
-import { currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 async function Page() {
-	const userClerk = await currentUser();
-	if (!userClerk) return redirect('/login');
 	const user = await getUser();
+	if (!user) {
+		redirect('/login');
+	}
+
 	const telegramSession = (await cookies()).get('telegramSession');
 
 	if (

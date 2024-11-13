@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { User } from '@/lib/types';
-import { UserButton } from '@clerk/nextjs';
 import { File, Menu } from 'lucide-react';
 import { cookies } from 'next/headers';
 import React from 'react';
@@ -14,6 +13,7 @@ import SearchItems from './searchItems';
 import SortBy from './SortBy';
 import Upload from './uploadWrapper';
 import ConnectionStatusIndicator from './conncStatusIndicator';
+import ProfileMenu from './profileMenu';
 
 export async function Dashboard({
 	children,
@@ -276,7 +276,7 @@ export async function Dashboard({
 						<Upload user={user} />
 					</div>
 					<div>
-						<UserButton />
+						<ProfileMenu />
 					</div>
 				</header>
 				<main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">

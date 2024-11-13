@@ -95,8 +95,8 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 			return;
 		}
 		(async () => {
-			client.on((ev) => {
-				alert(JSON.stringify(ev));
+			client.addEventHandler((ev) => {
+				console.log('evenet', ev);
 			});
 
 			const isValid = await checkSessionStatus(client);
@@ -118,7 +118,7 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 						console.log('Disconnected');
 						break;
 					case 'message':
-						console.log('Received message:', event.message);
+						// console.log('Received message:', event.message);
 						break;
 				}
 			});
