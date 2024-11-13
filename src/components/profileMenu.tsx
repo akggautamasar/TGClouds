@@ -42,7 +42,7 @@ export default async function ProfileMenu() {
 						)}
 					</div>
 				</DropdownMenuLabel>
-				<DropdownMenuSeparator />
+				{/* <DropdownMenuSeparator />
 				<DropdownMenuItem asChild>
 					<Link href="/profile">
 						<User className="mr-2 h-4 w-4" />
@@ -54,7 +54,7 @@ export default async function ProfileMenu() {
 						<Settings className="mr-2 h-4 w-4" />
 						<span>Settings</span>
 					</Link>
-				</DropdownMenuItem>
+				</DropdownMenuItem> */}
 				<DropdownMenuItem asChild>
 					<Link href="/support">
 						<HelpCircle className="mr-2 h-4 w-4" />
