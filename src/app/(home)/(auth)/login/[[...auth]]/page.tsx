@@ -1,8 +1,7 @@
-import { SignIn } from '@clerk/nextjs';
-import { currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { getUser } from '@/actions';
+import LoginPage from '@/components/login';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 function checkUserCredetials(user: Awaited<ReturnType<typeof getUser>>, telegramSession?: string) {
 	if (!user?.channelId || !user?.accessHash) {
@@ -20,9 +19,9 @@ function checkUserCredetials(user: Awaited<ReturnType<typeof getUser>>, telegram
 export default async function Component() {
 	const user = await getUser();
 	const telegramSession = (await cookies()).get('telegramSession');
-	if (user) {
-		checkUserCredetials(user, telegramSession?.value);
-		return;
+
+	if (!!user) {
+		return redirect('/connect-telegram');
 	}
 
 	return (
@@ -38,15 +37,7 @@ export default async function Component() {
 					</p>
 				</div>
 				<div className="w-full max-w-md min-h-[400px]">
-					<SignIn
-						appearance={{
-							elements: {
-								alertText: 'Terms of Service'
-							}
-						}}
-						signUpForceRedirectUrl="/connect-telegram"
-						forceRedirectUrl="/connect-telegram"
-					/>
+					<LoginPage />
 				</div>
 			</div>
 		</section>

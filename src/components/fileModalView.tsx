@@ -1,8 +1,7 @@
-'use client';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useCreateQueryString } from '@/lib/utils';
-import { useMediaQuery } from '@uidotdev/usehooks';
+import { useMediaQuery, useIsClient } from '@uidotdev/usehooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ElementRef, useEffect, useRef, useState, type JSX } from 'react';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
@@ -19,12 +18,13 @@ export function FileModalView({
 	const searchParams = useSearchParams();
 	const idInURL = searchParams.get('open');
 	const [open, setOpen] = useState(false);
-	const isDesktop = useMediaQuery('(min-width: 768px)');
 	const pathname = usePathname();
 	const dialogRef = useRef<ElementRef<typeof DialogTrigger> | null>(null); // Initialize useRef with proper type or null
 
 	const createQueryString = useCreateQueryString(searchParams);
 	const router = useRouter();
+
+	const isDesktop = useMediaQuery('(min-width: 768px)');
 
 	const handleOpenChange = (value: boolean) => {
 		setOpen(value);
