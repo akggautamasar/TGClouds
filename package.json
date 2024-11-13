@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev:turbo": "dotenv -e .env.development -- next dev --turbo -p 3000",
 		"dev": "dotenv -e .env.development -- next dev",
-		"build": "dotenv -e .env.production -- next build",
+		"build": "drizzle-kit push && next build",
 		"start": "next start",
 		"lint": "next lint",
 		"db:generate": "dotenv -e .env.development -- drizzle-kit generate",
