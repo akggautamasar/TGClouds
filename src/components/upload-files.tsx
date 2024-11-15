@@ -8,6 +8,7 @@ import { Dispatch, SetStateAction, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from './Icons/icons';
+import { getTgClient } from '@/lib/getTgClient';
 
 interface DropedFile {
 	file: File;
@@ -32,7 +33,7 @@ export const UploadFiles = ({
 	const router = useRouter();
 	const [dropedfiles, setFiles] = useState<DropedFile[]>([]);
 	const [uploadProgress, setUploadProgress] = useState<UploadProgress>();
-	const client = getGlobalTGCloudContext()?.TGClient;
+	const client = getTgClient(telegramSession ?? '');
 
 	const handleDrop = (acceptedFiles: File[]) => {
 		console.log(acceptedFiles);

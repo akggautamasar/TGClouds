@@ -1,5 +1,4 @@
 'use server';
-
 import Email from '@/components/email';
 import { PLANS } from '@/components/farmui/TGCloudPricing';
 import { auth } from '@/lib/auth';

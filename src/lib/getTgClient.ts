@@ -9,8 +9,7 @@ export function getTgClient(telegramSession: string) {
 		env.NEXT_PUBLIC_TELEGRAM_API_ID,
 		env.NEXT_PUBLIC_TELEGRAM_API_HASH,
 		{
-			connectionRetries: 5,
-			useWSS: true
+			connectionRetries: 5
 		}
 	);
 	return client;

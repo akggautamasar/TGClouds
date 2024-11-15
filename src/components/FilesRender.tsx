@@ -27,6 +27,7 @@ import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
 import { RPCError } from 'telegram/errors';
 import { Button } from '@/components/ui/button';
+import { getTgClient } from '@/lib/getTgClient';
 
 import Swal from 'sweetalert2';
 import { Api, TelegramClient } from 'telegram';
@@ -67,7 +68,7 @@ export function showSharableURL(url: string) {
 const checkSessionStatus = async (client: TelegramClient) => {
 	try {
 		if (!client.connected) await client.connect();
-		const isAuthorized = await client.checkAuthorization();
+		const isAuthorized = await client.getMe();
 		return isAuthorized;
 	} catch (error) {
 		if (error instanceof RPCError) {
@@ -83,7 +84,7 @@ const checkSessionStatus = async (client: TelegramClient) => {
 function Files({ user, files }: { user: User; mimeType?: string; files: FilesData | undefined }) {
 	const TGCloudGlobalContext = getGlobalTGCloudContext();
 	const sortBy = TGCloudGlobalContext?.sortBy;
-	const client = TGCloudGlobalContext?.TGClient as TelegramClient;
+	const client = getTgClient(TGCloudGlobalContext?.telegramSession ?? '');
 	const telegramSession = TGCloudGlobalContext?.telegramSession;
 	const [sessionChecked, setSessionChecked] = useState(false);
 	const [isValidSession, setIsValidSession] = useState(true);
@@ -102,26 +103,26 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 			const isValid = await checkSessionStatus(client);
 			const connStatus = client.connected ? 'connected' : 'disconnected';
 
-			TGCloudGlobalContext.setConnectionStatus(connStatus);
+			// TGCloudGlobalContext.setConnectionStatus(connStatus);
 			setSessionChecked(true);
 			setIsValidSession(!!isValid);
 			const result = await canWeAccessTheChannel(client, user);
 			setCanWeAccessTGChannel(!!result);
 
-			client.addEventHandler((event: { name: string }) => {
-				alert(event.name);
-				switch (event.name) {
-					case 'ready':
-						console.log('Connected successfully');
-						break;
-					case 'disconnected':
-						console.log('Disconnected');
-						break;
-					case 'message':
-						// console.log('Received message:', event.message);
-						break;
-				}
-			});
+			// client.addEventHandler((event: { name: string }) => {
+			// 	alert(event.name);
+			// 	switch (event.name) {
+			// 		case 'ready':
+			// 			console.log('Connected successfully');
+			// 			break;
+			// 		case 'disconnected':
+			// 			console.log('Disconnected');
+			// 			break;
+			// 		case 'message':
+			// 			// console.log('Received message:', event.message);
+			// 			break;
+			// 	}
+			// });
 		})();
 	}, [telegramSession]);
 
@@ -228,7 +229,7 @@ const addBotToChannel = async (client: TelegramClient, user: User) => {
 function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	const TGCloudGlobalContext = getGlobalTGCloudContext();
 	const telegramSession = TGCloudGlobalContext?.telegramSession;
-	const client = TGCloudGlobalContext?.TGClient as TelegramClient;
+	const client = getTgClient(telegramSession ?? '');
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);

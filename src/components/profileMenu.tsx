@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { getUser } from '@/actions';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
 	DropdownMenu,
@@ -8,9 +9,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Settings, HelpCircle, LogOut } from 'lucide-react';
-import { getUser } from '@/actions';
+import { HelpCircle, LogOut } from 'lucide-react';
+import { auth } from '@/lib/auth';
+import Link from 'next/link';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export default async function ProfileMenu() {
 	const user = await getUser();
@@ -63,8 +66,22 @@ export default async function ProfileMenu() {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem>
-					<LogOut className="mr-2 h-4 w-4" />
-					<span>Log out</span>
+					<form
+						action={async () => {
+							'use server';
+							const logoutResult = await auth.api.signOut({
+								headers: await headers()
+							});
+							if (logoutResult.success) {
+								redirect('/login');
+							}
+						}}
+					>
+						<button className="flex items-center">
+							<LogOut className="mr-2 h-4 w-4" />
+							<span>Log out</span>
+						</button>
+					</form>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

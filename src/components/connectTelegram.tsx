@@ -17,7 +17,7 @@ import { Api } from 'telegram';
 import { RPCError } from 'telegram/errors';
 import { useDebouncedCallback } from 'use-debounce';
 import { LoadingSVG, TextIcon } from './Icons/icons';
-
+import { getTgClient } from '@/lib/getTgClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getGlobalTGCloudContext } from '@/lib/context';
 import { errorToast } from '@/lib/notify';
@@ -170,86 +170,86 @@ export default function Component({
 }) {
 	const [isLoading, setIsLoading] = useState<boolean>();
 	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const client = TGCloudGlobalContext?.TGClient;
 	const session = TGCloudGlobalContext?.telegramSession;
-		const router = useRouter();
-		async function connectTelegram() {
-			try {
-				setIsLoading(true);
-				let newSession: string | undefined;
-				if (!session) {
-					newSession = await loginInTelegram();
-				}
+	const client = getTgClient(session ?? '');
+	const router = useRouter();
+	async function connectTelegram() {
+		try {
+			setIsLoading(true);
+			let newSession: string | undefined;
+			if (!session) {
+				newSession = await loginInTelegram();
+			}
 
-				if (!client?.connected) {
-					await client?.connect();
-				}
+			if (!client?.connected) {
+				await client?.connect();
+			}
 
-				const tgUserSession = newSession ?? session;
+			const tgUserSession = newSession ?? session;
 
-				if (!tgUserSession) {
-					toast.error('There was an error while connetion to telegram');
-					return;
-				}
+			if (!tgUserSession) {
+				toast.error('There was an error while connetion to telegram');
+				return;
+			}
 
-				if (user.channelId && user.channelTitle && user.accessHash) {
-					await saveTelegramCredentials({
-						session: tgUserSession,
-						accessHash: user.accessHash,
-						channelId: user.channelId,
-						channelTitle: user.channelTitle
-					});
-					posthog.capture('userTelegramAccountConnect', { property: user.email });
-					router.push('/files');
-					return;
-				}
-				const channelDetails = await createTelegramChannel()!;
+			if (user.channelId && user.channelTitle && user.accessHash) {
+				await saveTelegramCredentials({
+					session: tgUserSession,
+					accessHash: user.accessHash,
+					channelId: user.channelId,
+					channelTitle: user.channelTitle
+				});
+				posthog.capture('userTelegramAccountConnect', { property: user.email });
+				router.push('/files');
+				return;
+			}
+			const channelDetails = await createTelegramChannel()!;
+			Swal.fire({
+				title: 'Channel created',
+				text: 'We have created a channel in Telegram for you',
+				timer: 3000
+			});
+
+			if (channelDetails) {
+				const { accessHash, channelTitle, id } = channelDetails;
+				await saveTelegramCredentials({
+					session: tgUserSession,
+					accessHash,
+					channelId: id,
+					channelTitle
+				});
+
+				location.reload();
+			}
+		} catch (err) {
+			console.error(err);
+		} finally {
+			setIsLoading(false);
+			client?.disconnect();
+		}
+	}
+
+	async function loginInTelegram() {
+		try {
+			await client?.start({
+				phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
+				password: async () => (await getPassword()) as unknown as string,
+				phoneCode: async () => (await getCode()) as unknown as string,
+				onError: (err) => errorToast(err?.message)
+			});
+
+			const session = client?.session.save() as unknown as string;
+			return session;
+		} catch (err) {
+			if (err && typeof err == 'object' && 'message' in err) {
 				Swal.fire({
-					title: 'Channel created',
-					text: 'We have created a channel in Telegram for you',
+					title: 'failed to create channel',
+					text: (err?.message as string) ?? 'there was an error',
 					timer: 3000
 				});
-
-				if (channelDetails) {
-					const { accessHash, channelTitle, id } = channelDetails;
-					await saveTelegramCredentials({
-						session: tgUserSession,
-						accessHash,
-						channelId: id,
-						channelTitle
-					});
-
-					location.reload();
-				}
-			} catch (err) {
-				console.error(err);
-			} finally {
-				setIsLoading(false);
-				client?.disconnect();
 			}
 		}
-
-		async function loginInTelegram() {
-			try {
-				await client?.start({
-					phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
-					password: async () => (await getPassword()) as unknown as string,
-					phoneCode: async () => (await getCode()) as unknown as string,
-					onError: (err) => errorToast(err?.message)
-				});
-
-				const session = client?.session.save() as unknown as string;
-				return session;
-			} catch (err) {
-				if (err && typeof err == 'object' && 'message' in err) {
-					Swal.fire({
-						title: 'failed to create channel',
-						text: (err?.message as string) ?? 'there was an error',
-						timer: 3000
-					});
-				}
-			}
-		}
+	}
 
 	async function createTelegramChannel() {
 		try {

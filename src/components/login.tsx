@@ -14,11 +14,11 @@ import { client } from '@/lib/client';
 
 export default function LoginPage() {
 	return (
-		<div className="flex items-center justify-center min-h-screen ">
-			<Card className="w-full max-w-md ">
-				<CardHeader className="space-y-1">
-					<CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
-					<CardDescription className="text-center">
+		<div className="flex items-center justify-center">
+			<Card className="w-full max-w-md border-none bg-white shadow-none  rounded-lg">
+				<CardHeader className="space-y-1 ">
+					<CardTitle className="text-3xl font-bold text-center text-gray-800">Login</CardTitle>
+					<CardDescription className="text-center text-gray-600">
 						Choose your preferred login method
 					</CardDescription>
 				</CardHeader>
@@ -31,24 +31,27 @@ export default function LoginPage() {
 							});
 						}}
 						variant="outline"
-						className="w-full"
+						className="w-full hover:bg-gray-100 hover:text-black transition duration-200"
 					>
 						<Mail className="mr-2 h-4 w-4" />
 						Login with Google
 					</Button>
-					<Button variant="outline" className="w-full">
+					<Button
+						variant="outline"
+						className="w-full hover:text-black hover:bg-gray-100 transition duration-200"
+					>
 						<Github className="mr-2 h-4 w-4" />
 						Login with GitHub
 					</Button>
 				</CardContent>
 				<CardFooter className="flex flex-col items-center">
-					<p className="mt-2 text-xs text-center text-muted-foreground">
+					<p className="mt-2 text-xs text-center text-gray-500">
 						By logging in, you agree to our
-						<Link href="/terms" className="underline ml-1 text-foreground hover:text-primary">
+						<Link href="/terms" className="underline ml-1 text-blue-600 hover:text-blue-800">
 							Terms of Service
 						</Link>{' '}
 						and{' '}
-						<Link href="/privacy" className="underline text-foreground hover:text-primary">
+						<Link href="/privacy" className="underline text-blue-600 hover:text-blue-800">
 							Privacy Policy
 						</Link>
 					</p>
