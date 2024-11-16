@@ -291,8 +291,9 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 			: null;
 
 		downlaodFile('small', file.category);
-		requestIdleCallback((e) => {
-			downlaodFile('large', file.category);
+		requestIdleCallback(async (e) => {
+			await downlaodFile('large', file.category);
+			console.log('this should finish now')
 		});
 
 		return () => {
@@ -301,6 +302,8 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [file.category]);
+
+	console.log('url', url)
 
 	const fileContextMenuActions = [
 		{
