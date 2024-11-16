@@ -251,6 +251,12 @@ export default function Component({
 		}
 	}
 
+	/**
+	 * Creates a new Telegram channel for the user.
+	 * The channel title is based on the user's name, defaulting to 'TGCloudDrive' if not available.
+	 * If successful, returns an object containing the channel title, ID, and access hash.
+	 * Handles errors by displaying appropriate messages using Swal.
+	 */
 	async function createTelegramChannel() {
 		try {
 			const channelTitle = user?.name ? `${user?.name}Drive` : 'TGCloudDrive';

@@ -244,7 +244,7 @@ export const downloadMedia = async (
 	if (!user || !telegramSession || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
-	const cacheKey = `${user?.channelId}-${messageId}`;
+	const cacheKey = `${user?.channelId}-${messageId}-${size}-${category}-${isShare}`;
 
 	if (blobCache.has(cacheKey)) {
 		return blobCache.get(cacheKey)!;
