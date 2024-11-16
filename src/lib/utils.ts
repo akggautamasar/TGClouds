@@ -239,7 +239,7 @@ export const getMessage = async ({
 export const downloadMedia = async (
 	{ user, messageId, size, setURL, category, isShare }: DownloadMediaOptions,
 	telegramSession: string | undefined,
-	client:TelegramClient
+	client: TelegramClient
 ): Promise<Blob | { fileExists: boolean } | null> => {
 	if (!user || !telegramSession || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
@@ -258,16 +258,12 @@ export const downloadMedia = async (
 	console.log('media', media);
 
 	try {
-		if (!client.connected) await client.connect();
-
 		if (category === 'video')
 			return await handleVideoDownload(client, media as Message['media'], setURL);
 
 		if (media) return await handleMediaDownload(client, media, size, cacheKey, setURL);
 	} catch (err) {
 		console.error(err);
-	} finally {
-		await client.disconnect();
 	}
 
 	return null;

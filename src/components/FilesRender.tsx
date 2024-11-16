@@ -28,6 +28,7 @@ import Upload from './uploadWrapper';
 import { RPCError } from 'telegram/errors';
 import { Button } from '@/components/ui/button';
 import { getTgClient } from '@/lib/getTgClient';
+import { withTelegramConnection } from '@/lib/telegramMutex';
 
 import Swal from 'sweetalert2';
 import { Api, TelegramClient } from 'telegram';
@@ -66,19 +67,20 @@ export function showSharableURL(url: string) {
 }
 
 const checkSessionStatus = async (client: TelegramClient) => {
-	try {
-		if (!client.connected) await client.connect();
-		const isAuthorized = await client.getMe();
-		return isAuthorized;
-	} catch (error) {
-		if (error instanceof RPCError) {
-			if (error.errorMessage === 'AUTH_KEY_UNREGISTERED') {
-				console.error(error.errorMessage);
+	return withTelegramConnection(client, async () => {
+		try {
+			const isAuthorized = await client.getMe();
+			return isAuthorized;
+		} catch (error) {
+			if (error instanceof RPCError) {
+				if (error.errorMessage === 'AUTH_KEY_UNREGISTERED') {
+					console.error(error.errorMessage);
+				}
 			}
+			console.error('Error checking session status:', error);
+			return false;
 		}
-		console.error('Error checking session status:', error);
-		return false;
-	}
+	});
 };
 
 function Files({ user, files }: { user: User; mimeType?: string; files: FilesData | undefined }) {
@@ -106,7 +108,9 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 			// TGCloudGlobalContext.setConnectionStatus(connStatus);
 			setSessionChecked(true);
 			setIsValidSession(!!isValid);
-			const result = await canWeAccessTheChannel(client, user);
+			const result = await withTelegramConnection(client, () =>
+				canWeAccessTheChannel(client, user)
+			);
 			setCanWeAccessTGChannel(!!result);
 
 			// client.addEventHandler((event: { name: string }) => {
@@ -235,23 +239,31 @@ function EachFile({ file, user }: { file: FilesData[number]; user: User }) {
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);
 
 	const downlaodFile = async (size: 'large' | 'small', category: string) => {
-		const result = await downloadMedia(
-			{
-				user: user as NonNullable<User>,
-				messageId: file?.fileTelegramId,
-				size,
-				setURL,
-				category: file.category as MediaCategory
-			},
-			telegramSession,
-			client
-		);
-		if (
-			result &&
-			typeof result === 'object' &&
-			'fileExists' in result &&
-			result.fileExists === false
-		) {
+		try {
+			const result = await withTelegramConnection(client, async () => {
+				return await downloadMedia(
+					{
+						user: user as NonNullable<User>,
+						messageId: file?.fileTelegramId,
+						size,
+						setURL,
+						category: file.category as MediaCategory
+					},
+					telegramSession,
+					client
+				);
+			});
+
+			if (
+				result &&
+				typeof result === 'object' &&
+				'fileExists' in result &&
+				result.fileExists === false
+			) {
+				setFileNotFoundInTelegram(true);
+			}
+		} catch (error) {
+			console.error('Error downloading file:', error);
 			setFileNotFoundInTelegram(true);
 		}
 	};
