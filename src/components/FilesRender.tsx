@@ -112,6 +112,7 @@ function Files({ user, files }: { user: User; mimeType?: string; files: FilesDat
 				canWeAccessTheChannel(client, user)
 			);
 			setCanWeAccessTGChannel(!!result);
+			TGCloudGlobalContext.setShouldShowUploadModal(!!result);
 
 			// client.addEventHandler((event: { name: string }) => {
 			// 	alert(event.name);

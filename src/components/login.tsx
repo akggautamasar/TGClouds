@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Github, Mail } from 'lucide-react';
 import { client } from '@/lib/client';
+import { useFormStatus } from 'react-dom';
 
 export default function LoginPage() {
 	return (
@@ -23,26 +24,40 @@ export default function LoginPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4">
-					<Button
-						onClick={() => {
-							client.signIn.social({
+					<form
+						action={async () => {
+							await client.signIn.social({
 								provider: 'google',
 								callbackURL: '/connect-telegram'
 							});
 						}}
-						variant="outline"
-						className="w-full hover:bg-gray-100 hover:text-black transition duration-200"
 					>
-						<Mail className="mr-2 h-4 w-4" />
-						Login with Google
-					</Button>
-					<Button
-						variant="outline"
-						className="w-full hover:text-black hover:bg-gray-100 transition duration-200"
+						<LoginButton
+							type="submit"
+							variant="outline"
+							className="w-full hover:bg-gray-100 hover:text-black transition duration-200"
+						>
+							<Mail className="mr-2 h-4 w-4" />
+							Login with Google
+						</LoginButton>
+					</form>
+					<form
+						action={async () => {
+							await client.signIn.social({
+								provider: 'github',
+								callbackURL: '/connect-telegram'
+							});
+						}}
 					>
-						<Github className="mr-2 h-4 w-4" />
-						Login with GitHub
-					</Button>
+						<LoginButton
+							type="submit"
+							variant="outline"
+							className="w-full hover:text-black hover:bg-gray-100 transition duration-200"
+						>
+							<Github className="mr-2 h-4 w-4" />
+							Login with GitHub
+						</LoginButton>
+					</form>
 				</CardContent>
 				<CardFooter className="flex flex-col items-center">
 					<p className="mt-2 text-xs text-center text-gray-500">
@@ -58,5 +73,15 @@ export default function LoginPage() {
 				</CardFooter>
 			</Card>
 		</div>
+	);
+}
+
+interface LoginnButtonProps extends React.ComponentProps<typeof Button> {}
+function LoginButton({ children, ...props }: LoginnButtonProps) {
+	const { pending } = useFormStatus();
+	return (
+		<Button {...props} type="submit">
+			{pending ? 'please wait' : children}
+		</Button>
 	);
 }

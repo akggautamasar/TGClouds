@@ -36,6 +36,8 @@ export const TGCloudGlobalContext = React.createContext<
 			telegramSession: string | undefined;
 			connectionStatus: connectionState;
 			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
+			shouldShowUploadModal: boolean;
+			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
 	  }
 	| undefined
 >(undefined);
@@ -49,6 +51,8 @@ export const TGCloudGlobalContextWrapper = ({
 }) => {
 	const [sortBy, setSortBy] = useState<SortBy>('name');
 	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
+	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
+	
 	return (
 		<TGCloudGlobalContext.Provider
 			value={{
@@ -56,7 +60,9 @@ export const TGCloudGlobalContextWrapper = ({
 				sortBy,
 				telegramSession,
 				connectionStatus,
-				setConnectionStatus
+				setConnectionStatus, 
+				shouldShowUploadModal,
+				setShouldShowUploadModal
 			}}
 		>
 			{children}
