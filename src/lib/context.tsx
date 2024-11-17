@@ -2,8 +2,10 @@
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import React, { Dispatch, SetStateAction, use, useState } from 'react';
+import React, { Dispatch, SetStateAction, use, useState, useEffect } from 'react';
 import { env } from '../env';
+import { TelegramClient } from 'telegram';
+import { getTgClient } from './getTgClient';
 
 if (typeof window !== 'undefined') {
 	posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
@@ -11,6 +13,7 @@ if (typeof window !== 'undefined') {
 		person_profiles: 'always'
 	});
 }
+
 export function CSPostHogProvider({ children }: { children: React.ReactNode }) {
 	return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
 }
@@ -38,6 +41,7 @@ export const TGCloudGlobalContext = React.createContext<
 			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
 			shouldShowUploadModal: boolean;
 			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
+			telegramClient: TelegramClient | null;
 	  }
 	| undefined
 >(undefined);
@@ -52,7 +56,14 @@ export const TGCloudGlobalContextWrapper = ({
 	const [sortBy, setSortBy] = useState<SortBy>('name');
 	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
 	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
-	
+	const client = getTgClient(telegramSession ?? '');
+
+	useEffect(() => {
+		return () => {
+			client.disconnect().catch(console.error);
+		};
+	}, [telegramSession]);
+
 	return (
 		<TGCloudGlobalContext.Provider
 			value={{
@@ -60,9 +71,10 @@ export const TGCloudGlobalContextWrapper = ({
 				sortBy,
 				telegramSession,
 				connectionStatus,
-				setConnectionStatus, 
+				setConnectionStatus,
 				shouldShowUploadModal,
-				setShouldShowUploadModal
+				setShouldShowUploadModal,
+				telegramClient: client
 			}}
 		>
 			{children}

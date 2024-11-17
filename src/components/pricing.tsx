@@ -4,7 +4,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { User } from '@/lib/types';
 import { useMediaQuery } from '@uidotdev/usehooks';
 import { useState } from 'react';
-import TGCloudPricing from './farmui/TGCloudPricing';
+import TGCloudPricing from './TGCloudPricing';
 
 export default function Pricing({ user, children }: { user: User; children: React.ReactNode }) {
 	const [open, setOpen] = useState(false);

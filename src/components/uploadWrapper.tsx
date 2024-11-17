@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { UploadIcon } from './Icons/icons';
 import { UploadFiles } from './upload-files';
 import { User } from '@/lib/types';
-import TGCloudPricing from './farmui/TGCloudPricing';
+import TGCloudPricing from './TGCloudPricing';
 import { getGlobalTGCloudContext } from '@/lib/context';
 
 export default function DrawerDialogDemo({ user }: { user: User }) {

@@ -12,19 +12,15 @@ export async function withTelegramConnection<T>(
         throw new Error('Telegram client is not initialized');
     }
 
+    if (!client.connected) {
+        await client.connect();
+    }
+
     const release = await telegramMutex.acquire();
-
     try {
-        if (!client.connected) {
-            await client.connect();
-        }
-
         const result = await operation();
         return result;
     } finally {
-        if (client.connected) {
-            await client.disconnect();
-        }
         release();
     }
 }

@@ -1,3 +1,4 @@
+import { getFolderContents } from '@/actions';
 import { db } from '@/db';
 
 export interface ChannelDetails {
@@ -171,3 +172,25 @@ export type ChapaInitializePaymentRequestBody = {
 		logo?: string;
 	};
 };
+
+
+export type Folder = Awaited<ReturnType<typeof db.query.folders.findFirst>>;
+
+export type GetAllFilesReturnType = Awaited<ReturnType<typeof getFolderContents>>;
+
+
+export type FileItem = {
+	url: string;
+	date: string;
+	id: number;
+	userId: string;
+	folderId: string | null;
+	fileName: string;
+	mimeType: string;
+	size: bigint;
+	fileTelegramId: string;
+	category: string;
+};
+
+
+

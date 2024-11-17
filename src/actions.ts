@@ -1,8 +1,8 @@
 'use server';
 import Email from '@/components/email';
-import { PLANS } from '@/components/farmui/TGCloudPricing';
+import { PLANS } from '@/components/TGCloudPricing';
 import { auth } from '@/lib/auth';
-import { and, asc, count, desc, eq, ilike } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -10,10 +10,52 @@ import crypto from 'node:crypto';
 import React from 'react';
 import { Resend } from 'resend';
 import { db } from './db';
-import { paymentsTable, sharedFilesTable, userFiles, usersTable } from './db/schema';
+import { paymentsTable, sharedFilesTable, userFiles, usersTable, folders as foldersTable } from './db/schema';
 import { env } from './env';
 import { ChapaInitializePaymentRequestBody, User } from './lib/types';
 
+
+export type FolderHierarchy = {
+	id: string;
+	name: string;
+	path: string;
+	parentId: string | null;
+	children: FolderHierarchy[];
+};
+
+// Add this function to get folder hierarchy
+export async function getFolderHierarchy(userId: string): Promise<FolderHierarchy[]> {
+	// Get all folders for the user
+	const allFolders = await db
+		.select()
+		.from(foldersTable)
+		.where(eq(foldersTable.userId, userId))
+		.orderBy(asc(foldersTable.name))
+		.execute();
+
+	// Create a map for quick folder lookup
+	const folderMap = new Map(allFolders.map(folder => [folder.id, { ...folder, children: [] }]));
+
+	// Build the hierarchy
+	const rootFolders: FolderHierarchy[] = [];
+
+	allFolders.forEach(folder => {
+		const folderWithChildren = folderMap.get(folder.id)!;
+
+		if (!folder.parentId) {
+			// Root level folder
+			rootFolders.push(folderWithChildren);
+		} else {
+			// Add to parent's children
+			const parent = folderMap.get(folder.parentId);
+			if (parent) {
+				(parent.children as FolderHierarchy[]).push(folderWithChildren);
+			}
+		}
+	});
+
+	return rootFolders;
+}
 export async function saveTelegramCredentials({
 	accessHash,
 	channelId,
@@ -115,18 +157,22 @@ export async function getUser() {
 	}
 }
 
-export async function getAllFiles(searchItem?: string, offset?: number) {
+export async function getAllFiles(searchItem?: string, offset?: number, folderId?: string | null) {
 	try {
 		const user = await getUser();
 		if (!user || !user.id) {
 			throw new Error('User not authenticated or user ID is missing');
 		}
 
+		const baseWhere = folderId
+			? and(eq(userFiles.userId, user.id), eq(userFiles.folderId, folderId))
+			: and(eq(userFiles.userId, user.id), isNull(userFiles.folderId));
+
 		if (searchItem) {
 			const results = await db
 				.select()
 				.from(userFiles)
-				.where(and(ilike(userFiles.fileName, `%${searchItem}%`), eq(userFiles.userId, user.id)))
+				.where(and(baseWhere, ilike(userFiles.fileName, `%${searchItem}%`)))
 				.orderBy(asc(userFiles.id))
 				.limit(8)
 				.offset(offset ?? 0)
@@ -136,7 +182,7 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
 				await db
 					.select({ count: count() })
 					.from(userFiles)
-					.where(and(ilike(userFiles.fileName, `%${searchItem}%`), eq(userFiles.userId, user.id)))
+					.where(and(baseWhere, ilike(userFiles.fileName, `%${searchItem}%`)))
 					.execute()
 			)[0].count;
 
@@ -146,7 +192,7 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
 		const results = await db
 			.select()
 			.from(userFiles)
-			.where(eq(userFiles.userId, user.id))
+			.where(baseWhere)
 			.orderBy(asc(userFiles.id))
 			.limit(8)
 			.offset(offset ?? 0)
@@ -156,7 +202,7 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
 			await db
 				.select({ count: count() })
 				.from(userFiles)
-				.where(eq(userFiles.userId, user.id))
+				.where(baseWhere)
 				.execute()
 		)[0].count;
 
@@ -169,27 +215,89 @@ export async function getAllFiles(searchItem?: string, offset?: number) {
 	}
 }
 
-export async function getFilesFromSpecificType({
-	fileType,
-	searchItem,
-	offset
-}: {
-	searchItem?: string;
-	fileType: string;
-	offset?: number;
-}) {
+export async function getFolderContents(folderId: string | null, searchItem?: string, offset?: number,
+	fileType?: string
+) {
 	try {
 		const user = await getUser();
 		if (!user || !user.id) {
 			throw new Error('User not authenticated or user ID is missing');
 		}
 
+		const folders = await db
+			.select()
+			.from(foldersTable)
+			.where(
+				and(
+					eq(foldersTable.userId, user.id),
+					folderId ? eq(foldersTable.parentId, folderId) : isNull(foldersTable.parentId)
+				)
+			)
+			.orderBy(asc(foldersTable.name))
+			.execute();
+		if (fileType) {
+			const filesResult = await getFilesFromSpecificType({
+				fileType,
+				searchItem,
+				offset,
+				folderId
+			});
+			if (!filesResult) return null;
+
+			const [files, totalFiles] = filesResult;
+			return {
+				folders,
+				files,
+				totalFiles: totalFiles as number
+			};
+		} else {
+			const filesResult = await getAllFiles(searchItem, offset, folderId);
+			if (!filesResult) return null;
+
+
+			const [files, totalFiles] = filesResult;
+
+			return {
+				folders,
+				files,
+				totalFiles: totalFiles as number
+			};
+		}
+
+	} catch (err) {
+		if (err instanceof Error) {
+			console.error('Error fetching folder contents:', err.message);
+			throw new Error('Failed to fetch folder contents. Please try again later.');
+		}
+	}
+}
+
+export async function getFilesFromSpecificType({
+	fileType,
+	searchItem,
+	offset,
+	folderId
+}: {
+	searchItem?: string;
+	fileType: string;
+	offset?: number;
+		folderId?: string | null;
+}) {
+	try {
+		const user = await getUser();
+		if (!user || !user.id) {
+			throw new Error('User not authenticated or user ID is missing');
+		}
+		const baseWhere = folderId
+			? and(eq(userFiles.userId, user.id), eq(userFiles.folderId, folderId))
+			: and(eq(userFiles.userId, user.id), isNull(userFiles.folderId));
+
 		if (searchItem) {
 			const results = await db
 				.select()
 				.from(userFiles)
 				.where(
-					and(
+					and(baseWhere,
 						ilike(userFiles.fileName, `%${searchItem}%`),
 						eq(userFiles.category, fileType),
 						eq(userFiles.userId, user.id)
@@ -205,7 +313,7 @@ export async function getFilesFromSpecificType({
 					.select({ count: count() })
 					.from(userFiles)
 					.where(
-						and(
+						and(baseWhere,
 							ilike(userFiles.fileName, `%${searchItem}%`),
 							eq(userFiles.category, fileType),
 							eq(userFiles.userId, user.id)
@@ -220,7 +328,7 @@ export async function getFilesFromSpecificType({
 		const results = await db
 			.select()
 			.from(userFiles)
-			.where(and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id)))
+			.where(and(baseWhere, eq(userFiles.category, fileType), eq(userFiles.userId, user.id)))
 			.orderBy(asc(userFiles.id))
 			.limit(8)
 			.offset(offset ?? 0)
@@ -230,7 +338,7 @@ export async function getFilesFromSpecificType({
 			await db
 				.select({ count: count() })
 				.from(userFiles)
-				.where(and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id)))
+				.where(and(baseWhere, and(eq(userFiles.category, fileType), eq(userFiles.userId, user.id))))
 				.execute()
 		)[0].count;
 
@@ -241,6 +349,40 @@ export async function getFilesFromSpecificType({
 			throw new Error('Failed to fetch files. Please try again later.');
 		}
 	}
+}
+
+export async function createFolder(name: string, parentId: string | null) {
+	const user = await getUser();
+	if (!user || !user.id) {
+		throw new Error('User not authenticated');
+	}
+
+	let parentPath = '';
+	if (parentId) {
+		const parentFolder = await db
+			.select()
+			.from(foldersTable)
+			.where(eq(foldersTable.id, parentId))
+			.limit(1)
+			.execute();
+
+		if (parentFolder.length > 0) {
+			parentPath = parentFolder[0].path;
+		}
+	}
+
+	const folderId = crypto.randomUUID();
+	const path = parentPath ? `${parentPath}/${name}` : `/${name}`;
+
+	await db.insert(foldersTable).values({
+		id: folderId,
+		name,
+		userId: user.id,
+		parentId,
+		path,
+	});
+
+	return folderId;
 }
 
 export async function uploadFile(file: {
@@ -355,16 +497,16 @@ type PeymentResult = Awaited<ReturnType<typeof db.query.paymentsTable.findFirst>
 
 type UserPaymentSubscriptionResult =
 	| {
-			isDone: true;
-			data: PeymentResult;
-			status: 'success';
-	  }
+		isDone: true;
+		data: PeymentResult;
+		status: 'success';
+	}
 	| {
-			isDone: false;
-			status: 'failed';
-			message: string;
-			data?: PeymentResult;
-	  };
+		isDone: false;
+		status: 'failed';
+		message: string;
+		data?: PeymentResult;
+	};
 
 export async function subscribeToPro({
 	tx_ref

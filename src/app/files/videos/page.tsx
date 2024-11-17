@@ -1,4 +1,4 @@
-import { getFilesFromSpecificType, requireUserAuthentication } from '@/actions';
+import { getFolderContents, requireUserAuthentication } from '@/actions';
 import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
 import { LoadingItems } from '@/components/loading-files';
@@ -7,19 +7,21 @@ export default async function Home(props: { searchParams: Promise<Record<string,
 	const searchParams = await props.searchParams;
 	const user = await requireUserAuthentication();
 	const page = parseInt(searchParams.page || '1');
-
+	const currentFolderId = searchParams.folderId || null;
 	const searchItem = searchParams.search;
-
-	//@ts-ignore
-	const [files, total] = await getFilesFromSpecificType({
-		fileType: 'video',
+	const folderContents = await getFolderContents(
+		currentFolderId,
 		searchItem,
-		offset: (page - 1) * 8
-	});
+		(page - 1) * 8,
+		'video'
+	);
+	if (!folderContents) return null;
+
+	const { folders, files, totalFiles } = folderContents;
 	return (
-		<Dashboard total={total} user={user}>
+		<Dashboard currentFolderId={currentFolderId} folders={folders} total={totalFiles} user={user}>
 			<Suspense fallback={<LoadingItems />}>
-				<Files files={files} user={user} />
+				<Files files={files} folders={folders} user={user} currentFolderId={currentFolderId} />
 			</Suspense>
 		</Dashboard>
 	);
