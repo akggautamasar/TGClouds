@@ -9,11 +9,11 @@ import { ModeToggle } from './darkmodeToggle';
 import { CloudIcon, FileTextIcon, ImageIcon, Music2Icon, VideoIcon } from './Icons/icons';
 import Link from './Link';
 import Paginate from './pagination';
+import ProfileMenu from './profileMenu';
 import SearchItems from './searchItems';
 import SortBy from './SortBy';
 import Upload from './uploadWrapper';
-import ConnectionStatusIndicator from './conncStatusIndicator';
-import ProfileMenu from './profileMenu';
+import SpaceUsageIndicator from './storageSpaceIndicator';
 
 export async function Dashboard({
 	children,
@@ -111,12 +111,21 @@ export async function Dashboard({
 											View in Telegram
 										</Link>
 									</Button>
-									<ConnectionStatusIndicator />
+									{/* <ConnectionStatusIndicator /> */}
 								</CardContent>
 							</Card>
 						</div>
 					</div>
-					<div className="mt-auto p-2">
+					<div className="flex items-center justify-center mb-4">
+						<Upload user={user} />
+					</div>
+					<div className="flex items-center justify-center mb-4">
+						<SpaceUsageIndicator />
+					</div>
+					<div className="flex items-center justify-center mb-4">
+						<ProfileMenu />
+					</div>
+					<div className="mt-auto">
 						{/* {user?.isSubscribedToPro ? (
 							<Card>
 								<CardHeader>
@@ -224,12 +233,30 @@ export async function Dashboard({
 												View in Telegram
 											</Link>
 										</Button>
-										<ConnectionStatusIndicator />
+										{/* <ConnectionStatusIndicator /> */}
 									</CardContent>
 								</Card>
 							</div>
-
+							<div className="flex items-center justify-center mb-4">
+								<Upload user={user} />
+							</div>
+							<div className="flex items-center justify-center mb-4">
+								<SpaceUsageIndicator />
+							</div>
+							<div className="flex items-center justify-center mb-4">
+								<ProfileMenu />
+							</div>
 							<div className="mt-auto">
+								{/* {user?.isSubscribedToPro ? (
+									<Card>
+										<CardHeader>
+											<CardTitle>Pro Activated</CardTitle>
+										</CardHeader>
+										<CardContent>
+											{!isSubscribedToPro ? (
+												<Button size="sm" className="w-full">
+													<Link
+														target="_blank"
 								{/* {user?.isSubscribedToPro ? (
 									<Card>
 										<CardHeader>
@@ -272,12 +299,6 @@ export async function Dashboard({
 						<ModeToggle />
 					</div>
 					<SortBy />
-					<div className="h-8 gap-1 flex border-gray-400 items-center justify-center">
-						<Upload user={user} />
-					</div>
-					<div>
-						<ProfileMenu />
-					</div>
 				</header>
 				<main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
 					{children}

@@ -9,10 +9,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { HelpCircle, LogOut } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import Link from 'next/link';
+import { ChevronsUpDown, HelpCircle, LogOut } from 'lucide-react';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 export default async function ProfileMenu() {
@@ -21,14 +21,21 @@ export default async function ProfileMenu() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" className="relative h-8 w-8 rounded-full">
-					<Avatar className="h-8 w-8">
-						<AvatarImage
-							src={user?.imageUrl || '/placeholder.svg?height=32&width=32'}
-							alt={user?.name || 'User'}
-						/>
-						<AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() || 'UN'}</AvatarFallback>
-					</Avatar>
+				<Button
+					variant="ghost"
+					className="w-full max-w-[200px] justify-between bg-zinc-900 hover:bg-zinc-900/90 text-white rounded-lg p-2"
+				>
+					<div className="flex items-center gap-2">
+						<Avatar className="h-8 w-8">
+							<AvatarImage
+								src={user?.imageUrl || 'https://api.dicebear.com/9.x/lorelei/svg'}
+								alt={user?.name || 'User'}
+							/>
+							<AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() || 'UN'}</AvatarFallback>
+						</Avatar>
+						<span className="text-sm font-medium">{user?.name || 'User'}</span>
+					</div>
+					<ChevronsUpDown className="h-4 w-4 opacity-50" />
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-56" align="end" forceMount>
@@ -38,28 +45,17 @@ export default async function ProfileMenu() {
 						<p className="text-xs leading-none text-muted-foreground">
 							{user?.email || 'user@example.com'}
 						</p>
-						{user?.plan && (
-							<p className="text-xs leading-none text-muted-foreground mt-1">
-								Plan: {user.plan.charAt(0).toUpperCase() + user.plan.slice(1).toLowerCase()}
-							</p>
-						)}
+						<p className="text-xs leading-none text-muted-foreground mt-1">
+							Plan:{' '}
+							{user?.plan
+								? `${user.plan.charAt(0).toUpperCase()}${user.plan.slice(1).toLowerCase()}`
+								: 'Free Tier'}
+						</p>
 					</div>
 				</DropdownMenuLabel>
-				{/* <DropdownMenuSeparator />
+				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>
-					<Link href="/profile">
-						<User className="mr-2 h-4 w-4" />
-						<span>Profile</span>
-					</Link>
-				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link href="/settings">
-						<Settings className="mr-2 h-4 w-4" />
-						<span>Settings</span>
-					</Link>
-				</DropdownMenuItem> */}
-				<DropdownMenuItem asChild>
-					<Link href="/support">
+					<Link href="/support" className="flex items-center">
 						<HelpCircle className="mr-2 h-4 w-4" />
 						<span>Support</span>
 					</Link>
@@ -77,7 +73,7 @@ export default async function ProfileMenu() {
 							}
 						}}
 					>
-						<button className="flex items-center">
+						<button className="flex items-center w-full">
 							<LogOut className="mr-2 h-4 w-4" />
 							<span>Log out</span>
 						</button>

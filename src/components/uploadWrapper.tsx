@@ -15,6 +15,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
 	const TGCloudGlobalContext = getGlobalTGCloudContext();
 	const telegramSession = TGCloudGlobalContext?.telegramSession;
 
+	if (!TGCloudGlobalContext?.shouldShowUploadModal) return null;
 	if (isDesktop) {
 		return (
 			<Dialog open={open} onOpenChange={setOpen}>
