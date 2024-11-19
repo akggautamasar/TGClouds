@@ -119,11 +119,39 @@ export const paymentsTable = pgTable(
 	})
 );
 
+export const folders = pgTable(
+	'folders',
+	{
+		id: text('id').primaryKey(),
+		name: text('name').notNull(),
+		userId: text('userId').notNull(),
+		parentId: text('parentId'),
+		path: text('path').notNull(),
+		createdAt: date('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
+		updatedAt: date('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
+	},
+	(table) => ({
+		userFk: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [usersTable.id]
+		})
+			.onDelete('cascade')
+			.onUpdate('cascade'),
+		parentFk: foreignKey({
+			columns: [table.parentId],
+			foreignColumns: [table.id]
+		})
+			.onDelete('cascade')
+			.onUpdate('cascade')
+	})
+);
+
 export const userFiles = pgTable(
 	'userFiles',
 	{
 		id: bigint('id', { mode: 'number' }).primaryKey(),
 		userId: text('userId').notNull(),
+		folderId: text('folderId'),
 		fileName: text('filename').notNull(),
 		mimeType: text('mimeType').notNull(),
 		size: bigint('size', { mode: 'bigint' }).notNull(),
@@ -136,6 +164,12 @@ export const userFiles = pgTable(
 		userFk: foreignKey({
 			columns: [table.userId],
 			foreignColumns: [usersTable.id]
+		})
+			.onDelete('cascade')
+			.onUpdate('cascade'),
+		folderFk: foreignKey({
+			columns: [table.folderId],
+			foreignColumns: [folders.id]
 		})
 			.onDelete('cascade')
 			.onUpdate('cascade')

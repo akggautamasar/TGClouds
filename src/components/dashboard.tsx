@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { User } from '@/lib/types';
+import { GetAllFilesReturnType, User } from '@/lib/types';
 import { File, Menu } from 'lucide-react';
 import { cookies } from 'next/headers';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { ModeToggle } from './darkmodeToggle';
 import { CloudIcon, FileTextIcon, ImageIcon, Music2Icon, VideoIcon } from './Icons/icons';
 import Link from './Link';
@@ -14,15 +14,24 @@ import SearchItems from './searchItems';
 import SortBy from './SortBy';
 import Upload from './uploadWrapper';
 import SpaceUsageIndicator from './storageSpaceIndicator';
+import StoragePage from './folderPath';
+import { getFolderHierarchy, getAllFolders } from '@/actions';
+import { unstable_cache } from 'next/cache';
+
+const allfolders = unstable_cache(getAllFolders, [], { revalidate: 3600, tags: ['get-folder'] });
 
 export async function Dashboard({
 	children,
 	user,
-	total
+	total,
+	folders,
+	currentFolderId
 }: {
 	children: React.ReactNode;
 	user: User;
 	total: number;
+	folders: NonNullable<GetAllFilesReturnType>['folders'] | undefined;
+	currentFolderId: string | null;
 }) {
 	const calculateRemainingDays = (subscriptionDate: string) => {
 		const currentDate = new Date();
@@ -31,6 +40,9 @@ export async function Dashboard({
 		const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
 		return differenceInDays;
 	};
+
+	const foldersHierarchy = await getFolderHierarchy(user?.id as string);
+	const allFolders = await allfolders(user?.id as string);
 
 	const isSubscribedToPro = user?.isSubscribedToPro;
 	const subscriptionDate = user?.subscriptionDate;
@@ -301,7 +313,16 @@ export async function Dashboard({
 					<SortBy />
 				</header>
 				<main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-					{children}
+					<StoragePage
+						allFolder={allFolders}
+						foldersHierarchy={foldersHierarchy}
+						userId={user?.id as string}
+						folders={folders ?? []}
+						currentFolderId={currentFolderId}
+					/>
+					<Suspense fallback={<div>loading</div>}>
+						{children}
+					</Suspense>
 					<Paginate totalItems={total} />
 				</main>
 			</div>

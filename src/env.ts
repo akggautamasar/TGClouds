@@ -12,7 +12,6 @@ export const env = createEnv({
 		GITHUB_CLIENT_SECRET: z.string()
 	},
 	client: {
-		NEXT_PUBLIC_PUBLISHABLE_KEY: z.string().min(1),
 		NEXT_PUBLIC_TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
 		NEXT_PUBLIC_TELEGRAM_API_HASH: z.string(),
 		NEXT_PUBLIC_SENTRY_AUTH_TOKEN: z.string(),
@@ -26,7 +25,6 @@ export const env = createEnv({
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
 		TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH,
 		DATABASE_URL: process.env.DATABASE_URL,
-		NEXT_PUBLIC_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_PUBLISHABLE_KEY,
 		NEXT_PUBLIC_TELEGRAM_API_ID: process.env.NEXT_PUBLIC_TELEGRAM_API_ID,
 		NEXT_PUBLIC_TELEGRAM_API_HASH: process.env.NEXT_PUBLIC_TELEGRAM_API_HASH,
 		NEXT_PUBLIC_SENTRY_AUTH_TOKEN: process.env.NEXT_PUBLIC_SENTRY_AUTH_TOKEN,
