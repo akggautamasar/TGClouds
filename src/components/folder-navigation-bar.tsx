@@ -9,8 +9,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useCreateQueryString } from '@/lib/utils';
 import { ChevronRight, Home, Plus } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { use, useState } from 'react';
+
+export type AllFolder = {
+	id: string;
+	name: string;
+	userId: string;
+	parentId: string | null;
+	path: string;
+	createdAt: string | null;
+	updatedAt: string | null;
+}[];
 
 interface FolderNavigationBarProps {
 	currentPath?: string[];
@@ -19,6 +31,7 @@ interface FolderNavigationBarProps {
 	currentFolderId: string | null;
 	userId: string;
 	folders: Awaited<ReturnType<typeof getFolderHierarchy>>;
+	allFolder: AllFolder;
 }
 
 export default function FolderNavigationBar({
@@ -26,9 +39,17 @@ export default function FolderNavigationBar({
 	onCreateFolder,
 	currentFolderId,
 	userId,
-	folders
+	folders,
+	allFolder
 }: FolderNavigationBarProps) {
 	const [newFolderName, setNewFolderName] = useState('');
+	const currentFolder = allFolder.find((folder) => folder.id === currentFolderId);
+	const pathNames = currentFolder ? currentFolder.path.split('/').filter(Boolean) : [];
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParam = useSearchParams();
+
+	const createQueryString = useCreateQueryString(searchParam);
 
 	const handleCreateFolder = () => {
 		if (newFolderName.trim()) {
@@ -46,17 +67,24 @@ export default function FolderNavigationBar({
 							<Home className="h-4 w-4" />
 						</BreadcrumbLink>
 					</BreadcrumbItem>
-					{folders.length > 0 && (
+					{pathNames?.length > 0 && (
 						<BreadcrumbSeparator>
 							<ChevronRight className="h-4 w-4" />
 						</BreadcrumbSeparator>
 					)}
-					{folders.map((folder, index) => (
+					{pathNames.map((folder, index) => (
 						<BreadcrumbItem key={index}>
-							<BreadcrumbLink onClick={() => onNavigate(folder?.id as string)}>
-								{folder?.name}
+							<BreadcrumbLink
+								onClick={() => {
+									const fullPath = `/${pathNames.slice(0, index + 1).join('/')}`;
+									const matchingFolder = allFolder.find((f) => f.path === fullPath);
+									const query = createQueryString('folderId', matchingFolder?.id!);
+									router.push(pathname + '?' + query);
+								}}
+							>
+								{folder}
 							</BreadcrumbLink>
-							{index < folders.length - 1 && (
+							{index < pathNames.length - 1 && (
 								<BreadcrumbSeparator>
 									<ChevronRight className="h-4 w-4" />
 								</BreadcrumbSeparator>

@@ -23,9 +23,22 @@ export type FolderHierarchy = {
 	children: FolderHierarchy[];
 };
 
+
+export async function getAllFolders(userId: string) {
+	const allFolders = await db
+		.select()
+		.from(foldersTable)
+		.where(eq(foldersTable.userId, userId))
+		.orderBy(asc(foldersTable.name))
+		.execute();
+
+	return allFolders;
+}
+
+
+
 // Add this function to get folder hierarchy
 export async function getFolderHierarchy(userId: string): Promise<FolderHierarchy[]> {
-	// Get all folders for the user
 	const allFolders = await db
 		.select()
 		.from(foldersTable)
@@ -34,12 +47,12 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 		.execute();
 
 	// Create a map for quick folder lookup
-	const folderMap = new Map(allFolders.map(folder => [folder.id, { ...folder, children: [] }]));
+	const folderMap = new Map(allFolders.map((folder) => [folder.id, { ...folder, children: [] }]));
 
 	// Build the hierarchy
 	const rootFolders: FolderHierarchy[] = [];
 
-	allFolders.forEach(folder => {
+	allFolders.forEach((folder) => {
 		const folderWithChildren = folderMap.get(folder.id)!;
 
 		if (!folder.parentId) {

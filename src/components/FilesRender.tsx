@@ -107,7 +107,7 @@ function Files({
 		}
 		(async () => {
 			client?.addEventHandler((ev) => {
-				console.log('evenet', ev);
+				// console.log('evenet', ev);
 			});
 
 			const isValid = await checkSessionStatus(client);
