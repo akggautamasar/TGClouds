@@ -3,7 +3,7 @@ import { getGlobalTGCloudContext } from '@/lib/context';
 import { promiseToast } from '@/lib/notify';
 import { User } from '@/lib/types';
 import { formatBytes, uploadFiles } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Dropzone from 'react-dropzone';
@@ -34,6 +34,8 @@ export const UploadFiles = ({
 	const [dropedfiles, setFiles] = useState<DropedFile[]>([]);
 	const [uploadProgress, setUploadProgress] = useState<UploadProgress>();
 	const client = getTgClient(telegramSession ?? '');
+	const searchParams = useSearchParams();
+	const folderId = searchParams?.get('folderId') ?? null;
 
 	const handleDrop = (acceptedFiles: File[]) => {
 		console.log(acceptedFiles);
@@ -46,7 +48,7 @@ export const UploadFiles = ({
 
 	const handleSubmit = async (formData: FormData) => {
 		await promiseToast({
-			cb: () => uploadFiles(formData, user, setUploadProgress, client),
+			cb: () => uploadFiles(formData, user, setUploadProgress, client, folderId),
 			errMsg: 'Oops we fucked up we failed to upload your files',
 			successMsg: 'File Uploaded',
 			loadingMsg: 'please wait...',
