@@ -50,7 +50,8 @@ export async function uploadFiles(
 			| undefined
 		>
 	>,
-	client: TelegramClient | undefined
+	client: TelegramClient | undefined,
+	folderId: string | null
 ) {
 	if (!client) {
 		throw new Error('Failed to initialize Telegram client');
@@ -84,7 +85,8 @@ export async function uploadFiles(
 				url: !user?.hasPublicTgChannel
 					? `https://t.me/c/${user?.channelId}/${result?.id}`
 					: `https://t.me/${user?.channelUsername}/${result?.id}`,
-				fileTelegramId: result.id
+				fileTelegramId: result.id,
+				folderId
 			});
 			console.log('File uploaded successfully:', uploadToDbResult);
 		}

@@ -10,10 +10,16 @@ import crypto from 'node:crypto';
 import React from 'react';
 import { Resend } from 'resend';
 import { db } from './db';
-import { paymentsTable, sharedFilesTable, userFiles, usersTable, folders as foldersTable } from './db/schema';
+import {
+	paymentsTable,
+	sharedFilesTable,
+	userFiles,
+	usersTable,
+	folders as foldersTable
+} from './db/schema';
 import { env } from './env';
 import { ChapaInitializePaymentRequestBody, User } from './lib/types';
-
+import { revalidateTag } from 'next/cache';
 
 export type FolderHierarchy = {
 	id: string;
@@ -22,7 +28,6 @@ export type FolderHierarchy = {
 	parentId: string | null;
 	children: FolderHierarchy[];
 };
-
 
 export async function getAllFolders(userId: string) {
 	const allFolders = await db
@@ -34,8 +39,6 @@ export async function getAllFolders(userId: string) {
 
 	return allFolders;
 }
-
-
 
 // Add this function to get folder hierarchy
 export async function getFolderHierarchy(userId: string): Promise<FolderHierarchy[]> {
@@ -119,20 +122,6 @@ export const saveUserName = async (username: string) => {
 	try {
 		const existinguser = await getUser();
 
-		// if (!existinguser) {
-		// 	const name = user?.fullName ?? `${user.firstName} ${user.lastName}`;
-		// 	const data = await db
-		// 		.insert(usersTable)
-		// 		.values({
-		// 			email,
-		// 			name,
-		// 			id: user.id,
-		// 			channelUsername: username
-		// 		})
-		// 		.returning();
-		// 	return data;
-		// }
-
 		const result = await db
 			.update(usersTable)
 			.set({
@@ -212,11 +201,7 @@ export async function getAllFiles(searchItem?: string, offset?: number, folderId
 			.execute();
 
 		const total = (
-			await db
-				.select({ count: count() })
-				.from(userFiles)
-				.where(baseWhere)
-				.execute()
+			await db.select({ count: count() }).from(userFiles).where(baseWhere).execute()
 		)[0].count;
 
 		return [results, total];
@@ -228,7 +213,10 @@ export async function getAllFiles(searchItem?: string, offset?: number, folderId
 	}
 }
 
-export async function getFolderContents(folderId: string | null, searchItem?: string, offset?: number,
+export async function getFolderContents(
+	folderId: string | null,
+	searchItem?: string,
+	offset?: number,
 	fileType?: string
 ) {
 	try {
@@ -267,7 +255,6 @@ export async function getFolderContents(folderId: string | null, searchItem?: st
 			const filesResult = await getAllFiles(searchItem, offset, folderId);
 			if (!filesResult) return null;
 
-
 			const [files, totalFiles] = filesResult;
 
 			return {
@@ -276,7 +263,6 @@ export async function getFolderContents(folderId: string | null, searchItem?: st
 				totalFiles: totalFiles as number
 			};
 		}
-
 	} catch (err) {
 		if (err instanceof Error) {
 			console.error('Error fetching folder contents:', err.message);
@@ -294,7 +280,7 @@ export async function getFilesFromSpecificType({
 	searchItem?: string;
 	fileType: string;
 	offset?: number;
-		folderId?: string | null;
+	folderId?: string | null;
 }) {
 	try {
 		const user = await getUser();
@@ -310,7 +296,8 @@ export async function getFilesFromSpecificType({
 				.select()
 				.from(userFiles)
 				.where(
-					and(baseWhere,
+					and(
+						baseWhere,
 						ilike(userFiles.fileName, `%${searchItem}%`),
 						eq(userFiles.category, fileType),
 						eq(userFiles.userId, user.id)
@@ -326,7 +313,8 @@ export async function getFilesFromSpecificType({
 					.select({ count: count() })
 					.from(userFiles)
 					.where(
-						and(baseWhere,
+						and(
+							baseWhere,
 							ilike(userFiles.fileName, `%${searchItem}%`),
 							eq(userFiles.category, fileType),
 							eq(userFiles.userId, user.id)
@@ -392,9 +380,9 @@ export async function createFolder(name: string, parentId: string | null) {
 		name,
 		userId: user.id,
 		parentId,
-		path,
+		path
 	});
-
+	revalidateTag('get-folder');
 	return folderId;
 }
 
@@ -404,6 +392,7 @@ export async function uploadFile(file: {
 	size: bigint;
 	url: string;
 	fileTelegramId: number;
+	folderId:string | null,
 }) {
 	try {
 		const user = await getUser();
@@ -422,7 +411,8 @@ export async function uploadFile(file: {
 				url: file.url,
 				date: new Date().toDateString(),
 				fileTelegramId: String(file.fileTelegramId),
-				category: file?.mimeType?.split('/')[0]
+				category: file?.mimeType?.split('/')[0], 
+				folderId:file?.folderId
 			})
 			.returning();
 		revalidatePath('/files');
@@ -510,16 +500,16 @@ type PeymentResult = Awaited<ReturnType<typeof db.query.paymentsTable.findFirst>
 
 type UserPaymentSubscriptionResult =
 	| {
-		isDone: true;
-		data: PeymentResult;
-		status: 'success';
-	}
+			isDone: true;
+			data: PeymentResult;
+			status: 'success';
+	  }
 	| {
-		isDone: false;
-		status: 'failed';
-		message: string;
-		data?: PeymentResult;
-	};
+			isDone: false;
+			status: 'failed';
+			message: string;
+			data?: PeymentResult;
+	  };
 
 export async function subscribeToPro({
 	tx_ref
