@@ -9,10 +9,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { getGlobalTGCloudContext } from '@/lib/context';
 import { useCreateQueryString } from '@/lib/utils';
 import { ChevronRight, Home, Plus } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { use, useState } from 'react';
+import { use, useOptimistic, useState } from 'react';
 
 export type AllFolder = {
 	id: string;
@@ -45,6 +46,9 @@ export default function FolderNavigationBar({
 	const [newFolderName, setNewFolderName] = useState('');
 	const currentFolder = allFolder.find((folder) => folder.id === currentFolderId);
 	const pathNames = currentFolder ? currentFolder.path.split('/').filter(Boolean) : [];
+	const [optimisiticPathNames, setOPtimisticPathNames] = useOptimistic(pathNames);
+	const TGCloudGlobalContext = getGlobalTGCloudContext();
+
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParam = useSearchParams();
@@ -63,23 +67,27 @@ export default function FolderNavigationBar({
 			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
-						<BreadcrumbLink onClick={() => onNavigate('')}>
+						<BreadcrumbLink className="cursor-pointer" onClick={() => onNavigate('')}>
 							<Home className="h-4 w-4" />
 						</BreadcrumbLink>
 					</BreadcrumbItem>
-					{pathNames?.length > 0 && (
+					{optimisiticPathNames?.length > 0 && (
 						<BreadcrumbSeparator>
 							<ChevronRight className="h-4 w-4" />
 						</BreadcrumbSeparator>
 					)}
-					{pathNames.map((folder, index) => (
-						<BreadcrumbItem key={index}>
+					{optimisiticPathNames.map((folder, index) => (
+						<BreadcrumbItem className="cursor-pointer" key={index}>
 							<BreadcrumbLink
 								onClick={() => {
-									const fullPath = `/${pathNames.slice(0, index + 1).join('/')}`;
+									const expectedPath = pathNames.slice(0, index + 1);
+									const fullPath = `/${expectedPath.join('/')}`;
 									const matchingFolder = allFolder.find((f) => f.path === fullPath);
 									const query = createQueryString('folderId', matchingFolder?.id!);
-									router.push(pathname + '?' + query);
+									TGCloudGlobalContext?.startPathSwitching(() => {
+										setOPtimisticPathNames(expectedPath);
+										router.push(pathname + '?' + query);
+									});
 								}}
 							>
 								{folder}

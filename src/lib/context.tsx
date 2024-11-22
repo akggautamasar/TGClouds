@@ -2,7 +2,7 @@
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import React, { Dispatch, SetStateAction, use, useState, useEffect } from 'react';
+import React, { Dispatch, SetStateAction, use, useState, useEffect, useTransition } from 'react';
 import { env } from '../env';
 import { TelegramClient } from 'telegram';
 import { getTgClient } from './getTgClient';
@@ -42,6 +42,8 @@ export const TGCloudGlobalContext = React.createContext<
 			shouldShowUploadModal: boolean;
 			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
 			telegramClient: TelegramClient | null;
+			isSwitchingFolder: boolean;
+			startPathSwitching: React.TransitionStartFunction;
 	  }
 	| undefined
 >(undefined);
@@ -57,6 +59,7 @@ export const TGCloudGlobalContextWrapper = ({
 	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
 	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
 	const client = getTgClient(telegramSession ?? '');
+	const [isSwitchingFolder, startPathSwitching] = useTransition();
 
 	useEffect(() => {
 		return () => {
@@ -74,7 +77,9 @@ export const TGCloudGlobalContextWrapper = ({
 				setConnectionStatus,
 				shouldShowUploadModal,
 				setShouldShowUploadModal,
-				telegramClient: client
+				telegramClient: client,
+				isSwitchingFolder,
+				startPathSwitching
 			}}
 		>
 			{children}

@@ -1,15 +1,14 @@
 'use client';
-import { Suspense, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import FolderNavigationBar from './folder-navigation-bar';
-import { Button } from '@/components/ui/button';
-import { Folder, ChevronDown, ChevronUp } from 'lucide-react';
-import { FileItem, Folder as FolderType } from '@/lib/types';
 import { createFolder, getFolderHierarchy } from '@/actions';
-import { useOptimistic } from 'react';
+import { Button } from '@/components/ui/button';
+import { getGlobalTGCloudContext } from '@/lib/context';
+import { Folder as FolderType } from '@/lib/types';
 import { useCreateQueryString } from '@/lib/utils';
-import Link from 'next/link';
-import {revalidateTag} from 'next/cache'
+import { ChevronDown, ChevronUp, Folder } from 'lucide-react';
+import { revalidateTag } from 'next/cache';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useOptimistic, useState } from 'react';
+import FolderNavigationBar from './folder-navigation-bar';
 
 export type AllFolder = {
 	id: string;
@@ -38,17 +37,23 @@ export default function StoragePage({
 }: StoragePageProps) {
 	const [isFoldersVisible, setIsFoldersVisible] = useState(true);
 	const [foldersOptimistic, setFoldersOptimistic] = useOptimistic<FolderType[]>(folders);
+	const [currentlySelectedFolderId, setCurrentlySelectedFolderId] = useState(currentFolderId);
+	const TGCloudGlobalContext = getGlobalTGCloudContext();
+
 	const searchParams = useSearchParams();
 	const createQueryString = useCreateQueryString(searchParams);
 	const pathname = usePathname();
 	const router = useRouter();
 
 	const handleNavigate = (folderId: string | null) => {
-		if (folderId) {
-			router.push(`${pathname}?folderId=${folderId}`);
-		} else {
-			router.push(`${pathname}`);
-		}
+		TGCloudGlobalContext?.startPathSwitching(() => {
+			if (folderId) {
+				router.push(`${pathname}?folderId=${folderId}`);
+			} else {
+				setCurrentlySelectedFolderId(null);
+				router.push(`${pathname}`);
+			}
+		});
 	};
 
 	const handleCreateFolder = async (folderName: string) => {
@@ -56,7 +61,7 @@ export default function StoragePage({
 			setFoldersOptimistic((foldersOptimistic) => [
 				...foldersOptimistic,
 				{
-					id: crypto.randomUUID(),
+					id: 'TEMP_FOLDER_ID',
 					name: folderName,
 					path: '',
 					parentId: currentFolderId,
@@ -73,16 +78,14 @@ export default function StoragePage({
 		}
 	};
 
-
-   console.log(allFolder);
-
+	console.log(allFolder);
 
 	return (
 		<div className="container mx-auto p-4">
 			<FolderNavigationBar
 				allFolder={allFolder}
 				folders={foldersHierarchy}
-				currentFolderId={currentFolderId}
+				currentFolderId={currentlySelectedFolderId}
 				onNavigate={handleNavigate}
 				onCreateFolder={handleCreateFolder}
 				userId={userId}
@@ -107,17 +110,28 @@ export default function StoragePage({
 				>
 					{foldersOptimistic.map((folder) => {
 						const path = `${pathname}?${createQueryString('folderId', folder?.id as string)}`;
+						const isTemp = folder?.id === 'TEMP_FOLDER_ID';
 						return (
 							<Button
 								key={folder?.id}
 								variant="outline"
-								className="flex items-center justify-start h-12"
-								onMouseEnter={() => router.prefetch(path)}
+								className={`flex items-center justify-start h-12 ${
+									isTemp ? 'opacity-50 cursor-not-allowed' : ''
+								}`}
+								onMouseEnter={() => !isTemp && router.prefetch(path)}
+								disabled={isTemp}
+								onClick={(e) => {
+									if (isTemp) return;
+									setCurrentlySelectedFolderId(folder?.id as string);
+									const childFolders = allFolder.filter(({ parentId }) => parentId == folder?.id);
+									TGCloudGlobalContext?.startPathSwitching(() => {
+										setFoldersOptimistic(childFolders);
+										router.push(path);
+									});
+								}}
 							>
 								<Folder className="h-4 w-4 mr-2" />
-								<Link href={path} className="text-inherit">
-									{folder?.name}
-								</Link>
+								{isTemp ? <span className="text-inherit">{folder?.name}</span> : folder?.name}
 							</Button>
 						);
 					})}
