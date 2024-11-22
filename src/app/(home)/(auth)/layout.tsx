@@ -1,10 +1,7 @@
-import Footer from '@/components/footer';
-import Header from '@/components/Header';
-
-export default function RootLayout({
+export default function AuthLayout({
 	children
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	return <>{children}</>;
+	return <div className="min-h-[90svh] bg-white">{children}</div>;
 }

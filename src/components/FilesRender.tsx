@@ -27,6 +27,7 @@ import { RPCError } from 'telegram/errors';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
+import { use } from 'react';
 import Upload from './uploadWrapper';
 
 import Swal from 'sweetalert2';
@@ -101,6 +102,10 @@ function Files({
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
 	const router = useRouter();
 
+
+
+	
+
 	useEffect(() => {
 		if (!telegramSession) {
 			return;
@@ -145,6 +150,15 @@ function Files({
 			</div>
 		);
 	}
+
+	if (TGCloudGlobalContext?.isSwitchingFolder) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+			</div>
+		);
+	}
+
 
 	if (!isValidSession) {
 		return (
