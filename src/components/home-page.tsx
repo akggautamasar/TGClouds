@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Cloud, Lock, Play, Zap } from 'lucide-react';
+import { ArrowRight, Cloud, FolderTree, Lock, Play, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 export function HomePage() {
@@ -18,14 +18,14 @@ export function HomePage() {
 						<div className="flex flex-col items-center space-y-4 text-center">
 							<div className="space-y-2">
 								<h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-									Unlimited Storage Solution
+									Secure Unlimited Storage Solution
 								</h1>
 								<p className="text-2xl font-semibold text-primary mt-4 mb-6">
 									Storage limits got you down? We&apos;ve got your back!
 								</p>
 								<p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-									Securely store all your files with our innovative Telegram-powered solution.
-									Experience unlimited storage capacity.
+									Our innovative Telegram-powered solution provides unlimited storage capacity,
+									while ensuring the security and integrity of your data.
 								</p>
 							</div>
 							<div className="space-x-4">
@@ -55,8 +55,8 @@ export function HomePage() {
 								<CardContent>
 									<Cloud className="w-12 h-12 mb-4" />
 									<p>
-										Store as much data as you need without any restrictions. Enjoy truly unlimited
-										storage capacity.
+										Store as much data as you need without any restrictions. Our solution provides
+										unlimited storage capacity.
 									</p>
 								</CardContent>
 							</Card>
@@ -68,31 +68,43 @@ export function HomePage() {
 									<Lock className="w-12 h-12 mb-4" />
 									<p>
 										Your files are securely stored in a private Telegram channel, ensuring maximum
-										data protection.
+										data protection and privacy.
 									</p>
 								</CardContent>
 							</Card>
 							<Card>
 								<CardHeader>
-									<CardTitle>Speedy Gonzales Fast</CardTitle>
+									<CardTitle>Fast Performance</CardTitle>
 								</CardHeader>
 								<CardContent>
 									<Zap className="w-12 h-12 mb-4" />
 									<p>
-										Upload and download at the speed of light. Well, almost. Thank Telegram for the
-										rocket boost!
+										Our solution is optimized for performance, ensuring that your uploads and
+										downloads are completed quickly and efficiently.
 									</p>
 								</CardContent>
 							</Card>
 							<Card>
 								<CardHeader>
-									<CardTitle>Built-in Netflix (Sort of)</CardTitle>
+									<CardTitle>Media Playback</CardTitle>
 								</CardHeader>
 								<CardContent>
 									<Play className="w-12 h-12 mb-4" />
 									<p>
 										Watch your videos right here, right now. No need to download. It&apos;s like
 										having a mini cinema in your pocket!
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>Folder Organization</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<FolderTree className="w-12 h-12 mb-4" />
+									<p>
+										Keep your files neatly organized with folders. Create, manage, and navigate through
+										your file structure effortlessly.
 									</p>
 								</CardContent>
 							</Card>
@@ -125,7 +137,7 @@ export function HomePage() {
 								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
 									3
 								</div>
-								<h3 className="mt-4 font-semibold">Start Hoarding</h3>
+								<h3 className="mt-4 font-semibold">Start Uploading</h3>
 								<p className="mt-2 text-sm">Upload all your digital treasures. Go nuts!</p>
 							</li>
 						</ol>
@@ -160,10 +172,17 @@ export function HomePage() {
 								</AccordionContent>
 							</AccordionItem>
 							<AccordionItem value="item-4">
-								<AccordionTrigger>What can I stash here?</AccordionTrigger>
+								<AccordionTrigger>What can I store here?</AccordionTrigger>
 								<AccordionContent>
 									Anything digital! Docs, pics, videos, your secret recipe collection... If
 									it&apos;s a file, we can store it. No judgment here!
+								</AccordionContent>
+							</AccordionItem>
+							<AccordionItem value="item-5">
+								<AccordionTrigger>Can I organize my files in folders?</AccordionTrigger>
+								<AccordionContent>
+									Absolutely! You can create folders to organize your files just like you would on your computer.
+									Create as many folders as you need, nest them, and keep everything tidy and easy to find.
 								</AccordionContent>
 							</AccordionItem>
 						</Accordion>

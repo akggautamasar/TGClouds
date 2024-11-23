@@ -49,7 +49,7 @@ export const UploadFiles = ({
 	const handleSubmit = async (formData: FormData) => {
 		await promiseToast({
 			cb: () => uploadFiles(formData, user, setUploadProgress, client, folderId),
-			errMsg: 'Oops we fucked up we failed to upload your files',
+			errMsg: 'We apologize, but there was an error uploading your files',
 			successMsg: 'File Uploaded',
 			loadingMsg: 'please wait...',
 			position: 'top-right'

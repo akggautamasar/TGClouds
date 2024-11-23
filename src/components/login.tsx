@@ -80,8 +80,9 @@ interface LoginnButtonProps extends React.ComponentProps<typeof Button> {}
 function LoginButton({ children, ...props }: LoginnButtonProps) {
 	const { pending } = useFormStatus();
 	return (
-		<Button {...props} type="submit">
+		<Button disabled={pending} {...props} type="submit">
 			{pending ? 'please wait' : children}
 		</Button>
 	);
 }
+
