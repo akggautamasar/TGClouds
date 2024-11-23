@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const planEnum = pgEnum('plan', ['ANNUAL', 'MONTHLY']);
+
 export const usersTable = pgTable(
 	'usersTable',
 	{
@@ -31,15 +32,17 @@ export const usersTable = pgTable(
 	})
 );
 
-
 export const session = pgTable(
 	'session',
 	{
 		id: text('id').primaryKey(),
 		expiresAt: date('expiresAt'),
 		ipAddress: text('ipAddress'),
+		token: text('token'),
 		userAgent: text('userAgent'),
-		userId: text('userId')
+		userId: text('userId'),
+		createdAt: text('createdAt'),
+		updatedAt: text('updatedAt')
 	},
 	(table) => ({
 		fkUserId: foreignKey({
@@ -60,7 +63,9 @@ export const account = pgTable(
 		refreshToken: text('refreshToken'),
 		idToken: text('idToken'),
 		expiresAt: date('expiresAt'),
-		password: text('password')
+		password: text('password'),
+		createdAt: text('createdAt'),
+		updatedAt: text('updatedAt')
 	},
 	(table) => ({
 		fkUserId: foreignKey({
@@ -74,7 +79,9 @@ export const verification = pgTable('verification', {
 	id: text('id').primaryKey(),
 	identifier: text('identifier'),
 	value: text('value'),
-	expiresAt: date('expiresAt')
+	expiresAt: date('expiresAt'),
+	createdAt: date('createdAt'),
+	updatedAt: date('updatedAt')
 });
 
 export const sharedFilesTable = pgTable(
@@ -175,7 +182,3 @@ export const userFiles = pgTable(
 			.onUpdate('cascade')
 	})
 );
-
-
-
-

@@ -100,8 +100,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       better-auth:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^1.0.0
+        version: 1.0.0
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.0
@@ -2567,11 +2567,11 @@ packages:
   bcp-47@1.0.8:
     resolution: {integrity: sha512-Y9y1QNBBtYtv7hcmoX0tR+tUNSFZGZ6OL6vKPObq8BbOhkCoyayF6ogfLTgAli/KuAEbsYHYUNq2AQuY6IuLag==}
 
-  better-auth@0.8.2:
-    resolution: {integrity: sha512-zWXlc7vlpalp4WnkJSE0rUmMt+9xEiwZ15umDcE/oQ9pakrmr/DWw1BUPBdj3BGj9Q4N2YrJ+BDL34J6QyFocw==}
+  better-auth@1.0.0:
+    resolution: {integrity: sha512-R//T+jrIMZk1hScFk4b+Z0hDPCh/vj4p9UyErWdRVsZQy5yn1bA/suHw76uLTeYdwDvoyvhbsgdoQ9MQ1z3Q/w==}
 
-  better-call@0.2.14-beta.3:
-    resolution: {integrity: sha512-lA54ETanzM0xUZnQt6lm3BdTr4gVDyAe1DNpCQSTYUnwnGGOmQG8ob0FYivVd0XHsHQK68r01GB5c6cUuu4llQ==}
+  better-call@0.3.2:
+    resolution: {integrity: sha512-ZYUADh4S4JF3QOIgC0QAm4N9Ifb7v3rOEcwkIxr3UXxd+GCrGmEzv7VDe35o1ldX0Zcb9CX3QfT0jdJoMIKA9w==}
 
   big-integer@1.6.52:
     resolution: {integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==}
@@ -7424,14 +7424,14 @@ snapshots:
       is-alphanumerical: 1.0.4
       is-decimal: 1.0.4
 
-  better-auth@0.8.2:
+  better-auth@1.0.0:
     dependencies:
       '@better-fetch/fetch': 1.1.12
       '@noble/ciphers': 0.6.0
       '@noble/hashes': 1.5.0
       '@simplewebauthn/browser': 10.0.0
       '@simplewebauthn/server': 10.0.1
-      better-call: 0.2.14-beta.3
+      better-call: 0.3.2
       consola: 3.2.3
       defu: 6.1.4
       jose: 5.9.6
@@ -7444,7 +7444,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  better-call@0.2.14-beta.3:
+  better-call@0.3.2:
     dependencies:
       '@better-fetch/fetch': 1.1.12
       rou3: 0.5.1
