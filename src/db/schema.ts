@@ -27,10 +27,10 @@ export const usersTable = pgTable(
 		isSubscribedToPro: boolean('is_subscribed_to_pro').default(false),
 		subscriptionDate: date('subscription_date'),
 		plan: planEnum('plan'),
-		emailVerified: boolean('emailVerified').notNull(),
+		emailVerified: boolean('emailVerified'),
 		image: text('image'),
-		createdAt: timestamp('createdAt').notNull(),
-		updatedAt: timestamp('updatedAt').notNull()
+		createdAt: timestamp('createdAt'),
+		updatedAt: timestamp('updatedAt')
 	},
 	(table) => ({
 		emailIdx: uniqueIndex('email_idx').on(table.email)
