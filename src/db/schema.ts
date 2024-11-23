@@ -6,6 +6,7 @@ import {
 	pgEnum,
 	pgTable,
 	text,
+	timestamp,
 	uniqueIndex
 } from 'drizzle-orm/pg-core';
 
@@ -25,7 +26,11 @@ export const usersTable = pgTable(
 		hasPublicTgChannel: boolean('hasPublicChannel'),
 		isSubscribedToPro: boolean('is_subscribed_to_pro').default(false),
 		subscriptionDate: date('subscription_date'),
-		plan: planEnum('plan')
+		plan: planEnum('plan'),
+		emailVerified: boolean('emailVerified').notNull(),
+		image: text('image'),
+		createdAt: timestamp('createdAt').notNull(),
+		updatedAt: timestamp('updatedAt').notNull()
 	},
 	(table) => ({
 		emailIdx: uniqueIndex('email_idx').on(table.email)
@@ -42,7 +47,8 @@ export const session = pgTable(
 		userAgent: text('userAgent'),
 		userId: text('userId'),
 		createdAt: text('createdAt'),
-		updatedAt: text('updatedAt')
+		updatedAt: text('updatedAt'),
+
 	},
 	(table) => ({
 		fkUserId: foreignKey({
@@ -65,7 +71,10 @@ export const account = pgTable(
 		expiresAt: date('expiresAt'),
 		password: text('password'),
 		createdAt: text('createdAt'),
-		updatedAt: text('updatedAt')
+		updatedAt: text('updatedAt'),
+		accessTokenExpiresAt: timestamp('accessTokenExpiresAt'),
+		refreshTokenExpiresAt: timestamp('refreshTokenExpiresAt'),
+		scope: text('scope'),
 	},
 	(table) => ({
 		fkUserId: foreignKey({
