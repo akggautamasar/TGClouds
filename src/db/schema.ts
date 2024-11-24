@@ -191,3 +191,14 @@ export const userFiles = pgTable(
 			.onUpdate('cascade')
 	})
 );
+
+export const supportTable = pgTable(
+	'supportTable',
+	{
+		id: bigint('id', { mode: 'number' }).primaryKey(),
+		name: text('name').notNull(),
+		email: text('email').notNull(),
+		message: text('message').notNull(),
+		date: date('date', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
+	}
+);

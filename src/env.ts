@@ -9,7 +9,9 @@ export const env = createEnv({
 		RESEND_API_KEY: z.string(),
 		CHAPA_API_KEY: z.string(),
 		GOOGLE_CLIENT_SECRET: z.string(),
-		GITHUB_CLIENT_SECRET: z.string()
+		GITHUB_CLIENT_SECRET: z.string(),
+		supportMail: z.string().default("onboarding@resend.dev"),
+		supportRecipients: z.string().default("kumnegerwondimu01@gmail.com"),
 	},
 	client: {
 		NEXT_PUBLIC_TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
@@ -34,6 +36,8 @@ export const env = createEnv({
 		GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
 		GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
 		NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-		NEXT_PUBLIC_GITHUB_CLIENT_ID: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
+		NEXT_PUBLIC_GITHUB_CLIENT_ID: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
+		supportMail: process.env.supportMail,
+		supportRecipients: process.env.supportRecipients
 	}
 });

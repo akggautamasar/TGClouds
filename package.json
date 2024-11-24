@@ -10,7 +10,7 @@
 		"lint": "next lint",
 		"db:generate": "dotenv -e .env.development -- drizzle-kit generate",
 		"db:migrate": "dotenv -e .env.development  -- drizzle-kit migrate",
-		"db:push": "dotenv -e .env.production -- drizzle-kit push",
+		"db:push": "dotenv -e .env.development -- drizzle-kit push",
 		"migrate": "pnpm db:generate && pnpm db:migrate"
 	},
 	"dependencies": {
