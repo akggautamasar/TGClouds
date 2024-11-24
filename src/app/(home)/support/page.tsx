@@ -27,8 +27,12 @@ async function acceptSupport(user: string, email: string, message: string) {
 	}
 }
 
-export default function SupportPage({ searchParams }: { searchParams: { success: string } }) {
-	const success = searchParams.success;
+export default async function SupportPage({
+	searchParams
+}: {
+	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+	const success = (await searchParams).success;
 
 	return (
 		<main className="flex-1 bg-background text-foreground">
@@ -76,7 +80,10 @@ export default function SupportPage({ searchParams }: { searchParams: { success:
 							className="space-y-4"
 						>
 							<div>
-								<label htmlFor="name" className="block text-sm font-medium text-muted-foreground dark:text-muted-foreground-dark">
+								<label
+									htmlFor="name"
+									className="block text-sm font-medium text-muted-foreground dark:text-muted-foreground-dark"
+								>
 									Name
 								</label>
 								<Input
@@ -88,7 +95,10 @@ export default function SupportPage({ searchParams }: { searchParams: { success:
 								/>
 							</div>
 							<div>
-								<label htmlFor="email" className="block text-sm font-medium text-muted-foreground dark:text-muted-foreground-dark">
+								<label
+									htmlFor="email"
+									className="block text-sm font-medium text-muted-foreground dark:text-muted-foreground-dark"
+								>
 									Email
 								</label>
 								<Input
@@ -101,7 +111,10 @@ export default function SupportPage({ searchParams }: { searchParams: { success:
 								/>
 							</div>
 							<div>
-								<label htmlFor="message" className="block text-sm font-medium text-muted-foreground dark:text-muted-foreground-dark">
+								<label
+									htmlFor="message"
+									className="block text-sm font-medium text-muted-foreground dark:text-muted-foreground-dark"
+								>
 									Message
 								</label>
 								<Textarea
@@ -113,9 +126,7 @@ export default function SupportPage({ searchParams }: { searchParams: { success:
 								/>
 							</div>
 							<div className="flex items-center justify-center">
-								<CustomButton
-									className="bg-primary text-foreground text-white dark:text-black dark:bg-primary-dark"
-								>
+								<CustomButton className="bg-primary text-foreground text-white dark:text-black dark:bg-primary-dark">
 									Send Message
 								</CustomButton>
 							</div>
