@@ -86,3 +86,4 @@ function LoginButton({ children, ...props }: LoginnButtonProps) {
 	);
 }
 
+export { LoginButton as CustomButton };

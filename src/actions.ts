@@ -591,7 +591,6 @@ export async function subscribeToPro({
 
 async function sendEmail(user: User, expirationDate: string) {
 	const resend = new Resend(env.RESEND_API_KEY);
-
 	await resend.emails.send({
 		from: 'onboarding@resend.dev',
 		to: user?.email!,
