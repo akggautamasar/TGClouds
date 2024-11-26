@@ -50,6 +50,7 @@
 		"dotenv-cli": "^7.4.2",
 		"drizzle-orm": "^0.31.4",
 		"fluid-player": "^3.41.0",
+		"grammy": "^1.32.0",
 		"lucide-react": "^0.402.0",
 		"next": "^15.0.3",
 		"next-client-cookies": "^1.1.1",
