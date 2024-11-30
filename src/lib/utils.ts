@@ -8,6 +8,8 @@ import { twMerge } from 'tailwind-merge';
 import { Api, TelegramClient } from 'telegram';
 import { RPCError, TypeNotFoundError } from 'telegram/errors';
 import { ChannelDetails, User } from './types';
+import toast from 'react-hot-toast';
+import { EntityLike } from 'telegram/define';
 
 type MediaSize = 'large' | 'small';
 export type MediaCategory = 'video' | 'image' | 'document';
@@ -56,7 +58,9 @@ export async function uploadFiles(
 	if (!client) {
 		throw new Error('Failed to initialize Telegram client');
 	}
-	if (!client?.connected) await client.connect();
+
+	if (!client.connected) await client.connect()
+
 	const files = formData.getAll('files') as File[];
 	try {
 		for (let index = 0; index < files.length; index++) {
@@ -72,6 +76,12 @@ export async function uploadFiles(
 					});
 				}
 			});
+
+			console.log('file', file);
+			console.log('toUpload', toUpload);
+
+			console.log('user.channelID', user?.channelId);
+			console.log('user.accessHash', user?.accessHash);
 
 			const result = await client.sendFile(getChannelEntity(user?.channelId!, user?.accessHash!), {
 				file: toUpload,
@@ -110,11 +120,14 @@ export async function delelteItem(
 	postId: number | string,
 	client: TelegramClient | undefined
 ) {
-	if (!client) return alert('You are not connected to Telegram');
-
-	if (!client?.connected) {
-		await client.connect();
+	if (!client) {
+		toast.error('Failed to initialize Telegram client');
+		return
 	}
+
+	if (!client.connected) 
+		await client.connect();
+
 	try {
 		const deleteMediaStatus = await client.deleteMessages(
 			getChannelEntity(user?.channelId!, user?.accessHash!),
@@ -142,9 +155,6 @@ export async function delelteItem(
 
 export async function getChannelDetails(client: TelegramClient, username: string) {
 	if (!client) throw new Error('Telegram client is not initialized');
-
-	if (!client?.connected) await client.connect();
-
 	const entity = (await client.getEntity(username)) as unknown as ChannelDetails & {
 		id: { value: string };
 		broadcast: boolean;
@@ -208,7 +218,7 @@ export function isDarkMode() {
 
 export const canWeAccessTheChannel = async (client: TelegramClient, user: User) => {
 	try {
-		const entity = await client.getEntity(getChannelEntity(user?.channelId!, user?.accessHash!));
+		const entity = await client.getInputEntity(user?.channelId as EntityLike);
 		return !!entity;
 	} catch (err) {
 		if (err instanceof RPCError) {
@@ -224,7 +234,7 @@ export const getMessage = async ({
 }: Pick<DownloadMediaOptions, 'messageId' | 'user'> & {
 	client: TelegramClient;
 }) => {
-	if (!client.connected) await client.connect();
+	// if (!client.connected) await client.connect();
 
 	const result = (
 		(await client.getMessages(getChannelEntity(user?.channelId!, user?.accessHash!), {
@@ -240,10 +250,9 @@ export const getMessage = async ({
 
 export const downloadMedia = async (
 	{ user, messageId, size, setURL, category, isShare }: DownloadMediaOptions,
-	telegramSession: string | undefined,
 	client: TelegramClient
 ): Promise<Blob | { fileExists: boolean } | null> => {
-	if (!user || !telegramSession || !user.channelId || !user.accessHash)
+	if (!user || !client || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
 	const cacheKey = `${user?.channelId}-${messageId}-${size}-${category}-${isShare}`;
@@ -251,8 +260,6 @@ export const downloadMedia = async (
 	if (blobCache.has(cacheKey)) {
 		return blobCache.get(cacheKey)!;
 	}
-
-	if (!client) throw new Error('Failed to get Telegram client');
 
 	const media = await getMessage({ client, messageId, user });
 
@@ -335,7 +342,6 @@ export const downloadVideoThumbnail = async (
 	client: TelegramClient,
 	media: Message['media']
 ) => {
-	if (!client.connected) await client.connect();
 	const thumbnail = media.document.thumbs;
 
 	if (!thumbnail) return;

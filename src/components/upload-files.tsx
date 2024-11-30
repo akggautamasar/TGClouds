@@ -23,17 +23,15 @@ interface UploadProgress {
 
 export const UploadFiles = ({
 	user,
-	setOpen,
-	telegramSession
+	setOpen
 }: {
 	user: User;
 	setOpen: Dispatch<SetStateAction<boolean>>;
-	telegramSession: string | undefined;
 }) => {
 	const router = useRouter();
 	const [dropedfiles, setFiles] = useState<DropedFile[]>([]);
 	const [uploadProgress, setUploadProgress] = useState<UploadProgress>();
-	const client = getTgClient(telegramSession ?? '');
+	const tgCloudContext = getGlobalTGCloudContext();
 	const searchParams = useSearchParams();
 	const folderId = searchParams?.get('folderId') ?? null;
 
@@ -47,8 +45,11 @@ export const UploadFiles = ({
 	};
 
 	const handleSubmit = async (formData: FormData) => {
+		if (!tgCloudContext?.telegramClient) return null;
+
 		await promiseToast({
-			cb: () => uploadFiles(formData, user, setUploadProgress, client, folderId),
+			cb: () =>
+				uploadFiles(formData, user, setUploadProgress, tgCloudContext?.telegramClient!, folderId),
 			errMsg: 'We apologize, but there was an error uploading your files',
 			successMsg: 'File Uploaded',
 			loadingMsg: 'please wait...',
@@ -58,6 +59,8 @@ export const UploadFiles = ({
 		setFiles([]);
 		router.refresh();
 	};
+
+	if (!tgCloudContext?.telegramClient) return null;
 
 	return (
 		<>

@@ -10,8 +10,8 @@ export const env = createEnv({
 		CHAPA_API_KEY: z.string(),
 		GOOGLE_CLIENT_SECRET: z.string(),
 		GITHUB_CLIENT_SECRET: z.string(),
-		supportMail: z.string().default("onboarding@resend.dev"),
-		supportRecipients: z.string().default("kumnegerwondimu01@gmail.com"),
+		supportMail: z.string().default('onboarding@resend.dev'),
+		supportRecipients: z.string().default('kumnegerwondimu01@gmail.com')
 	},
 	client: {
 		NEXT_PUBLIC_TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
@@ -20,7 +20,8 @@ export const env = createEnv({
 		NEXT_PUBLIC_POSTHOG_HOST: z.string(),
 		NEXT_PUBLIC_POSTHOG_KEY: z.string(),
 		NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string(),
-		NEXT_PUBLIC_GITHUB_CLIENT_ID: z.string()
+		NEXT_PUBLIC_GITHUB_CLIENT_ID: z.string(), 
+		NEXT_PUBLIC_BOT_TOKEN:z.string()
 	},
 	runtimeEnv: {
 		TELEGRAM_API_ID: process.env.NEXT_PUBLIC_TELEGRAM_API_ID,
@@ -38,6 +39,7 @@ export const env = createEnv({
 		NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
 		NEXT_PUBLIC_GITHUB_CLIENT_ID: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
 		supportMail: process.env.supportMail,
-		supportRecipients: process.env.supportRecipients
+		supportRecipients: process.env.supportRecipients, 
+		NEXT_PUBLIC_BOT_TOKEN:process.env.NEXT_PUBLIC_BOT_TOKEN
 	}
 });

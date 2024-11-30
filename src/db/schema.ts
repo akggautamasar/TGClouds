@@ -27,10 +27,11 @@ export const usersTable = pgTable(
 		isSubscribedToPro: boolean('is_subscribed_to_pro').default(false),
 		subscriptionDate: date('subscription_date'),
 		plan: planEnum('plan'),
+		botToken: text('botToken'),
 		emailVerified: boolean('emailVerified'),
 		image: text('image'),
 		createdAt: timestamp('createdAt'),
-		updatedAt: timestamp('updatedAt')
+		updatedAt: timestamp('updatedAt'),
 	},
 	(table) => ({
 		emailIdx: uniqueIndex('email_idx').on(table.email)
@@ -47,8 +48,7 @@ export const session = pgTable(
 		userAgent: text('userAgent'),
 		userId: text('userId'),
 		createdAt: text('createdAt'),
-		updatedAt: text('updatedAt'),
-
+		updatedAt: text('updatedAt')
 	},
 	(table) => ({
 		fkUserId: foreignKey({
@@ -74,7 +74,7 @@ export const account = pgTable(
 		updatedAt: text('updatedAt'),
 		accessTokenExpiresAt: timestamp('accessTokenExpiresAt'),
 		refreshTokenExpiresAt: timestamp('refreshTokenExpiresAt'),
-		scope: text('scope'),
+		scope: text('scope')
 	},
 	(table) => ({
 		fkUserId: foreignKey({
@@ -192,13 +192,10 @@ export const userFiles = pgTable(
 	})
 );
 
-export const supportTable = pgTable(
-	'supportTable',
-	{
-		id: bigint('id', { mode: 'number' }).primaryKey(),
-		name: text('name').notNull(),
-		email: text('email').notNull(),
-		message: text('message').notNull(),
-		date: date('date', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
-	}
-);
+export const supportTable = pgTable('supportTable', {
+	id: bigint('id', { mode: 'number' }).primaryKey(),
+	name: text('name').notNull(),
+	email: text('email').notNull(),
+	message: text('message').notNull(),
+	date: date('date', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
+});

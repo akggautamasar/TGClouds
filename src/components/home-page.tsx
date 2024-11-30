@@ -103,8 +103,8 @@ export function HomePage() {
 								<CardContent>
 									<FolderTree className="w-12 h-12 mb-4" />
 									<p>
-										Keep your files neatly organized with folders. Create, manage, and navigate through
-										your file structure effortlessly.
+										Keep your files neatly organized with folders. Create, manage, and navigate
+										through your file structure effortlessly.
 									</p>
 								</CardContent>
 							</Card>
@@ -181,8 +181,9 @@ export function HomePage() {
 							<AccordionItem value="item-5">
 								<AccordionTrigger>Can I organize my files in folders?</AccordionTrigger>
 								<AccordionContent>
-									Absolutely! You can create folders to organize your files just like you would on your computer.
-									Create as many folders as you need, nest them, and keep everything tidy and easy to find.
+									Absolutely! You can create folders to organize your files just like you would on
+									your computer. Create as many folders as you need, nest them, and keep everything
+									tidy and easy to find.
 								</AccordionContent>
 							</AccordionItem>
 						</Accordion>

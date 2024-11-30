@@ -93,86 +93,43 @@ function Files({
 	folders: NonNullable<GetAllFilesReturnType>['folders'] | undefined;
 	currentFolderId: string | null;
 }) {
-	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const sortBy = TGCloudGlobalContext?.sortBy;
-	const client = TGCloudGlobalContext?.telegramClient as TelegramClient;
-	const telegramSession = TGCloudGlobalContext?.telegramSession;
-	const [sessionChecked, setSessionChecked] = useState(false);
-	const [isValidSession, setIsValidSession] = useState(true);
+	const tGCloudGlobalContext = getGlobalTGCloudContext();
+	const sortBy = tGCloudGlobalContext?.sortBy;
+	const client = tGCloudGlobalContext?.telegramClient as TelegramClient;
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
 	const router = useRouter();
 
-
-
-	
-
 	useEffect(() => {
-		if (!telegramSession) {
+		if (!client) {
 			return;
 		}
 		(async () => {
-			client?.addEventHandler((ev) => {
-				// console.log('evenet', ev);
-			});
-
-			const isValid = await checkSessionStatus(client);
-			const connStatus = client?.connected ? 'connected' : 'disconnected';
-
-			setSessionChecked(true);
-			setIsValidSession(!!isValid);
 			const result = await withTelegramConnection(client as TelegramClient, () =>
 				canWeAccessTheChannel(client as TelegramClient, user)
 			);
 			setCanWeAccessTGChannel(!!result);
-			TGCloudGlobalContext.setShouldShowUploadModal(!!result);
-
-			// client.addEventHandler((event: { name: string }) => {
-			// 	alert(event.name);
-			// 	switch (event.name) {
-			// 		case 'ready':
-			// 			console.log('Connected successfully');
-			// 			break;
-			// 		case 'disconnected':
-			// 			console.log('Disconnected');
-			// 			break;
-			// 		case 'message':
-			// 			// console.log('Received message:', event.message);
-			// 			break;
-			// 	}
-			// });
+			tGCloudGlobalContext?.setShouldShowUploadModal(!!result);
 		})();
-	}, [telegramSession]);
+	}, []);
 
-	if (!sessionChecked) {
-		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-			</div>
-		);
-	}
-
-	if (TGCloudGlobalContext?.isSwitchingFolder) {
-		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-			</div>
-		);
-	}
-
-
-	if (!isValidSession) {
+	if (tGCloudGlobalContext?.botRateLimit?.isRateLimited) {
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="text-center space-y-4">
-					<h2 className="text-xl font-semibold">Unable to Access Your Telegram Account</h2>
+					<h2 className="text-xl font-semibold">Rate Limited 😭</h2>
 					<p className="text-muted-foreground">
-						We&apos;ve lost access to your Telegram account. This can happen if you logged out of
-						Telegram or revoked access. Please re-authorize TGCloud to continue using the service.
+						We are rate limited by Telegram. Please come back after{' '}
+						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes.
 					</p>
-					<Button onClick={() => clearCookies()} variant="default">
-						Authorize TGCloud
-					</Button>
 				</div>
+			</div>
+		);
+	}
+
+	if (tGCloudGlobalContext?.isSwitchingFolder || !client) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
 			</div>
 		);
 	}
@@ -227,7 +184,7 @@ function Files({
 	return (
 		<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 			{sortedFiles?.map((file) => (
-				<EachFile key={file.id} file={file as FileItem} user={user} />
+				<EachFile client={client} key={file.id} file={file as FileItem} user={user} />
 			))}
 		</div>
 	);
@@ -253,9 +210,8 @@ const addBotToChannel = async (client: TelegramClient, user: User) => {
 	});
 };
 
-function EachFile({ file, user }: { file: FileItem; user: User }) {
+function EachFile({ file, user, client }: { file: FileItem; user: User; client: TelegramClient }) {
 	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const client = TGCloudGlobalContext?.telegramClient as TelegramClient;
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);
@@ -276,7 +232,6 @@ function EachFile({ file, user }: { file: FileItem; user: User }) {
 						setURL,
 						category: file.category as MediaCategory
 					},
-					TGCloudGlobalContext?.telegramSession,
 					client
 				);
 			});

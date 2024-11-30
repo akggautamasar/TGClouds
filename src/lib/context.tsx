@@ -2,7 +2,7 @@
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import React, { Dispatch, SetStateAction, use, useState, useEffect, useTransition } from 'react';
+import React, { Dispatch, SetStateAction, useState, useEffect, useTransition } from 'react';
 import { env } from '../env';
 import { TelegramClient } from 'telegram';
 import { getTgClient } from './getTgClient';
@@ -36,7 +36,6 @@ export const TGCloudGlobalContext = React.createContext<
 	| {
 			sortBy: SortBy;
 			setSortBy: Dispatch<SetStateAction<SortBy>>;
-			telegramSession: string | undefined;
 			connectionStatus: connectionState;
 			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
 			shouldShowUploadModal: boolean;
@@ -44,42 +43,68 @@ export const TGCloudGlobalContext = React.createContext<
 			telegramClient: TelegramClient | null;
 			isSwitchingFolder: boolean;
 			startPathSwitching: React.TransitionStartFunction;
+			getClient: () => TelegramClient | null;
+			isClientLoading: boolean;
+			botRateLimit: {
+				isRateLimited: boolean;
+				retryAfter: number;
+			};
 	  }
 	| undefined
 >(undefined);
 
-export const TGCloudGlobalContextWrapper = ({
-	children,
-	telegramSession
-}: {
-	children: React.ReactNode;
-	telegramSession: string | undefined;
-}) => {
+export const TGCloudGlobalContextWrapper = ({ children }: { children: React.ReactNode }) => {
 	const [sortBy, setSortBy] = useState<SortBy>('name');
 	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
 	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
-	const client = getTgClient(telegramSession ?? '');
+	const [client, setClient] = useState<TelegramClient | null>(null);
 	const [isSwitchingFolder, startPathSwitching] = useTransition();
+	const [isClientLoading, setIsClientLoading] = useState(true);
+	const [botRateLimit, setBotRateLimit] = useState<{
+		isRateLimited: boolean;
+		retryAfter: number;
+	}>({
+		isRateLimited: false,
+		retryAfter: 0
+	});
 
 	useEffect(() => {
+		async function initClient() {
+			try {
+				setIsClientLoading(true);
+				const newClient = await getTgClient({ setBotRateLimit });
+				setClient(newClient || null);
+				setIsClientLoading(false);
+			} catch (error) {
+				console.error('Failed to initialize Telegram client:', error);
+				setIsClientLoading(false);
+			}
+		}
+
+		initClient();
+
 		return () => {
-			client.disconnect().catch(console.error);
+			if (client) {
+				client.disconnect().catch(console.error);
+			}
 		};
-	}, [telegramSession]);
+	}, []);
 
 	return (
 		<TGCloudGlobalContext.Provider
 			value={{
 				setSortBy,
 				sortBy,
-				telegramSession,
 				connectionStatus,
 				setConnectionStatus,
 				shouldShowUploadModal,
 				setShouldShowUploadModal,
 				telegramClient: client,
 				isSwitchingFolder,
-				startPathSwitching
+				startPathSwitching,
+				getClient: () => client,
+				isClientLoading,
+				botRateLimit
 			}}
 		>
 			{children}
@@ -89,5 +114,5 @@ export const TGCloudGlobalContextWrapper = ({
 
 export const getGlobalTGCloudContext = () => {
 	// eslint-disable-next-line react-hooks/rules-of-hooks
-	return use(TGCloudGlobalContext);
+	return React.use(TGCloudGlobalContext);
 };

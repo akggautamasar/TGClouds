@@ -1,21 +1,19 @@
 'use client';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
+import { getGlobalTGCloudContext } from '@/lib/context';
+import { User } from '@/lib/types';
 import { useMediaQuery } from '@uidotdev/usehooks';
 import { useState } from 'react';
 import { UploadIcon } from './Icons/icons';
 import { UploadFiles } from './upload-files';
-import { User } from '@/lib/types';
-import TGCloudPricing from './TGCloudPricing';
-import { getGlobalTGCloudContext } from '@/lib/context';
 
 export default function DrawerDialogDemo({ user }: { user: User }) {
 	const [open, setOpen] = useState(false);
 	const isDesktop = useMediaQuery('(min-width: 768px)');
 	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const telegramSession = TGCloudGlobalContext?.telegramSession;
 
-	if (!TGCloudGlobalContext?.shouldShowUploadModal) return null;
+	// if (!TGCloudGlobalContext?.shouldShowUploadModal) return null;
 	if (isDesktop) {
 		return (
 			<Dialog open={open} onOpenChange={setOpen}>
@@ -30,7 +28,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
 				<DialogContent className="w-[700px]">
 					<DialogTitle className="sr-only">upload file</DialogTitle>
 					{/* {user?.isSubscribedToPro ? ( */}
-					<UploadFiles telegramSession={telegramSession} setOpen={setOpen} user={user} />
+					<UploadFiles setOpen={setOpen} user={user} />
 					{/* ) : ( */}
 					{/* <TGCloudPricing /> */}
 					{/* )} */}
@@ -52,7 +50,7 @@ export default function DrawerDialogDemo({ user }: { user: User }) {
 			</DrawerTrigger>
 			<DrawerContent className="h-4/5">
 				{/* {user?.isSubscribedToPro ? ( */}
-				<UploadFiles telegramSession={telegramSession} setOpen={setOpen} user={user} />
+				<UploadFiles setOpen={setOpen} user={user} />
 				{/* ) : ( */}
 				{/* <TGCloudPricing /> */}
 				{/* )} */}

@@ -1,10 +1,12 @@
 'use client';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { User } from '@/lib/types';
 import { useMediaQuery } from '@uidotdev/usehooks';
 import { useState } from 'react';
 import TGCloudPricing from './TGCloudPricing';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+
 
 export default function Pricing({ user, children }: { user: User; children: React.ReactNode }) {
 	const [open, setOpen] = useState(false);
@@ -17,6 +19,9 @@ export default function Pricing({ user, children }: { user: User; children: Reac
 					<DialogTrigger>{children}</DialogTrigger>
 				</DialogTrigger>
 				<DialogContent>
+					<VisuallyHidden.Root>
+						<DialogTitle>Pricing</DialogTitle>
+					</VisuallyHidden.Root>
 					<TGCloudPricing />
 				</DialogContent>
 			</Dialog>
@@ -29,6 +34,9 @@ export default function Pricing({ user, children }: { user: User; children: Reac
 				<DialogTrigger>{children}</DialogTrigger>
 			</DrawerTrigger>
 			<DrawerContent>
+				<VisuallyHidden.Root>
+					<DialogTitle>Pricing</DialogTitle>
+				</VisuallyHidden.Root>
 				<TGCloudPricing />
 			</DrawerContent>
 		</Drawer>

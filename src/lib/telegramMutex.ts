@@ -5,24 +5,24 @@ import { TelegramClient } from 'telegram';
 const telegramMutex = new Mutex();
 
 export async function withTelegramConnection<T>(
-    client: TelegramClient | undefined,
-    operation: () => Promise<T>
+	client: TelegramClient | undefined,
+	operation: () => Promise<T>
 ): Promise<T> {
-    if (!client) {
-        throw new Error('Telegram client is not initialized');
-    }
+	if (!client) {
+		throw new Error('Telegram client is not initialized');
+	}
 
-    if (!client.connected) {
-        await client.connect();
-    }
+	if (!client.connected) {
+		await client.connect();
+	}
 
-    const release = await telegramMutex.acquire();
-    try {
-        const result = await operation();
-        return result;
-    } finally {
-        release();
-    }
+	const release = await telegramMutex.acquire();
+	try {
+		const result = await operation();
+		return result;
+	} finally {
+		release();
+	}
 }
 
 export { telegramMutex };

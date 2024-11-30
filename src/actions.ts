@@ -76,12 +76,14 @@ export async function saveTelegramCredentials({
 	accessHash,
 	channelId,
 	channelTitle,
-	session
+	session,
+	botToken
 }: {
 	session: string;
 	accessHash: string;
 	channelId: string;
 	channelTitle: string;
+		botToken?: string;
 }) {
 	if (!session) {
 		throw new Error('Session is required ');
@@ -103,7 +105,8 @@ export async function saveTelegramCredentials({
 			.set({
 				accessHash: accessHash,
 				channelId: channelId,
-				channelTitle: channelTitle
+				channelTitle: channelTitle,
+				botToken: botToken
 			})
 			.where(eq(usersTable.id, user.id))
 			.returning();
@@ -392,7 +395,7 @@ export async function uploadFile(file: {
 	size: bigint;
 	url: string;
 	fileTelegramId: number;
-	folderId:string | null,
+	folderId: string | null;
 }) {
 	try {
 		const user = await getUser();
@@ -411,8 +414,8 @@ export async function uploadFile(file: {
 				url: file.url,
 				date: new Date().toDateString(),
 				fileTelegramId: String(file.fileTelegramId),
-				category: file?.mimeType?.split('/')[0], 
-				folderId:file?.folderId
+				category: file?.mimeType?.split('/')[0],
+				folderId: file?.folderId
 			})
 			.returning();
 		revalidatePath('/files');
@@ -452,14 +455,9 @@ async function generateId() {
 
 export const requireUserAuthentication = async () => {
 	const user = await getUser();
-
-	const hasNotDecidedToHavePrivateChannle =
-		user?.hasPublicTgChannel === null || user?.hasPublicTgChannel === undefined;
-
 	const hasNotHaveNeccessaryDetails = !user?.accessHash || !user?.channelId;
 
-	if (hasNotDecidedToHavePrivateChannle || hasNotHaveNeccessaryDetails)
-		return redirect('/connect-telegram');
+	if (hasNotHaveNeccessaryDetails) return redirect('/connect-telegram');
 
 	if (!user.channelUsername && (!user.channelId || !user.accessHash))
 		throw new Error('There was something wrong');

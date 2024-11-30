@@ -10,16 +10,7 @@ async function Page() {
 		redirect('/login');
 	}
 
-	const telegramSession = (await cookies()).get('telegramSession');
-
-	if (
-		user?.hasPublicTgChannel !== null &&
-		user?.hasPublicTgChannel !== undefined &&
-		user.accessHash &&
-		user.channelId &&
-		telegramSession
-	)
-		return redirect('/files');
+	// if (user.accessHash && user.channelId) return redirect('/files');
 
 	return (
 		<div>

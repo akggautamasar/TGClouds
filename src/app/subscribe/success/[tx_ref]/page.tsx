@@ -5,15 +5,13 @@ import Link from 'next/link';
 import { SVGProps } from 'react';
 
 export default async function Component(props: { params: Promise<{ tx_ref: string }> }) {
-    const params = await props.params;
+	const params = await props.params;
 
-    const {
-        tx_ref
-    } = params;
+	const { tx_ref } = params;
 
-    const result = await subscribeToPro({ tx_ref });
+	const result = await subscribeToPro({ tx_ref });
 
-    if (result?.isDone) {
+	if (result?.isDone) {
 		const data = result.data;
 		const formattedAmount = `${data?.currency} ${data?.amount}`;
 		const planType = data?.plan === 'ANNUAL' ? 'Annual' : 'Monthly';
@@ -37,7 +35,7 @@ export default async function Component(props: { params: Promise<{ tx_ref: strin
 			</div>
 		);
 	}
-    return <PaymentError />;
+	return <PaymentError />;
 }
 
 function CircleCheckIcon(props: SVGProps<SVGSVGElement>) {

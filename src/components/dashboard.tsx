@@ -320,9 +320,7 @@ export async function Dashboard({
 						folders={folders ?? []}
 						currentFolderId={currentFolderId}
 					/>
-					<Suspense fallback={<div>loading</div>}>
-						{children}
-					</Suspense>
+					<Suspense fallback={<div>loading</div>}>{children}</Suspense>
 					<Paginate totalItems={total} />
 				</main>
 			</div>
