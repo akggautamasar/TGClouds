@@ -223,7 +223,7 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		}
 
 		try {
-			const result = await withTelegramConnection(client, async () => {
+			const result = await withTelegramConnection(client, async (client: TelegramClient) => {
 				return await downloadMedia(
 					{
 						user: user as NonNullable<User>,
@@ -275,7 +275,6 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		downlaodFile('small', file.category);
 		requestIdleCallback(async (e) => {
 			await downlaodFile('large', file.category);
-			console.log('this should finish now');
 		});
 
 		return () => {

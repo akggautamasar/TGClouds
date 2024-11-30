@@ -8,7 +8,7 @@ import { Dispatch, SetStateAction, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from './Icons/icons';
-import { getTgClient } from '@/lib/getTgClient';
+import { UploadProgressOverlay } from './uploadProgressOverlay';
 
 interface DropedFile {
 	file: File;
@@ -64,26 +64,11 @@ export const UploadFiles = ({
 
 	return (
 		<>
-			<div className="w-full">
-				{uploadProgress && (
-					<div className="flex justify-between items-center flex-col p-4 bg-gray-100 rounded-lg shadow-md w-full">
-						<div className="font-medium text-gray-700">Upload Progress</div>
-						<div>
-							<div className="text-gray-600">{uploadProgress.itemName}</div>
-						</div>
-						<div className="text-gray-600">
-							{uploadProgress.itemIndex + 1}/{dropedfiles.length}
-						</div>
-						{/* <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <Progress
-                value={Math.round(uploadProgress.progress)}
-                className="w-full"
-              />
-            </div> */}
-						<div className="ml-2 text-gray-600">{Math.round(uploadProgress.progress * 100)}%</div>
-					</div>
-				)}
-			</div>
+			{uploadProgress && (
+				<UploadProgressOverlay
+					progress={{ ...uploadProgress, total: dropedfiles.length }}
+				/>
+			)}
 			<div className="grid gap-6 max-w-xl overflow-x-hidden mx-auto">
 				<form
 					action={async () => {
