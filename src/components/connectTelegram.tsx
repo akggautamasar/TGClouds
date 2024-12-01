@@ -52,7 +52,14 @@ export default function Component({ user }: Props) {
 									<div className="flex items-center space-x-2">
 										<RadioGroupItem value="default" id="default" />
 										<Label htmlFor="default">
-											Use TGCloud Bot
+											<a
+												href="https://t.me/tgcloudet2024_bot?start=setup_tgcloud"
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-blue-500 underline"
+											>
+												Use TGCloud Bot
+											</a>
 											<span className="block text-sm text-gray-600">
 												Our default bot with standard features
 											</span>
@@ -62,26 +69,41 @@ export default function Component({ user }: Props) {
 										<RadioGroupItem value="custom" id="custom" />
 										<Label htmlFor="custom">
 											Use Custom Bot
-											<span className="block text-sm text-gray-600">
-												Your own bot for better rate limits
-											</span>
+											<span className="block text-sm text-gray-600">Recommended</span>
 										</Label>
+									</div>
+									<div>
+										<div></div>
 									</div>
 								</RadioGroup>
 
-								{selectedBot === 'custom' && (
-									<div className="mt-4 space-y-2">
-										<p className="text-sm text-gray-600">
-											To use your own bot:
-											<ol className="list-decimal ml-5 mt-2">
-												<li>Create a new bot with @BotFather</li>
-												<li>Copy the bot token provided</li>
-												<li>Add the bot to your channel as admin with posting permissions</li>
-												<li>Paste the bot token below</li>
-											</ol>
-										</p>
-									</div>
-								)}
+								<div className="mt-4 space-y-2">
+									<p className="text-sm text-gray-600">
+										To use {selectedBot === 'custom' ? 'your own bot' : 'TGCloud Bot'}:
+										<ol className="list-decimal ml-5 mt-2">
+											{selectedBot === 'custom' && (
+												<li>
+													Create a new bot with{' '}
+													<a
+														href="https://t.me/BotFather"
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-blue-600 hover:underline"
+													>
+														@BotFather
+													</a>
+												</li>
+											)}
+											<li>
+												{selectedBot === 'custom'
+													? 'Copy the bot token provided'
+													: 'Add the bot as admin'}
+											</li>
+											<li>Add the bot to your channel as admin with posting permissions</li>
+											<li>{selectedBot === 'custom' ? 'Paste the bot token below' : 'Done!'}</li>
+										</ol>
+									</p>
+								</div>
 							</div>
 							<div className="space-y-2">
 								<h3 className="font-semibold">Step 3: Get Channel ID</h3>
@@ -113,14 +135,14 @@ export default function Component({ user }: Props) {
         "from": {
             "id": 5660513633,
             "is_bot": false,
-            "first_name": "Kune",
-            "username": "KuneWM",
+            "first_name": "John Doe",
+            "username": "johndoe123",
             "language_code": "en"
         },
         "chat": {
             "id": 5660513633,
-            "first_name": "Kune",
-            "username": "KuneWM",
+            "first_name": "John Doe",
+            "username": "johndoe123",
             "type": "private"
         },
         "date": 1732815925,
@@ -171,32 +193,37 @@ export default function Component({ user }: Props) {
 											try {
 												if (selectedBot === 'custom' && botToken) {
 													client = await getTgClient({
-														botToken:botToken as string
+														botToken: botToken as string
 													});
 												}
-												const dialogs = await client?.getInputEntity(channelId as EntityLike);
+												const dialogs = await client?.getInputEntity(
+													String(channelId) as EntityLike
+												);
 												const id = (dialogs as unknown as { channelId: string })?.channelId;
 												const accessHash = (dialogs as unknown as { accessHash: string })
 													?.accessHash;
 
-												const sentMessage = await tgCloudContext?.telegramClient?.sendMessage(
-													channelId as EntityLike,
-													{
-														message:
-															' Yay! You have successfully connected your Telegram channel with our platform! '
+												console.log('id', id);
+												console.log('accessHash', accessHash);
+												console.log('dialogs', dialogs);
+													const sentMessage = await client?.sendMessage(
+														channelId as EntityLike,
+														{
+															message:
+																' Yay! You have successfully connected your Telegram channel with our platform! '
+														}
+													);
+													if (sentMessage?.id) {
+														await saveTelegramCredentials({
+															channelId: String(id) as string,
+															accessHash: String(accessHash),
+															session: 'this is test session',
+															channelTitle: '',
+															botToken: botToken as string
+														});
+														toast.success('Channel Connected Successfully');
+														router.push('/files');
 													}
-												);
-												if (sentMessage?.id) {
-													await saveTelegramCredentials({
-														channelId: String(id) as string,
-														accessHash: String(accessHash),
-														session: 'this is test session',
-														channelTitle: '',
-														botToken: botToken as string
-													});
-													toast.success('Channel Connected Successfully');
-													router.push('/files');
-												}
 											} catch (err) {
 												console.log('err', err);
 												toast.error('Failed to connect channel');

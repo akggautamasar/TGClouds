@@ -68,9 +68,10 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 export async function updateTokenRateLimit(tokenId: string, millisec: number) {
 	try {
 		const retryAfter = new Date(Date.now() + millisec)
-		db.update(botTokens).set({
+		const updateResult = await db.update(botTokens).set({
 			rateLimitedUntil: retryAfter
-		}).where(eq(botTokens.id, tokenId));
+		}).where(eq(botTokens.id, tokenId)).returning()
+		return updateResult
 	} catch (error) {
 		console.error('Error updating token rate limit:', error);
 	}
@@ -78,7 +79,7 @@ export async function updateTokenRateLimit(tokenId: string, millisec: number) {
 
 export async function deleteToken(tokenId: string) {
 	try {
-		db.delete(botTokens).where(eq(botTokens.id, tokenId));
+		await db.delete(botTokens).where(eq(botTokens.id, tokenId));
 	} catch (error) {
 		console.error('Error deleting token:', error);
 	}
@@ -495,10 +496,6 @@ export const requireUserAuthentication = async () => {
 
 	if (!user.channelUsername && (!user.channelId || !user.accessHash))
 		throw new Error('There was something wrong');
-
-	const session = (await cookies()).get('telegramSession');
-
-	if (!session) return redirect('/connect-telegram');
 
 	return user as User;
 };

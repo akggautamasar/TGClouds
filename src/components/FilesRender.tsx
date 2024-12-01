@@ -80,6 +80,7 @@ function Files({
 	const client = tGCloudGlobalContext?.telegramClient as TelegramClient;
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
 	const router = useRouter();
+
 	useEffect(() => {
 		if (!client) {
 			return;
@@ -92,6 +93,7 @@ function Files({
 							setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
 					  })
 					: client;
+
 				isDisconnected && tGCloudGlobalContext?.setTelegramClient(telegramClient || null);
 				const result = await withTelegramConnection(telegramClient as TelegramClient, () =>
 					canWeAccessTheChannel(telegramClient as TelegramClient, user)
@@ -142,9 +144,12 @@ function Files({
 						<Button onClick={() => deleteChannelDetail()} variant="destructive">
 							Yes, I deleted it
 						</Button>
-						<Button onClick={() => {
-							window.location.reload();
-						}} variant="outline">
+						<Button
+							onClick={() => {
+								window.location.reload();
+							}}
+							variant="outline"
+						>
 							No, I didn&apos;t
 						</Button>
 					</div>

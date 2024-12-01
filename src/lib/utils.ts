@@ -83,7 +83,7 @@ export async function uploadFiles(
 			console.log('user.channelID', user?.channelId);
 			console.log('user.accessHash', user?.accessHash);
 
-			const result = await client.sendFile(getChannelEntity(user?.channelId!, user?.accessHash!), {
+			const result = await client.sendFile(user?.channelId!, {
 				file: toUpload,
 				forceDocument: false
 			});
@@ -238,11 +238,15 @@ export const getMessage = async ({
 	if (!client.connected) await client.connect();
 	const channelId = user?.channelId as string;
 
+	console.log('user.channelId', user?.channelId);
+
 	const result = (
-		(await client.getMessages(getChannelEntity(channelId, user?.accessHash!), {
+		(await client.getMessages(channelId, {
 			ids: [Number(messageId)]
 		})) as unknown as Message[]
 	)[0];
+
+	console.log('result', result);
 
 	if (!result) return null;
 
@@ -257,6 +261,10 @@ export const downloadMedia = async (
 	if (!user || !client || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
+
+	const me = await client.getMe()
+	console.log('me', me);
+
 	const cacheKey = `${user?.channelId}-${messageId}-${size}-${category}-${isShare}`;
 
 	if (blobCache.has(cacheKey)) {
@@ -265,8 +273,9 @@ export const downloadMedia = async (
 
 	const media = await getMessage({ client, messageId, user });
 
-	if (!media) return { fileExists: false };
 	console.log('media', media);
+
+	if (!media) return { fileExists: false };
 
 	try {
 		if (category === 'video')

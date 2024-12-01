@@ -31,8 +31,8 @@ export const usersTable = pgTable(
 		plan: planEnum('plan'),
 		emailVerified: boolean('emailVerified'),
 		image: text('image'),
-		createdAt: timestamp('createdAt'),
-		updatedAt: timestamp('updatedAt'),
+		createdAt: timestamp('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
+		updatedAt: timestamp('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
 	},
 	(table) => ({
 		emailIdx: uniqueIndex('email_idx').on(table.email)
@@ -49,9 +49,9 @@ export const botTokens = pgTable(
 		id: text('id').primaryKey(),
 		token: text('token').notNull().default(env.NEXT_PUBLIC_BOT_TOKEN),
 		userId: text('userId').notNull().references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-		createdAt: timestamp('createdAt'),
-		updatedAt: timestamp('updatedAt'),
-		rateLimitedUntil: timestamp('rateLimitedUntil')
+		rateLimitedUntil: timestamp('rateLimitedUntil'),
+		createdAt: timestamp('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
+		updatedAt: timestamp('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
 	});
 
 export const botTokenRelations = relations(botTokens, ({ one }) => ({
@@ -198,7 +198,9 @@ export const userFiles = pgTable(
 		url: text('fileUrl').notNull(),
 		date: date('date', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
 		fileTelegramId: text('fileTelegramId'),
-		category: text('fileCategory')
+		category: text('fileCategory'),
+		createdAt: date('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
+		updatedAt: date('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
 	},
 	(table) => ({
 		userFk: foreignKey({
