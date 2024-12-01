@@ -41,14 +41,19 @@ export const TGCloudGlobalContext = React.createContext<
 			shouldShowUploadModal: boolean;
 			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
 			telegramClient: TelegramClient | null;
+			setTelegramClient: Dispatch<SetStateAction<TelegramClient | null>>;
 			isSwitchingFolder: boolean;
 			startPathSwitching: React.TransitionStartFunction;
-			getClient: () => TelegramClient | null;
-			isClientLoading: boolean;
 			botRateLimit: {
 				isRateLimited: boolean;
 				retryAfter: number;
 			};
+			setBotRateLimit: React.Dispatch<
+				React.SetStateAction<{
+					isRateLimited: boolean;
+					retryAfter: number;
+				}>
+			>;
 	  }
 	| undefined
 >(undefined);
@@ -59,7 +64,6 @@ export const TGCloudGlobalContextWrapper = ({ children }: { children: React.Reac
 	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
 	const [client, setClient] = useState<TelegramClient | null>(null);
 	const [isSwitchingFolder, startPathSwitching] = useTransition();
-	const [isClientLoading, setIsClientLoading] = useState(true);
 	const [botRateLimit, setBotRateLimit] = useState<{
 		isRateLimited: boolean;
 		retryAfter: number;
@@ -71,13 +75,10 @@ export const TGCloudGlobalContextWrapper = ({ children }: { children: React.Reac
 	useEffect(() => {
 		async function initClient() {
 			try {
-				setIsClientLoading(true);
 				const newClient = await getTgClient({ setBotRateLimit });
 				setClient(newClient || null);
-				setIsClientLoading(false);
 			} catch (error) {
 				console.error('Failed to initialize Telegram client:', error);
-				setIsClientLoading(false);
 			}
 		}
 
@@ -102,9 +103,9 @@ export const TGCloudGlobalContextWrapper = ({ children }: { children: React.Reac
 				telegramClient: client,
 				isSwitchingFolder,
 				startPathSwitching,
-				getClient: () => client,
-				isClientLoading,
-				botRateLimit
+				botRateLimit,
+				setTelegramClient: setClient,
+				setBotRateLimit
 			}}
 		>
 			{children}

@@ -1,5 +1,5 @@
 'use client';
-import { getUser } from '@/actions';
+import { getUser, updateTokenRateLimit } from '@/actions';
 import { env } from '@/env';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
@@ -12,15 +12,32 @@ export interface GetTgClientOptions {
 		retryAfter: number;
 	}>>;
 }
+const getBotTokenWithLeastAmountOfRemaingRateLimit = async (user: Awaited<ReturnType<typeof getUser>>) => {
+	const allTokens = user?.botTokens ?? [];
+	console.log('alltokens', allTokens);
+	console.log('users', user)
+
+	const isThereAnyBotWithoutRateLimit = allTokens.some((token) => !token.rateLimitedUntil);
+	if (isThereAnyBotWithoutRateLimit) {
+		return allTokens.find((token) => !token.rateLimitedUntil)?.token;
+	}
+	const now = new Date().getTime() / 1000;
+	const tokenWithLeastAmountOfRemainingRateLimit = (allTokens.filter((token) => token.rateLimitedUntil) as unknown as { rateLimitedUntil: Date, token: string, id: string }[]).sort((a, b) => {
+		const remainingA = a.rateLimitedUntil?.getTime() / 1000 - now;
+		const remainingB = b.rateLimitedUntil?.getTime() / 1000 - now;
+		return remainingA - remainingB;
+	})[0];
+
+	return tokenWithLeastAmountOfRemainingRateLimit?.token;
+};
+
 export async function getTgClient({ stringSession, botToken, setBotRateLimit }: GetTgClientOptions = {}) {
 	console.log('getTgClient called');
 	if (typeof window === 'undefined') return;
 	const user = await getUser();
 	if (!user) return;
-
-	console.log('botToken', botToken);
-
-	const token = botToken ?? user.botToken ?? env.NEXT_PUBLIC_BOT_TOKEN
+	const userBotToken = await getBotTokenWithLeastAmountOfRemaingRateLimit(user);
+	const token = botToken ?? userBotToken ?? env.NEXT_PUBLIC_BOT_TOKEN
 	try {
 		console.log('about to create TelegramClient');
 		const client = new TelegramClient(
@@ -35,7 +52,6 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 				botAuthToken: token
 			});
 		} catch (startError: any) {
-			console.error('Error starting TelegramClient:', startError.code);
 			if (startError?.message?.includes('A wait of')) {
 				const waitTimeMatch = startError.message.match(/(\d+)\sseconds/);
 				if (waitTimeMatch) {
@@ -45,7 +61,10 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 						isRateLimited: true,
 						retryAfter: waitTime
 					});
-
+					const tokenId = user?.botTokens?.find((token) => token.token === userBotToken)?.id;
+					if (tokenId) {
+						await updateTokenRateLimit(tokenId, timeInMilliseconds);
+					}
 					await new Promise((resolve) => setTimeout(resolve, timeInMilliseconds));
 					await client.start({
 						botAuthToken: token

@@ -15,6 +15,7 @@ import {
 	sharedFilesTable,
 	userFiles,
 	usersTable,
+	botTokens,
 	folders as foldersTable
 } from './db/schema';
 import { env } from './env';
@@ -40,7 +41,6 @@ export async function getAllFolders(userId: string) {
 	return allFolders;
 }
 
-// Add this function to get folder hierarchy
 export async function getFolderHierarchy(userId: string): Promise<FolderHierarchy[]> {
 	const allFolders = await db
 		.select()
@@ -49,20 +49,15 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 		.orderBy(asc(foldersTable.name))
 		.execute();
 
-	// Create a map for quick folder lookup
 	const folderMap = new Map(allFolders.map((folder) => [folder.id, { ...folder, children: [] }]));
-
-	// Build the hierarchy
 	const rootFolders: FolderHierarchy[] = [];
 
 	allFolders.forEach((folder) => {
 		const folderWithChildren = folderMap.get(folder.id)!;
 
 		if (!folder.parentId) {
-			// Root level folder
 			rootFolders.push(folderWithChildren);
 		} else {
-			// Add to parent's children
 			const parent = folderMap.get(folder.parentId);
 			if (parent) {
 				(parent.children as FolderHierarchy[]).push(folderWithChildren);
@@ -72,6 +67,41 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 
 	return rootFolders;
 }
+
+export async function updateTokenRateLimit(tokenId: string, millisec: number) {
+	try {
+		const retryAfter = new Date(Date.now() + millisec)
+		db.update(botTokens).set({
+			rateLimitedUntil: retryAfter
+		}).where(eq(botTokens.id, tokenId));
+	} catch (error) {
+		console.error('Error updating token rate limit:', error);
+	}
+}
+
+export async function deleteToken(tokenId: string) {
+	try {
+		db.delete(botTokens).where(eq(botTokens.id, tokenId));
+	} catch (error) {
+		console.error('Error deleting token:', error);
+	}
+}
+export async function addToken(token: string) {
+	try {
+		const user = await getUser();
+		if (!user?.id) {
+			throw new Error('user needs to be logged in.');
+		}
+		await db.insert(botTokens).values({
+			id: crypto.randomUUID(),
+			token: token,
+			userId: user?.id
+		});
+	} catch (error) {
+		console.error('Error adding token:', error);
+	}
+}
+
 export async function saveTelegramCredentials({
 	accessHash,
 	channelId,
@@ -95,18 +125,24 @@ export async function saveTelegramCredentials({
 	});
 	const user = await getUser();
 
-	if (!user) {
+	if (!user?.id) {
 		throw new Error('user needs to be logged in.');
 	}
-
 	try {
+		if (botToken) {
+			await db.insert(botTokens).values({
+				id: crypto.randomUUID(),
+				userId: user?.id,
+				token: botToken
+			});
+
+		}
 		const result = await db
 			.update(usersTable)
 			.set({
 				accessHash: accessHash,
 				channelId: channelId,
 				channelTitle: channelTitle,
-				botToken: botToken
 			})
 			.where(eq(usersTable.id, user.id))
 			.returning();
@@ -119,11 +155,10 @@ export async function saveTelegramCredentials({
 
 export const saveUserName = async (username: string) => {
 	const user = await getUser();
-	if (!user) {
+	if (!user || !user.id) {
 		throw new Error('user needs to be logged in.');
 	}
 	try {
-		const existinguser = await getUser();
 
 		const result = await db
 			.update(usersTable)
@@ -151,9 +186,11 @@ export async function getUser() {
 		const result = await db.query.usersTable.findFirst({
 			where(fields, { eq }) {
 				return eq(fields.id, user.id);
+			},
+			with: {
+				botTokens: true,
 			}
 		});
-
 		return result;
 	} catch (err) {
 		console.log(err);
@@ -432,7 +469,7 @@ export async function uploadFile(file: {
 export async function deleteFile(fileId: number) {
 	try {
 		const user = await getUser();
-		if (!user) throw new Error('you need to be logged to delete files');
+		if (!user || !user.id) throw new Error('you need to be logged to delete files');
 		const deletedFile = await db
 			.delete(userFiles)
 			.where(and(eq(userFiles.userId, user.id), eq(userFiles.id, Number(fileId))))
@@ -472,7 +509,7 @@ export const requireUserAuthentication = async () => {
 export const updateHasPublicChannelStatus = async (isPublic: boolean) => {
 	try {
 		const user = await getUser();
-		if (!user)
+		if (!user || !user.id)
 			throw new Error('Seems lke you are not authenticated', {
 				cause: 'AUTH_ERR'
 			});
@@ -498,16 +535,16 @@ type PeymentResult = Awaited<ReturnType<typeof db.query.paymentsTable.findFirst>
 
 type UserPaymentSubscriptionResult =
 	| {
-			isDone: true;
-			data: PeymentResult;
-			status: 'success';
-	  }
+		isDone: true;
+		data: PeymentResult;
+		status: 'success';
+	}
 	| {
-			isDone: false;
-			status: 'failed';
-			message: string;
-			data?: PeymentResult;
-	  };
+		isDone: false;
+		status: 'failed';
+		message: string;
+		data?: PeymentResult;
+	};
 
 export async function subscribeToPro({
 	tx_ref
@@ -534,7 +571,7 @@ export async function subscribeToPro({
 		if (data.status !== 'success') throw new Error(data.message);
 
 		const user = await getUser();
-		if (!user) throw new Error('Failed to get user');
+		if (!user || !user.id) throw new Error('Failed to get user');
 
 		let currentExpirationDate = user.subscriptionDate
 			? new Date(user.subscriptionDate)
@@ -587,7 +624,7 @@ export async function subscribeToPro({
 	}
 }
 
-async function sendEmail(user: User, expirationDate: string) {
+async function sendEmail(user: Partial<User>, expirationDate: string) {
 	const resend = new Resend(env.RESEND_API_KEY);
 	await resend.emails.send({
 		from: 'onboarding@resend.dev',
@@ -612,15 +649,15 @@ export async function initailizePayment({
 	try {
 		const user = await getUser();
 
-		if (!user) throw new Error('user needs to be loggedin');
+		if (!user || !user.id) throw new Error('user needs to be loggedin');
 
 		const tx_ref = crypto.randomUUID();
 
 		const body: ChapaInitializePaymentRequestBody = {
 			amount,
 			currency,
-			email: user.email,
-			first_name: user.name,
+			email: user.email!,
+			first_name: user.name!,
 			tx_ref,
 			return_url: `https://tgcloud-k.vercel.app/subscribe/success/${tx_ref}`
 		};
@@ -681,12 +718,12 @@ async function verifyPayment({ tx_ref }: { tx_ref: string }) {
 export async function shareFile({ fileID }: { fileID: string }) {
 	try {
 		const user = await getUser();
-		if (!user) throw new Error('you need to be singed in to share ur files');
+		if (!user?.id) throw new Error('you need to be singed in to share ur files');
 		const newShare = await db
 			.insert(sharedFilesTable)
 			.values({
 				id: crypto.randomUUID(),
-				userId: user.id,
+				userId: user?.id,
 				fileId: fileID
 			})
 			.returning()
@@ -729,7 +766,7 @@ export const clearCookies = async () => {
 export const deleteChannelDetail = async () => {
 	// try {
 	const user = await getUser();
-	if (!user) throw new Error('Failed to get user');
+	if (!user?.id) throw new Error('Failed to get user');
 	const updateTable = await db
 		.update(usersTable)
 		.set({
@@ -737,7 +774,7 @@ export const deleteChannelDetail = async () => {
 			accessHash: null,
 			channelTitle: null
 		})
-		.where(eq(usersTable.id, user.id));
+		.where(eq(usersTable.id, user?.id));
 	redirect('/connect-telegram');
 	// } catch (err) {
 	// console.error(err);
