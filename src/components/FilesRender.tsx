@@ -24,7 +24,6 @@ import { Play, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { RPCError } from 'telegram/errors';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
@@ -196,7 +195,6 @@ const addBotToChannel = async (client: TelegramClient, user: User) => {
 };
 
 function EachFile({ file, user, client }: { file: FileItem; user: User; client: TelegramClient }) {
-	const TGCloudGlobalContext = getGlobalTGCloudContext();
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);

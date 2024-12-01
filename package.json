@@ -11,7 +11,11 @@
 		"db:generate": "dotenv -e .env.development -- drizzle-kit generate",
 		"db:migrate": "dotenv -e .env.development  -- drizzle-kit migrate",
 		"db:push": "dotenv -e .env.development -- drizzle-kit push",
-		"migrate": "pnpm db:generate && pnpm db:migrate"
+		"migrate": "pnpm db:generate && pnpm db:migrate",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"typecheck": "tsc --project tsconfig.json",
+		"prepare": "husky install"
 	},
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.17",
@@ -52,7 +56,6 @@
 		"dotenv-cli": "^7.4.2",
 		"drizzle-orm": "^0.31.4",
 		"fluid-player": "^3.41.0",
-		"grammy": "^1.32.0",
 		"lucide-react": "^0.402.0",
 		"next": "^15.0.3",
 		"next-client-cookies": "^1.1.1",
@@ -82,6 +85,8 @@
 		"drizzle-kit": "^0.22.8",
 		"eslint": "^8.57.1",
 		"eslint-config-next": "15.0.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.2.10",
 		"postcss": "^8.4.47",
 		"tailwindcss": "^3.4.14",
 		"typescript": "^5.6.3"

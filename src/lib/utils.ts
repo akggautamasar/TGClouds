@@ -217,8 +217,9 @@ export function isDarkMode() {
 }
 
 export const canWeAccessTheChannel = async (client: TelegramClient, user: User) => {
+	const channelId = user?.channelId?.startsWith('-100') ? user?.channelId : `-100${user?.channelId}`;
 	try {
-		const entity = await client.getInputEntity(`-100${user?.channelId}` as EntityLike);
+		const entity = await client.getInputEntity(channelId as EntityLike);
 		return !!entity;
 	} catch (err) {
 		if (err instanceof RPCError) {
@@ -235,9 +236,10 @@ export const getMessage = async ({
 	client: TelegramClient;
 }) => {
 	if (!client.connected) await client.connect();
+	const channelId = user?.channelId as string;
 
 	const result = (
-		(await client.getMessages(getChannelEntity(user?.channelId!, user?.accessHash!), {
+		(await client.getMessages(getChannelEntity(channelId, user?.accessHash!), {
 			ids: [Number(messageId)]
 		})) as unknown as Message[]
 	)[0];
