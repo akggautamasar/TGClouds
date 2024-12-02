@@ -1,7 +1,6 @@
 import { getUser } from '@/actions';
 import ConnectTelegram from '@/components/connectTelegram';
 import { User } from '@/lib/types';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 async function Page() {
@@ -9,6 +8,8 @@ async function Page() {
 	if (!user) {
 		redirect('/login');
 	}
+
+	if (user.accessHash && user.channelId) return redirect('/files');
 	return (
 		<div>
 			<ConnectTelegram user={user as NonNullable<User>} />

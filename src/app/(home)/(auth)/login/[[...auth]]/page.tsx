@@ -1,24 +1,9 @@
 import { getUser } from '@/actions';
 import LoginPage from '@/components/login';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-
-function checkUserCredetials(user: Awaited<ReturnType<typeof getUser>>, telegramSession?: string) {
-	if (!user?.channelId || !user?.accessHash) {
-		return redirect('/connect-telegram');
-	}
-
-	if (user?.hasPublicTgChannel === null || user?.hasPublicTgChannel === undefined)
-		return redirect('/connect-telegram');
-
-	if (user.accessHash && user.channelId && telegramSession) {
-		return redirect('/files');
-	}
-}
 
 export default async function Component() {
 	const user = await getUser();
-	const telegramSession = (await cookies()).get('telegramSession');
 
 	if (!!user) {
 		return redirect('/connect-telegram');

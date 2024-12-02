@@ -28,6 +28,8 @@ import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
+import { fileCacheDb } from '@/lib/dexie';
+import { MediaSize } from '@/lib/utils';
 
 import Swal from 'sweetalert2';
 import { TelegramClient } from 'telegram';
@@ -82,9 +84,7 @@ function Files({
 	const router = useRouter();
 
 	useEffect(() => {
-		if (!client) {
-			return;
-		}
+		if (!client) return;
 		(async () => {
 			const isDisconnected = client?.connected === false;
 			try {
@@ -272,8 +272,6 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [file.category]);
 
-	console.log('url', url);
-
 	const fileContextMenuActions = [
 		{
 			actionName: 'save',
@@ -292,6 +290,20 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		{
 			actionName: 'delete',
 			onClick: async () => {
+				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${
+					'small' satisfies MediaSize
+				}-${file.category}`;
+				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${
+					'large' satisfies MediaSize
+				}-${file.category}`;
+
+				try {
+					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeySmall).delete();
+					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeyLarge).delete();
+				} catch (err) {
+					console.error(err);
+				}
+
 				const promies = () =>
 					withTelegramConnection(client, async () => {
 						await Promise.all([

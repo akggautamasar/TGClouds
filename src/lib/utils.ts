@@ -1,17 +1,17 @@
 import { uploadFile } from '@/actions';
+import { fileCacheDb } from '@/lib/dexie';
 import Message, { MessageMediaPhoto } from '@/lib/types';
-import TTLCache from '@isaacs/ttlcache';
 import { type ClassValue, clsx } from 'clsx';
 import { ReadonlyURLSearchParams } from 'next/navigation';
 import { Dispatch, SetStateAction } from 'react';
+import toast from 'react-hot-toast';
 import { twMerge } from 'tailwind-merge';
 import { Api, TelegramClient } from 'telegram';
+import { EntityLike } from 'telegram/define';
 import { RPCError, TypeNotFoundError } from 'telegram/errors';
 import { ChannelDetails, User } from './types';
-import toast from 'react-hot-toast';
-import { EntityLike } from 'telegram/define';
 
-type MediaSize = 'large' | 'small';
+export type MediaSize = 'large' | 'small';
 export type MediaCategory = 'video' | 'image' | 'document';
 
 interface DownloadMediaOptions {
@@ -45,10 +45,10 @@ export async function uploadFiles(
 	onProgress: Dispatch<
 		SetStateAction<
 			| {
-					itemName: string;
-					itemIndex: number;
-					progress: number;
-			  }
+				itemName: string;
+				itemIndex: number;
+				progress: number;
+			}
 			| undefined
 		>
 	>,
@@ -125,7 +125,7 @@ export async function delelteItem(
 		return
 	}
 
-	if (!client.connected) 
+	if (!client.connected)
 		await client.connect();
 
 	try {
@@ -192,11 +192,6 @@ export const getChannelEntity = (channelId: string, accessHash: string) => {
 	});
 };
 
-export const blobCache = new TTLCache<string, Blob>({
-	max: 100,
-	ttl: 1000 * 60 * 60 * 24 * 7 // 1 week
-});
-
 export function getBannerURL(filename: string, isDarkMode: boolean) {
 	const width = 600;
 	const height = 500;
@@ -238,7 +233,6 @@ export const getMessage = async ({
 	if (!client.connected) await client.connect();
 	const channelId = user?.channelId as string;
 
-	console.log('user.channelId', user?.channelId);
 
 	const result = (
 		(await client.getMessages(channelId, {
@@ -246,7 +240,6 @@ export const getMessage = async ({
 		})) as unknown as Message[]
 	)[0];
 
-	console.log('result', result);
 
 	if (!result) return null;
 
@@ -261,20 +254,18 @@ export const downloadMedia = async (
 	if (!user || !client || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
+	const cacheKey = `${user?.channelId}-${messageId}-${size}-${category}`;
+	const cachedFile = await fileCacheDb.fileCache.where('cacheKey').equals(cacheKey).first();
 
-	const me = await client.getMe()
-	console.log('me', me);
-
-	const cacheKey = `${user?.channelId}-${messageId}-${size}-${category}-${isShare}`;
-
-	if (blobCache.has(cacheKey)) {
-		return blobCache.get(cacheKey)!;
+	if (cachedFile) {
+		console.log('file found in cache');
+		const blob = cachedFile.data;
+		const url = URL.createObjectURL(blob);
+		setURL(url);
+		return blob
 	}
 
 	const media = await getMessage({ client, messageId, user });
-
-	console.log('media', media);
-
 	if (!media) return { fileExists: false };
 
 	try {
@@ -315,7 +306,6 @@ export const handleVideoDownload = async (
 				sourceBuffer.addEventListener('updateend', resolve, { once: true });
 			});
 		}
-
 		sourceBuffer.addEventListener('updateend', () => {
 			if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
 				mediaSource.endOfStream();
@@ -340,11 +330,16 @@ export const handleMediaDownload = async (
 		},
 		thumb: size === 'small' ? 0 : undefined
 	});
+
 	const blob = new Blob([buffer as unknown as Buffer]);
 
-	blobCache.set(cacheKey, blob);
-	setURL(URL.createObjectURL(blob));
+	fileCacheDb.fileCache.add({
+		id: Date.now(),
+		data: blob,
+		cacheKey
+	});
 
+	setURL(URL.createObjectURL(blob));
 	return blob;
 };
 
