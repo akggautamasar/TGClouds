@@ -206,24 +206,21 @@ export default function Component({ user }: Props) {
 												console.log('id', id);
 												console.log('accessHash', accessHash);
 												console.log('dialogs', dialogs);
-													const sentMessage = await client?.sendMessage(
-														channelId as EntityLike,
-														{
-															message:
-																' Yay! You have successfully connected your Telegram channel with our platform! '
-														}
-													);
-													if (sentMessage?.id) {
-														await saveTelegramCredentials({
-															channelId: String(id) as string,
-															accessHash: String(accessHash),
-															session: 'this is test session',
-															channelTitle: '',
-															botToken: botToken as string
-														});
-														toast.success('Channel Connected Successfully');
-														router.push('/files');
-													}
+												const sentMessage = await client?.sendMessage(channelId as EntityLike, {
+													message:
+														' Yay! You have successfully connected your Telegram channel with our platform! '
+												});
+												if (sentMessage?.id) {
+													await saveTelegramCredentials({
+														channelId: String(id) as string,
+														accessHash: String(accessHash),
+														session: 'this is test session',
+														channelTitle: '',
+														botToken: botToken as string
+													});
+													toast.success('Channel Connected Successfully');
+													typeof window !== 'undefined' && window.location.replace('/files');
+												}
 											} catch (err) {
 												console.log('err', err);
 												toast.error('Failed to connect channel');

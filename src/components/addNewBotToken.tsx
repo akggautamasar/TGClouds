@@ -74,6 +74,7 @@ export function AddNewBotTokenDialog() {
 											session: 'user session'
 										});
 										setIsOpen(false);
+										typeof window !== 'undefined' && window.location.reload();
 									}
 								} catch (err) {
 									console.log('err', err);
