@@ -1,9 +1,9 @@
 import { betterAuth } from 'better-auth';
 import { nextCookies } from 'better-auth/next-js';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db, } from '@/db';
+import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { env } from '@/env'
+import { env } from '@/env';
 
 const s = {
 	extra: {

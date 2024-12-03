@@ -47,12 +47,6 @@ export async function Dashboard({
 	const isSubscribedToPro = user?.isSubscribedToPro;
 	const subscriptionDate = user?.subscriptionDate;
 
-	let remainingDays = 0;
-	if (isSubscribedToPro && subscriptionDate) {
-		remainingDays = calculateRemainingDays(subscriptionDate);
-	}
-	const telegramSession = (await cookies()).get('telegramSession');
-
 	return (
 		<div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
 			<div className="hidden max-h-svh  sticky top-0 overflow-y-hidden border-r bg-muted/40 md:block">
@@ -123,7 +117,6 @@ export async function Dashboard({
 											View in Telegram
 										</Link>
 									</Button>
-									{/* <ConnectionStatusIndicator /> */}
 								</CardContent>
 							</Card>
 						</div>
@@ -136,42 +129,6 @@ export async function Dashboard({
 					</div>
 					<div className="flex items-center justify-center mb-4">
 						<ProfileMenu />
-					</div>
-					<div className="mt-auto">
-						{/* {user?.isSubscribedToPro ? (
-							<Card>
-								<CardHeader>
-									<CardTitle>Pro Activated</CardTitle>
-								</CardHeader>
-								<CardContent>
-									{!isSubscribedToPro ? (
-										<Button size="sm" className="w-full">
-											Upgrade
-										</Button>
-									) : (
-										<div>
-											<p>{remainingDays} days remaining until your Pro subscription expires.</p>
-										</div>
-									)}
-								</CardContent>
-							</Card>
-						) : (
-							<Pricing user={user}>
-								<Card x-chunk="dashboard-02-chunk-0">
-									<CardHeader className="p-2 pt-0 md:p-4">
-										<CardTitle>Upgrade to Pro</CardTitle>
-										<CardDescription>
-											Unlock all features and get unlimited access to our support team.
-										</CardDescription>
-									</CardHeader>
-									<CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-										<Button size="sm" className="w-full">
-											Upgrade
-										</Button>
-									</CardContent>
-								</Card>
-							</Pricing>
-						)} */}
 					</div>
 				</div>
 			</div>
@@ -258,52 +215,6 @@ export async function Dashboard({
 							<div className="flex items-center justify-center mb-4">
 								<ProfileMenu />
 							</div>
-							<div className="mt-auto">
-								{/* {user?.isSubscribedToPro ? (
-									<Card>
-										<CardHeader>
-											<CardTitle>Pro Activated</CardTitle>
-										</CardHeader>
-										<CardContent>
-											{!isSubscribedToPro ? (
-												<Button size="sm" className="w-full">
-													<Link
-														target="_blank"
-								{/* {user?.isSubscribedToPro ? (
-									<Card>
-										<CardHeader>
-											<CardTitle>Pro Activated</CardTitle>
-										</CardHeader>
-										<CardContent>
-											{!isSubscribedToPro ? (
-												<Button size="sm" className="w-full">
-													Upgrade
-												</Button>
-											) : (
-												<div>
-													<p>{remainingDays} days remaining until your Pro subscription expires.</p>
-												</div>
-											)}
-										</CardContent>
-									</Card>
-								) : (
-									<Pricing user={user}>
-										<Card>
-											<CardHeader>
-												<CardTitle>Upgrade to Pro</CardTitle>
-												<CardDescription>
-													Unlock all features and get unlimited access to our support team.
-												</CardDescription>
-											</CardHeader>
-											<CardContent>
-												<Button size="sm" className="w-full">
-													Upgrade
-												</Button>
-											</CardContent>
-										</Card>
-									</Pricing>
-								)} */}
-							</div>
 						</SheetContent>
 					</Sheet>
 					<SearchItems />
@@ -320,9 +231,7 @@ export async function Dashboard({
 						folders={folders ?? []}
 						currentFolderId={currentFolderId}
 					/>
-					<Suspense fallback={<div>loading</div>}>
-						{children}
-					</Suspense>
+					<Suspense fallback={<div>loading</div>}>{children}</Suspense>
 					<Paginate totalItems={total} />
 				</main>
 			</div>

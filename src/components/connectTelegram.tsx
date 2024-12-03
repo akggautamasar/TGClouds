@@ -1,690 +1,271 @@
 'use client';
 
-import { saveTelegramCredentials, saveUserName, updateHasPublicChannelStatus } from '@/actions';
 import { Button } from '@/components/ui/button';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue
-} from '@/components/ui/select';
-import { db } from '@/db';
-import Image from 'next/image';
-import { Dispatch, SetStateAction, SVGProps, useState, type JSX } from 'react';
-import Swal from 'sweetalert2';
-import { Api } from 'telegram';
-import { RPCError } from 'telegram/errors';
-import { useDebouncedCallback } from 'use-debounce';
-import { LoadingSVG, TextIcon } from './Icons/icons';
-import { getTgClient } from '@/lib/getTgClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getGlobalTGCloudContext } from '@/lib/context';
-import { errorToast } from '@/lib/notify';
-import { User } from '@/lib/types';
-import { useRouter } from 'next/navigation';
-import posthog from 'posthog-js';
-import toast from 'react-hot-toast';
 import { Input } from './ui/input';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { db } from '@/db';
+import { getGlobalTGCloudContext } from '@/lib/context';
+import { useRouter } from 'next/navigation';
+import { saveTelegramCredentials } from '@/actions';
+import { useState } from 'react';
+import { EntityLike } from 'telegram/define';
+import { useFormStatus } from 'react-dom';
+import { getTgClient } from '@/lib/getTgClient';
+import toast from 'react-hot-toast';
 
-interface Chat {
-	id: string;
-	accessHash?: string;
-}
-
-interface Result {
-	chats?: Chat[];
-}
-
-const errors = {
-	checkusername: {
-		CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
-			"You're managing too many public channels. To change this channel's username, make some of your public channels private.",
-		CHANNEL_INVALID:
-			'There seems to be a problem with the channel you provided. Please double-check the channel information.',
-		CHAT_ID_INVALID:
-			"The provided chat ID is invalid. Please ensure you're using the correct chat identifier.",
-		USERNAME_INVALID:
-			'The username you entered is invalid. Usernames must be between 5 and 32 characters long and can only contain letters, numbers, underscores, and hyphens.'
-	},
-	createChannel: {
-		CHANNELS_ADMIN_LOCATED_TOO_MUCH:
-			"You've reached the limit for creating public geogroups. Try creating a private channel instead.",
-		CHANNELS_TOO_MUCH:
-			"You've joined too many channels or supergroups. Reduce the number of channels you're in to create a new one.",
-		CHAT_ABOUT_TOO_LONG: 'The channel description is too long. Please shorten it and try again.',
-		CHAT_TITLE_EMPTY: 'Please provide a title for your new channel.',
-		USER_RESTRICTED:
-			"It seems your account has been restricted due to spam reports. You can't create channels or chats at this time."
-	},
-	updateUsername: {
-		CHANNELS_ADMIN_PUBLIC_TOO_MUCH:
-			"You're managing too many public channels. To change this channel's username, make some of your public channels private.",
-		CHANNEL_INVALID:
-			'There seems to be a problem with the channel you provided. Please double-check the channel information.',
-		CHANNEL_PRIVATE:
-			"You can't update the username of a private channel you haven't joined. Join the channel and try again.",
-		CHAT_ADMIN_REQUIRED: 'Only admins of the channel can change its username.',
-		CHAT_NOT_MODIFIED: 'There seems to be an issue updating the username. Please try again.',
-		CHAT_WRITE_FORBIDDEN: "You don't have permission to make changes to the channel's username.",
-		USERNAME_INVALID:
-			'The username you entered is invalid. Usernames must be between 5 and 32 characters long and can only contain letters, numbers, underscores, and hyphens.',
-		USERNAME_NOT_MODIFIED:
-			"The username wasn't changed. Perhaps you entered the same username as the current one?",
-		USERNAME_OCCUPIED: 'The username you want is already taken. Please choose a different username.'
-	}
-} as const;
-
-async function getPhoneNumber() {
-	return await Swal.fire({
-		title: 'Enter your phone number',
-		html: `
-      <label for="phone-input">Phone Number (include country code, e.g., +1)</label>
-      <input type="text" id="phone-input" class="swal2-input" placeholder="+1 (555) 555-5555">
-    `,
-		inputAttributes: {
-			inputmode: 'tel',
-			pattern: '\\+[0-9]{1,3}\\s?[0-9]{10}'
-		},
-		showCancelButton: true,
-
-		preConfirm: () => {
-			const phoneNumber = (Swal?.getPopup()?.querySelector('#phone-input') as HTMLInputElement)
-				.value;
-			if (!/^\+\d{1,3}\s?\d{10}$/.test(phoneNumber)) {
-				Swal.showValidationMessage(
-					'Please enter a valid phone number with the country code, e.g., +1 (555) 555-5555'
-				);
-			}
-			return phoneNumber;
-		}
-	}).then((result) => result.value);
-}
-
-async function getCode() {
-	return await Swal.fire({
-		title: 'Enter the verification code',
-		html: `
-      <label for="code-input">Verification Code</label>
-      <input type="text" id="code-input" class="swal2-input" placeholder="Please enter the code you received from Telegram">
-    `,
-		inputAttributes: {
-			inputmode: 'numeric',
-			pattern: '[0-9]{6}'
-		},
-		showCancelButton: true,
-
-		preConfirm: () => {
-			const code = (Swal?.getPopup()?.querySelector('#code-input') as HTMLInputElement).value;
-			if (!/^\d{5}$/.test(code)) {
-				Swal.showValidationMessage('Please enter a valid 5-digit verification code.');
-				setTimeout(() => {
-					Swal.resetValidationMessage;
-				}, 5000);
-			}
-			return code;
-		}
-	}).then((result) => result.value);
-}
-
-async function getPassword() {
-	return await Swal.fire({
-		title: 'Enter Your Password',
-		html: `
-      <label for="password-input">Password</label>
-      <input type="password" id="password-input" class="swal2-input" placeholder="Please enter your password">
-      <input type="checkbox" id="toggle-password" style="margin-top: 10px;">
-      <label for="toggle-password" style="margin-left: 5px;">Show Password</label>
-    `,
-		showCancelButton: true,
-		didOpen: () => {
-			const passwordInput = Swal?.getPopup()?.querySelector('#password-input') as HTMLInputElement;
-			const togglePassword = Swal?.getPopup()?.querySelector(
-				'#toggle-password'
-			) as HTMLInputElement;
-
-			togglePassword.addEventListener('change', () => {
-				if (togglePassword.checked) {
-					passwordInput.type = 'text';
-				} else {
-					passwordInput.type = 'password';
-				}
-			});
-		},
-		preConfirm: () => {
-			const password = (Swal?.getPopup()?.querySelector('#password-input') as HTMLInputElement)
-				.value;
-			if (!password) {
-				Swal.showValidationMessage('Please enter your password.');
-			}
-			return password;
-		}
-	}).then((result) => result.value);
-}
-
-export default function Component({
-	user
-}: {
+interface Props {
 	user: NonNullable<Awaited<ReturnType<typeof db.query.usersTable.findFirst>>>;
-}) {
-	const [isLoading, setIsLoading] = useState<boolean>();
-	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const session = TGCloudGlobalContext?.telegramSession;
-	const client = getTgClient(session ?? '');
-	const router = useRouter();
-	async function connectTelegram() {
-		try {
-			setIsLoading(true);
-			let newSession: string | undefined;
-			if (!session) {
-				newSession = await loginInTelegram();
-			}
-
-			if (!client?.connected) {
-				await client?.connect();
-			}
-
-			const tgUserSession = newSession ?? session;
-
-			if (!tgUserSession) {
-				toast.error('There was an error while connetion to telegram');
-				return;
-			}
-
-			if (user.channelId && user.channelTitle && user.accessHash) {
-				await saveTelegramCredentials({
-					session: tgUserSession,
-					accessHash: user.accessHash,
-					channelId: user.channelId,
-					channelTitle: user.channelTitle
-				});
-				posthog.capture('userTelegramAccountConnect', { property: user.email });
-				router.push('/files');
-				return;
-			}
-			const channelDetails = await createTelegramChannel()!;
-			Swal.fire({
-				title: 'Channel created',
-				text: 'We have created a channel in Telegram for you',
-				timer: 3000
-			});
-
-			if (channelDetails) {
-				const { accessHash, channelTitle, id } = channelDetails;
-				await saveTelegramCredentials({
-					session: tgUserSession,
-					accessHash,
-					channelId: id,
-					channelTitle
-				});
-
-				location.reload();
-			}
-		} catch (err) {
-			console.error(err);
-		} finally {
-			setIsLoading(false);
-			client?.disconnect();
-		}
-	}
-
-	async function loginInTelegram() {
-		try {
-			await client?.start({
-				phoneNumber: async () => (await getPhoneNumber()) as unknown as string,
-				password: async () => (await getPassword()) as unknown as string,
-				phoneCode: async () => (await getCode()) as unknown as string,
-				onError: (err) => errorToast(err?.message)
-			});
-
-			const session = client?.session.save() as unknown as string;
-			return session;
-		} catch (err) {
-			if (err && typeof err == 'object' && 'message' in err) {
-				Swal.fire({
-					title: 'failed to create channel',
-					text: (err?.message as string) ?? 'there was an error',
-					timer: 3000
-				});
-			}
-		}
-	}
-
-	/**
-	 * Creates a new Telegram channel for the user.
-	 * The channel title is based on the user's name, defaulting to 'TGCloudDrive' if not available.
-	 * If successful, returns an object containing the channel title, ID, and access hash.
-	 * Handles errors by displaying appropriate messages using Swal.
-	 */
-	async function createTelegramChannel() {
-		try {
-			const channelTitle = user?.name ? `${user?.name}Drive` : 'TGCloudDrive';
-			const res = await client?.invoke(
-				new Api.channels.CreateChannel({
-					title: channelTitle,
-					about:
-						"Don't delete this channel or you will lose all your files in https://yourtgcloud.vercel.app/",
-					broadcast: true
-				})
-			);
-
-			const result = res as Result;
-
-			if (result?.chats?.[0].id) {
-				return {
-					channelTitle,
-					id: result.chats?.[0].id,
-					accessHash: result.chats?.[0].accessHash!
-				};
-			}
-		} catch (err) {
-			if (err instanceof RPCError) {
-				const text = errors.createChannel[err.errorMessage as keyof typeof errors.createChannel];
-
-				Swal.fire({
-					title: err.message,
-					text: text ?? 'there was an error',
-					timer: 3000
-				});
-			} else {
-				Swal.fire({
-					title: 'failed to create channel',
-					//@ts-expect-error
-					text: err?.message! ?? 'there was an error',
-					timer: 3000
-				});
-			}
-		}
-	}
-
-	async function connectChannel({ channelId, username }: { username: string; channelId: string }) {
-		try {
-			if (!client?.connected) await client?.connect();
-
-			const inputChannel = new Api.InputChannel({
-				//@ts-ignore
-				channelId: user.channelId,
-				//@ts-ignore
-				accessHash: user.accessHash
-			});
-
-			const result = await client?.invoke(
-				new Api.channels.CheckUsername({
-					channel: inputChannel,
-					username: username
-				})
-			);
-
-			if (!result) {
-				Swal.fire({
-					icon: 'error',
-					title: 'Oops...',
-					text: 'username is alreay taken'
-				});
-				return;
-			}
-
-			await client
-				?.invoke(
-					new Api.channels.UpdateUsername({
-						channel: inputChannel,
-						username: username
-					})
-				)
-				.then(async (res) => {
-					await Promise.all([saveUserName(username), updateHasPublicChannelStatus(true)]);
-					await Swal.fire({
-						icon: 'success',
-						title: 'Update success',
-						text: 'you have update channle username now we will redirect you to dashborad in a minute',
-						timer: 2000
-					});
-					router.push('/files');
-				});
-			console.log('Username updated successfully.');
-		} catch (err) {
-			console.error('Error updating username:', err);
-			if (err instanceof RPCError) {
-				const text = errors.updateUsername[err.errorMessage as keyof typeof errors.updateUsername];
-				Swal.fire({
-					icon: 'error',
-					title: err.message,
-					text: text
-				});
-				return;
-			}
-			if (err && typeof err == 'object' && 'message' in err) {
-				Swal.fire({
-					icon: 'error',
-					title: 'Oops...',
-					text: err.message as string
-				});
-			}
-		}
-	}
-
-	const checkUserNameOnChange = async (
-		username: string | undefined,
-		setStatus: Dispatch<SetStateAction<{ type: 'error' | 'success'; message: string } | null>>
-	) => {
-		if (!username) return;
-		try {
-			const inputChannel = new Api.InputChannel({
-				//@ts-ignore
-				channelId: user.channelId,
-				//@ts-ignore
-				accessHash: user.accessHash
-			});
-
-			if (!client?.connected) await client?.connect();
-			const result = await client?.invoke(
-				new Api.channels.CheckUsername({
-					channel: inputChannel,
-					username: username
-				})
-			);
-			if (!result) {
-				setStatus({ type: 'error', message: 'username is alreay taken' });
-				return;
-			}
-			setStatus({ message: 'username available', type: 'success' });
-		} catch (err) {
-			console.error(err);
-			if (err instanceof RPCError) {
-				const type = err.errorMessage as keyof typeof errors.checkusername;
-				const text = errors.checkusername[type];
-				setStatus({ message: text, type: 'error' });
-				return;
-			}
-			if (err && typeof err == 'object' && 'message' in err) {
-				setStatus({ message: err.message as string, type: 'error' });
-			}
-		}
-	};
-
-	const hasRequiredTelegramData =
-		session && user?.accessHash && user?.channelTitle && user?.channelId;
-
-	if (hasRequiredTelegramData && user) {
-		const { channelId, channelTitle } = user;
-
-		return (
-			<UpdateUsernameForm
-				user={user}
-				onChange={checkUserNameOnChange}
-				channelId={channelId || ''}
-				channelTitle={channelTitle || ''}
-				onSubmit={connectChannel}
-			/>
-		);
-	}
-
-	return (
-		<div className="w-full bg-white py-20 md:py-32 lg:py-40">
-			<div className="container md:w-[85%]  flex flex-col items-center justify-between gap-10 px-4 md:flex-row md:gap-16">
-				<div className="max-w-md space-y-6 text-center md:text-left">
-					<h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl md:text-5xl">
-						Connect Your Telegram Account
-					</h1>
-					<p className="text-lg text-[#00b894]/90 md:text-xl">
-						Link your Telegram account to our cloud platform and enjoy seamless file storage and
-						sharing.
-					</p>
-					<div className="flex flex-col items-center gap-4 md:flex-row">
-						<Button
-							disabled={isLoading}
-							variant={'secondary'}
-							onClick={() => connectTelegram()}
-							className="w-full md:w-auto"
-						>
-							<TextIcon className="mr-2 h-5 w-5" />
-							{isLoading ? 'please wait...' : ' Connect Telegram'}
-						</Button>
-					</div>
-				</div>
-				<div className="w-full max-w-md">
-					<Image
-						src={'/tgConnect.jpg'}
-						alt="Connect Telegram"
-						width={500}
-						height={500}
-						className="mx-auto"
-					/>
-				</div>
-			</div>
-		</div>
-	);
 }
 
-const showChannelVisisblityConfrimation = async (visibility: string) => {
-	return await Swal.fire({
-		title: 'Confirm Channel Visibility',
-		text: `Are you sure you want to make your channel ${visibility} ?`,
-		icon: 'warning',
-		showCancelButton: true,
-		confirmButtonText: `Yes, make it ${visibility} 👍`,
-		cancelButtonText: 'No,let Me Think 🤔'
-	});
-};
-
-const UpdateUsernameForm = <T extends { channelTitle: string; channelId: string }>({
-	onSubmit,
-	channelTitle,
-	channelId,
-	user,
-	onChange
-}: {
-	onSubmit: (arg: Pick<T, 'channelId'> & { username: string }) => Promise<void>;
-	user: User;
-	onChange: (
-		username: string,
-		setError: Dispatch<SetStateAction<{ type: 'error' | 'success'; message: string } | null>>
-	) => Promise<void>;
-} & T) => {
-	const [pending, setPending] = useState(false);
-	const [status, setStatus] = useState<{
-		type: 'error' | 'success';
-		message: string;
-	} | null>(null);
-
+export default function Component({ user }: Props) {
+	const tgCloudContext = getGlobalTGCloudContext();
 	const router = useRouter();
-
-	const handleSubmit = async (username: string) => {
-		setPending(true);
-		await onSubmit({ channelId, username });
-		setPending(false);
-	};
-
-	const hasPuplicChannelByDefault =
-		user?.channelUsername &&
-		(user.hasPublicTgChannel === null || user.hasPublicTgChannel === undefined)
-			? true
-			: false;
-
-	const [isPublic, setIsPublic] = useState(hasPuplicChannelByDefault);
-	const checkUsername = useDebouncedCallback(onChange, 200);
-	const isUpdateButtonDisabled = pending || status?.type !== 'success';
-
-	const makePrivake = async () => {
-		setPending(true);
-		const result = await showChannelVisisblityConfrimation('private');
-		if (result.isConfirmed) {
-			if (hasPuplicChannelByDefault) {
-				await onSubmit({ channelId: user?.channelId!, username: '' });
-			}
-			await updateHasPublicChannelStatus(false);
-			router.push('/files');
-		}
-		setPending(false);
-	};
-
-	const contiunePublic = async () => {
-		setPending(true);
-		const result = await showChannelVisisblityConfrimation('public');
-		if (result.isConfirmed) {
-			await updateHasPublicChannelStatus(false);
-			router.push('/files');
-		}
-		setPending(false);
-	};
-
-	const warning = hasPuplicChannelByDefault
-		? {
-				message: (
-					<p>
-						We Noticed Your channel <strong>{channelTitle}</strong> is currently public. Your files
-						might be accessible to anyone on Telegram. Do you want to make it private
-					</p>
-				),
-				header: 'Telegram Channel Visiblity warning'
-		  }
-		: {
-				message: (
-					<p>
-						Your channel <strong>{channelTitle}</strong> is private by default. You can make it
-						public, but keep in mind that if you do, your channel will be accessible to anyone, and
-						they might be able to view your content
-					</p>
-				),
-				header: 'Your channel is private by default'
-		  };
+	const [selectedBot, setSelectedBot] = useState<'default' | 'custom'>('default');
 
 	return (
-		<div className="h-screen flex justify-center items-center bg-gray-100 p-4">
-			<div className="space-y-4 max-w-lg w-full">
-				<div className="bg-white p-4 rounded shadow-sm">
-					<WarningIndicator warning={warning} />
-					<Select onValueChange={(value: string) => setIsPublic(value === 'public')}>
-						<SelectTrigger className="w-full mt-4">
-							<SelectValue placeholder="Channel Visibility" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="public">Public</SelectItem>
-							<SelectItem value="private">Private</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
+		<div className="min-h-screen flex items-center">
+			<Card className="w-full max-w-6xl mx-auto">
+				<CardHeader>
+					<CardTitle>Connect Your Telegram Channel</CardTitle>
+					<CardDescription>
+						Follow these steps to connect your Telegram channel with TG Cloud
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex flex-col lg:flex-row gap-6">
+						<div className="flex-1 space-y-4">
+							<div className="space-y-2">
+								<h3 className="font-semibold">Step 1: Create and Set Up Your Channel</h3>
+								<p className="text-sm text-gray-600">
+									Create a private Telegram channel if you haven&apos;t already.
+								</p>
+							</div>
+							<div className="space-y-2">
+								<h3 className="font-semibold">Step 2: Choose Bot</h3>
+								<RadioGroup
+									defaultValue="default"
+									onValueChange={(value) => setSelectedBot(value as 'default' | 'custom')}
+									className="space-y-2"
+								>
+									<div className="flex items-center space-x-2">
+										<RadioGroupItem value="default" id="default" />
+										<Label htmlFor="default">
+											<a
+												href="https://t.me/tgcloudet2024_bot?start=setup_tgcloud"
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-blue-500 underline"
+											>
+												Use TGCloud Bot
+											</a>
+											<span className="block text-sm text-gray-600">
+												Our default bot with standard features
+											</span>
+										</Label>
+									</div>
+									<div className="flex items-center space-x-2">
+										<RadioGroupItem value="custom" id="custom" />
+										<Label htmlFor="custom">
+											Use Custom Bot
+											<span className="block text-sm text-gray-600">Recommended</span>
+										</Label>
+									</div>
+									<div>
+										<div></div>
+									</div>
+								</RadioGroup>
 
-				{isPublic && !hasPuplicChannelByDefault ? (
-					<Card className="bg-white text-black p-4 rounded shadow-sm">
-						<CardHeader>
-							<CardTitle className="text-black">Channel Created</CardTitle>
-							<CardDescription>
-								Your channel <strong>{channelTitle}</strong> has been created. Now, you can update
-								its username.
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<form
-								action={async (formData) => {
-									const result = await showChannelVisisblityConfrimation('public');
-									if (!result.isConfirmed) return;
-									const username = formData.get('channel-username') as string;
-									handleSubmit(username);
-								}}
-								className="space-y-4"
-							>
-								<div className="flex flex-col space-y-1">
-									<Label htmlFor="channel-username">Telegram Channel Username</Label>
-									<Input
-										defaultValue={user?.channelUsername ?? ''}
-										id="channel-username"
-										name="channel-username"
-										className="text-white"
-										placeholder="@mychannel"
-										onChange={(e) => {
-											if (!e.target.value) {
-												setStatus(null);
+								<div className="mt-4 space-y-2">
+									<p className="text-sm text-gray-600">
+										To use {selectedBot === 'custom' ? 'your own bot' : 'TGCloud Bot'}:
+										<ol className="list-decimal ml-5 mt-2">
+											{selectedBot === 'custom' && (
+												<li>
+													Create a new bot with{' '}
+													<a
+														href="https://t.me/BotFather"
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-blue-600 hover:underline"
+													>
+														@BotFather
+													</a>
+												</li>
+											)}
+											<li>
+												{selectedBot === 'custom'
+													? 'Copy the bot token provided'
+													: 'Add the bot as admin'}
+											</li>
+											<li>Add the bot to your channel as admin with posting permissions</li>
+											<li>{selectedBot === 'custom' ? 'Paste the bot token below' : 'Done!'}</li>
+										</ol>
+									</p>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<h3 className="font-semibold">Step 3: Get Channel ID</h3>
+								<p className="text-sm text-gray-600">
+									1. Forward any message from your channel to{' '}
+									<a
+										href="https://t.me/RawDataBot"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-blue-600 hover:underline"
+									>
+										@RawDataBot
+									</a>
+									<br />
+									2. Look for the &quot;id&quot; field in the response (format: -100xxxxxxxxxx)
+									<br />
+									3. Copy and paste this ID below
+								</p>
+								<details className="mt-2">
+									<summary className="text-sm text-blue-600 cursor-pointer hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+										View example response from RawDataBot
+									</summary>
+									<div className="mt-2">
+										<pre className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md text-xs overflow-x-auto whitespace-pre text-gray-800 dark:text-gray-200">
+											{`{
+    "update_id": 846844456,
+    "message": {
+        "message_id": 3123678,
+        "from": {
+            "id": 5660513633,
+            "is_bot": false,
+            "first_name": "John Doe",
+            "username": "johndoe123",
+            "language_code": "en"
+        },
+        "chat": {
+            "id": 5660513633,
+            "first_name": "John Doe",
+            "username": "johndoe123",
+            "type": "private"
+        },
+        "date": 1732815925,
+        "forward_origin": {
+            "type": "channel",
+            "chat": {
+                "id": -1002254371734,  ⬅️ Copy this channel ID
+                "title": "hfh",
+                "type": "channel"
+            },
+            "message_id": 2,
+            "date": 1732815917
+        },
+        "forward_from_chat": {
+            "id": -1002254371734,
+            "title": "hfh",
+            "type": "channel"
+        },
+        "forward_from_message_id": 2,
+        "forward_date": 1732815917,
+        "text": "ddd"
+    }
+}`}
+										</pre>
+									</div>
+								</details>
+							</div>
+						</div>
+
+						<div className="flex-1 lg:border-l lg:pl-6">
+							<div className="max-w-md space-y-6">
+								<div>
+									<h3 className="text-lg font-semibold mb-4">Enter Your Channel ID</h3>
+									<form
+										action={async (formData) => {
+											const channelId = formData.get('channelId');
+											const botToken = formData.get('botToken');
+											console.log('channelid', channelId);
+											if (!channelId) return;
+
+											if (selectedBot === 'custom' && !botToken) {
+												toast.error('Please enter your bot token');
 												return;
 											}
-											checkUsername(e.target.value, setStatus);
-										}}
-										required
-									/>
-									{status && (
-										<span
-											className={`text-sm block w-full ${
-												status.type === 'error' ? 'text-red-500' : 'text-green-500'
-											}`}
-										>
-											{status.message}
-										</span>
-									)}
-								</div>
-								<Button
-									disabled={isUpdateButtonDisabled}
-									type="submit"
-									className={`w-full p-2 text-white ${
-										isUpdateButtonDisabled
-											? 'bg-gray-500 cursor-not-allowed'
-											: 'bg-blue-500 hover:bg-blue-700'
-									}`}
-								>
-									{pending ? 'Please wait...' : 'Update Username'}
-								</Button>
-							</form>
-						</CardContent>
-					</Card>
-				) : (
-					<div className="bg-white p-4 rounded shadow-sm text-center">
-						{hasPuplicChannelByDefault && isPublic ? (
-							<div>
-								<Button onClick={contiunePublic} disabled={pending}>
-									{pending ? <LoadingSVG /> : 'Continue Public'}
-								</Button>
-							</div>
-						) : (
-							<Button onClick={makePrivake} disabled={pending}>
-								{pending ? <LoadingSVG /> : 'Continue Private'}
-							</Button>
-						)}
-					</div>
-				)}
-			</div>
-		</div>
-	);
-};
+											try {
+												const client =
+													selectedBot === 'custom' && botToken
+														? await getTgClient({
+																botToken: botToken as string
+														  })
+														: await getTgClient();
 
-export function WarningIndicator({
-	warning
-}: {
-	warning: { message: JSX.Element; header: string };
-}) {
-	return (
-		<div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-			<div className="flex">
-				<div className="flex-shrink-0">
-					<TriangleAlertIcon className="h-5 w-5 text-yellow-400" />
-				</div>
-				<div className="ml-3">
-					<h3 className="text-lg font-medium text-yellow-800">{warning.header}</h3>
-					<div className="mt-2 text-yellow-700">
-						<p className="text-gray-700">{warning.message}</p>
+												const dialogs = await client?.getInputEntity(
+													String(channelId) as EntityLike
+												);
+												const id = (dialogs as unknown as { channelId: string })?.channelId;
+												const accessHash = (dialogs as unknown as { accessHash: string })
+													?.accessHash;
+												const sentMessage = await client?.sendMessage(channelId as EntityLike, {
+													message:
+														' Yay! You have successfully connected your Telegram channel with our platform! '
+												});
+												if (sentMessage?.id) {
+													await saveTelegramCredentials({
+														channelId: String(id) as string,
+														accessHash: String(accessHash),
+														session: 'this is test session',
+														channelTitle: '',
+														botToken: botToken as string
+													});
+													toast.success('Channel Connected Successfully');
+													typeof window !== 'undefined' && window.location.replace('/files');
+												}
+											} catch (err) {
+												console.log('err', err);
+												toast.error('Failed to connect channel');
+											}
+										}}
+										className="space-y-4"
+									>
+										<div className="space-y-2">
+											<Label htmlFor="channelId">Channel ID</Label>
+											<Input
+												name="channelId"
+												id="channelId"
+												type="text"
+												placeholder="-1001234567890"
+												required
+											/>
+										</div>
+										{selectedBot === 'custom' && (
+											<div className="space-y-2">
+												<label htmlFor="botToken" className="text-sm font-medium">
+													Bot Token
+													<span className="text-red-500">*</span>
+												</label>
+												<Input
+													type="text"
+													id="botToken"
+													name="botToken"
+													placeholder="Enter your bot token from @BotFather"
+													className="w-full"
+													required
+												/>
+											</div>
+										)}
+										<ConnectChannelButton />
+									</form>
+								</div>
+							</div>
+						</div>
 					</div>
-				</div>
-			</div>
+				</CardContent>
+			</Card>
 		</div>
 	);
 }
 
-function TriangleAlertIcon(props: SVGProps<SVGSVGElement>) {
+function ConnectChannelButton() {
+	const { pending } = useFormStatus();
 	return (
-		<svg
-			{...props}
-			xmlns="http://www.w3.org/2000/svg"
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-			<path d="M12 9v4" />
-			<path d="M12 17h.01" />
-		</svg>
+		<Button disabled={pending} type="submit" className="w-full">
+			{pending ? 'please wait' : 'Connect Channel'}
+		</Button>
 	);
 }

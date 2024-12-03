@@ -54,12 +54,6 @@ export default function TermsPage() {
 							TGCloud is not liable for any indirect, incidental, special, consequential or punitive
 							damages.
 						</p>
-
-						<h2 className="text-2xl font-bold">7. Governing Law</h2>
-						<p>
-							These terms shall be governed by and construed in accordance with the laws of
-							Ethiopia.
-						</p>
 					</div>
 				</div>
 			</section>

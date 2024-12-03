@@ -173,11 +173,9 @@ export type ChapaInitializePaymentRequestBody = {
 	};
 };
 
-
 export type Folder = Awaited<ReturnType<typeof db.query.folders.findFirst>>;
 
 export type GetAllFilesReturnType = Awaited<ReturnType<typeof getFolderContents>>;
-
 
 export type FileItem = {
 	url: string;
@@ -191,6 +189,3 @@ export type FileItem = {
 	fileTelegramId: string;
 	category: string;
 };
-
-
-

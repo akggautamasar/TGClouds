@@ -1,9 +1,8 @@
 'use server';
 import Email from '@/components/email';
-import { PLANS } from '@/components/TGCloudPricing';
 import { auth } from '@/lib/auth';
 import { and, asc, count, desc, eq, ilike, isNull } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import crypto from 'node:crypto';
@@ -11,15 +10,14 @@ import React from 'react';
 import { Resend } from 'resend';
 import { db } from './db';
 import {
-	paymentsTable,
+	botTokens,
+	folders as foldersTable,
 	sharedFilesTable,
 	userFiles,
-	usersTable,
-	folders as foldersTable
+	usersTable
 } from './db/schema';
 import { env } from './env';
-import { ChapaInitializePaymentRequestBody, User } from './lib/types';
-import { revalidateTag } from 'next/cache';
+import { User } from './lib/types';
 
 export type FolderHierarchy = {
 	id: string;
@@ -40,7 +38,6 @@ export async function getAllFolders(userId: string) {
 	return allFolders;
 }
 
-// Add this function to get folder hierarchy
 export async function getFolderHierarchy(userId: string): Promise<FolderHierarchy[]> {
 	const allFolders = await db
 		.select()
@@ -49,20 +46,15 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 		.orderBy(asc(foldersTable.name))
 		.execute();
 
-	// Create a map for quick folder lookup
 	const folderMap = new Map(allFolders.map((folder) => [folder.id, { ...folder, children: [] }]));
-
-	// Build the hierarchy
 	const rootFolders: FolderHierarchy[] = [];
 
 	allFolders.forEach((folder) => {
 		const folderWithChildren = folderMap.get(folder.id)!;
 
 		if (!folder.parentId) {
-			// Root level folder
 			rootFolders.push(folderWithChildren);
 		} else {
-			// Add to parent's children
 			const parent = folderMap.get(folder.parentId);
 			if (parent) {
 				(parent.children as FolderHierarchy[]).push(folderWithChildren);
@@ -72,16 +64,54 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 
 	return rootFolders;
 }
+
+export async function updateTokenRateLimit(tokenId: string, millisec: number) {
+	try {
+		const retryAfter = new Date(Date.now() + millisec)
+		const updateResult = await db.update(botTokens).set({
+			rateLimitedUntil: retryAfter
+		}).where(eq(botTokens.id, tokenId)).returning()
+		return updateResult
+	} catch (error) {
+		console.error('Error updating token rate limit:', error);
+	}
+}
+
+export async function deleteToken(tokenId: string) {
+	try {
+		await db.delete(botTokens).where(eq(botTokens.id, tokenId));
+	} catch (error) {
+		console.error('Error deleting token:', error);
+	}
+}
+export async function addToken(token: string) {
+	try {
+		const user = await getUser();
+		if (!user?.id) {
+			throw new Error('user needs to be logged in.');
+		}
+		await db.insert(botTokens).values({
+			id: crypto.randomUUID(),
+			token: token,
+			userId: user?.id
+		});
+	} catch (error) {
+		console.error('Error adding token:', error);
+	}
+}
+
 export async function saveTelegramCredentials({
 	accessHash,
 	channelId,
 	channelTitle,
-	session
+	session,
+	botToken
 }: {
 	session: string;
 	accessHash: string;
 	channelId: string;
 	channelTitle: string;
+		botToken?: string;
 }) {
 	if (!session) {
 		throw new Error('Session is required ');
@@ -93,17 +123,24 @@ export async function saveTelegramCredentials({
 	});
 	const user = await getUser();
 
-	if (!user) {
+	if (!user?.id) {
 		throw new Error('user needs to be logged in.');
 	}
-
 	try {
+		if (botToken) {
+			await db.insert(botTokens).values({
+				id: crypto.randomUUID(),
+				userId: user?.id,
+				token: botToken
+			});
+
+		}
 		const result = await db
 			.update(usersTable)
 			.set({
 				accessHash: accessHash,
 				channelId: channelId,
-				channelTitle: channelTitle
+				channelTitle: channelTitle,
 			})
 			.where(eq(usersTable.id, user.id))
 			.returning();
@@ -116,11 +153,10 @@ export async function saveTelegramCredentials({
 
 export const saveUserName = async (username: string) => {
 	const user = await getUser();
-	if (!user) {
+	if (!user || !user.id) {
 		throw new Error('user needs to be logged in.');
 	}
 	try {
-		const existinguser = await getUser();
 
 		const result = await db
 			.update(usersTable)
@@ -148,9 +184,11 @@ export async function getUser() {
 		const result = await db.query.usersTable.findFirst({
 			where(fields, { eq }) {
 				return eq(fields.id, user.id);
+			},
+			with: {
+				botTokens: true,
 			}
 		});
-
 		return result;
 	} catch (err) {
 		console.log(err);
@@ -392,7 +430,7 @@ export async function uploadFile(file: {
 	size: bigint;
 	url: string;
 	fileTelegramId: number;
-	folderId:string | null,
+	folderId: string | null;
 }) {
 	try {
 		const user = await getUser();
@@ -411,8 +449,8 @@ export async function uploadFile(file: {
 				url: file.url,
 				date: new Date().toDateString(),
 				fileTelegramId: String(file.fileTelegramId),
-				category: file?.mimeType?.split('/')[0], 
-				folderId:file?.folderId
+				category: file?.mimeType?.split('/')[0],
+				folderId: file?.folderId
 			})
 			.returning();
 		revalidatePath('/files');
@@ -429,7 +467,7 @@ export async function uploadFile(file: {
 export async function deleteFile(fileId: number) {
 	try {
 		const user = await getUser();
-		if (!user) throw new Error('you need to be logged to delete files');
+		if (!user || !user.id) throw new Error('you need to be logged to delete files');
 		const deletedFile = await db
 			.delete(userFiles)
 			.where(and(eq(userFiles.userId, user.id), eq(userFiles.id, Number(fileId))))
@@ -452,21 +490,12 @@ async function generateId() {
 
 export const requireUserAuthentication = async () => {
 	const user = await getUser();
-
-	const hasNotDecidedToHavePrivateChannle =
-		user?.hasPublicTgChannel === null || user?.hasPublicTgChannel === undefined;
-
 	const hasNotHaveNeccessaryDetails = !user?.accessHash || !user?.channelId;
 
-	if (hasNotDecidedToHavePrivateChannle || hasNotHaveNeccessaryDetails)
-		return redirect('/connect-telegram');
+	if (hasNotHaveNeccessaryDetails) return redirect('/connect-telegram');
 
 	if (!user.channelUsername && (!user.channelId || !user.accessHash))
 		throw new Error('There was something wrong');
-
-	const session = (await cookies()).get('telegramSession');
-
-	if (!session) return redirect('/connect-telegram');
 
 	return user as User;
 };
@@ -474,7 +503,7 @@ export const requireUserAuthentication = async () => {
 export const updateHasPublicChannelStatus = async (isPublic: boolean) => {
 	try {
 		const user = await getUser();
-		if (!user)
+		if (!user || !user.id)
 			throw new Error('Seems lke you are not authenticated', {
 				cause: 'AUTH_ERR'
 			});
@@ -500,96 +529,96 @@ type PeymentResult = Awaited<ReturnType<typeof db.query.paymentsTable.findFirst>
 
 type UserPaymentSubscriptionResult =
 	| {
-			isDone: true;
-			data: PeymentResult;
-			status: 'success';
-	  }
-	| {
-			isDone: false;
-			status: 'failed';
-			message: string;
-			data?: PeymentResult;
-	  };
-
-export async function subscribeToPro({
-	tx_ref
-}: {
-	tx_ref: string;
-}): Promise<UserPaymentSubscriptionResult> {
-	try {
-		const otherSubscriptionWithThisTxRef = await db.query.paymentsTable.findFirst({
-			where(fields, { eq, and }) {
-				return eq(fields.tx_ref, tx_ref);
-			}
-		});
-
-		if (otherSubscriptionWithThisTxRef?.isPaymentDONE)
-			return {
-				isDone: false,
-				data: otherSubscriptionWithThisTxRef,
-				status: 'failed',
-				message: 'payment already made before'
-			};
-
-		const data = await verifyPayment({ tx_ref });
-
-		if (data.status !== 'success') throw new Error(data.message);
-
-		const user = await getUser();
-		if (!user) throw new Error('Failed to get user');
-
-		let currentExpirationDate = user.subscriptionDate
-			? new Date(user.subscriptionDate)
-			: new Date();
-		if (currentExpirationDate < new Date()) {
-			currentExpirationDate = new Date();
-		}
-
-		const plan = otherSubscriptionWithThisTxRef?.plan;
-
-		if (!plan) throw new Error('FAILED GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER');
-
-		const newExpirationDate = addDays(
-			currentExpirationDate,
-			plan == 'ANNUAL' ? 365 : 30
-		).toISOString();
-
-		const result = await db
-			.update(usersTable)
-			.set({
-				isSubscribedToPro: true,
-				subscriptionDate: newExpirationDate,
-				plan: plan
-			})
-			.where(eq(usersTable.id, user.id))
-			.returning();
-
-		await db
-			.update(paymentsTable)
-			.set({
-				isPaymentDONE: true
-			})
-			.where(eq(paymentsTable.tx_ref, tx_ref))
-			.returning()
-			.execute();
-
-		sendEmail(user, newExpirationDate);
-
-		return {
-			isDone: true,
-			data: otherSubscriptionWithThisTxRef,
-			status: 'success'
-		};
-	} catch (err) {
-		return {
-			isDone: false,
-			message: 'there was an error while proccessin payment',
-			status: 'failed'
-		};
+		isDone: true;
+		data: PeymentResult;
+		status: 'success';
 	}
-}
+	| {
+		isDone: false;
+		status: 'failed';
+		message: string;
+		data?: PeymentResult;
+	};
 
-async function sendEmail(user: User, expirationDate: string) {
+// export async function subscribeToPro({
+// 	tx_ref
+// }: {
+// 	tx_ref: string;
+// }): Promise<UserPaymentSubscriptionResult> {
+// 	try {
+// 		const otherSubscriptionWithThisTxRef = await db.query.paymentsTable.findFirst({
+// 			where(fields, { eq, and }) {
+// 				return eq(fields.tx_ref, tx_ref);
+// 			}
+// 		});
+
+// 		if (otherSubscriptionWithThisTxRef?.isPaymentDONE)
+// 			return {
+// 				isDone: false,
+// 				data: otherSubscriptionWithThisTxRef,
+// 				status: 'failed',
+// 				message: 'payment already made before'
+// 			};
+
+// 		const data = await verifyPayment({ tx_ref });
+
+// 		if (data.status !== 'success') throw new Error(data.message);
+
+// 		const user = await getUser();
+// 		if (!user || !user.id) throw new Error('Failed to get user');
+
+// 		let currentExpirationDate = user.subscriptionDate
+// 			? new Date(user.subscriptionDate)
+// 			: new Date();
+// 		if (currentExpirationDate < new Date()) {
+// 			currentExpirationDate = new Date();
+// 		}
+
+// 		const plan = otherSubscriptionWithThisTxRef?.plan;
+
+// 		if (!plan) throw new Error('FAILED GET UR PAYMENT INFORAMITON PELEASE PLACT SUPPORT CENTER');
+
+// 		const newExpirationDate = addDays(
+// 			currentExpirationDate,
+// 			plan == 'ANNUAL' ? 365 : 30
+// 		).toISOString();
+
+// 		const result = await db
+// 			.update(usersTable)
+// 			.set({
+// 				isSubscribedToPro: true,
+// 				subscriptionDate: newExpirationDate,
+// 				plan: plan
+// 			})
+// 			.where(eq(usersTable.id, user.id))
+// 			.returning();
+
+// 		await db
+// 			.update(paymentsTable)
+// 			.set({
+// 				isPaymentDONE: true
+// 			})
+// 			.where(eq(paymentsTable.tx_ref, tx_ref))
+// 			.returning()
+// 			.execute();
+
+// 		sendEmail(user, newExpirationDate);
+
+// 		return {
+// 			isDone: true,
+// 			data: otherSubscriptionWithThisTxRef,
+// 			status: 'success'
+// 		};
+// 	} catch (err) {
+// 		return {
+// 			isDone: false,
+// 			message: 'there was an error while proccessin payment',
+// 			status: 'failed'
+// 		};
+// 	}
+// }
+
+async function sendEmail(user: Partial<User>, expirationDate: string) {
 	const resend = new Resend(env.RESEND_API_KEY);
 	await resend.emails.send({
 		from: 'onboarding@resend.dev',
@@ -602,93 +631,93 @@ async function sendEmail(user: User, expirationDate: string) {
 	});
 }
 
-export async function initailizePayment({
-	amount,
-	currency,
-	plan
-}: {
-	amount: string;
-	currency: string;
-	plan: PLANS;
-}) {
-	try {
-		const user = await getUser();
+// export async function initailizePayment({
+// 	amount,
+// 	currency,
+// 	plan
+// }: {
+// 	amount: string;
+// 	currency: string;
+// 	plan: PLANS;
+// }) {
+// 	try {
+// 		const user = await getUser();
 
-		if (!user) throw new Error('user needs to be loggedin');
+// 		if (!user || !user.id) throw new Error('user needs to be loggedin');
 
-		const tx_ref = crypto.randomUUID();
+// 		const tx_ref = crypto.randomUUID();
 
-		const body: ChapaInitializePaymentRequestBody = {
-			amount,
-			currency,
-			email: user.email,
-			first_name: user.name,
-			tx_ref,
-			return_url: `https://tgcloud-k.vercel.app/subscribe/success/${tx_ref}`
-		};
+// 		const body: ChapaInitializePaymentRequestBody = {
+// 			amount,
+// 			currency,
+// 			email: user.email!,
+// 			first_name: user.name!,
+// 			tx_ref,
+// 			return_url: `https://tgcloud-k.vercel.app/subscribe/success/${tx_ref}`
+// 		};
 
-		await db
-			.insert(paymentsTable)
-			.values({
-				id: crypto.randomUUID(),
-				amount: amount,
-				currency: currency,
-				userId: user.id,
-				tx_ref,
-				isPaymentDONE: false,
-				plan: plan
-			})
-			.returning()
-			.execute();
+// 		await db
+// 			.insert(paymentsTable)
+// 			.values({
+// 				id: crypto.randomUUID(),
+// 				amount: amount,
+// 				currency: currency,
+// 				userId: user.id,
+// 				tx_ref,
+// 				isPaymentDONE: false,
+// 				plan: plan
+// 			})
+// 			.returning()
+// 			.execute();
 
-		const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
-			method: 'post',
-			headers: {
-				Authorization: `Bearer ${env.CHAPA_API_KEY}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(body)
-		});
+// 		const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
+// 			method: 'post',
+// 			headers: {
+// 				Authorization: `Bearer ${env.CHAPA_API_KEY}`,
+// 				'Content-Type': 'application/json'
+// 			},
+// 			body: JSON.stringify(body)
+// 		});
 
-		const data = (await response.json()) as {
-			message: string;
-			status: string;
-			data: {
-				checkout_url: string;
-			};
-		};
+// 		const data = (await response.json()) as {
+// 			message: string;
+// 			status: string;
+// 			data: {
+// 				checkout_url: string;
+// 			};
+// 		};
 
-		return data;
-	} catch (err) {
-		console.error(err);
-		throw err;
-	}
-}
+// 		return data;
+// 	} catch (err) {
+// 		console.error(err);
+// 		throw err;
+// 	}
+// }
 
-async function verifyPayment({ tx_ref }: { tx_ref: string }) {
-	const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${tx_ref}`, {
-		method: 'get',
-		headers: {
-			Authorization: `Bearer ${env.CHAPA_API_KEY}`
-		}
-	});
-	const result = (await response.json()) as {
-		message: string;
-		status: string;
-		data: ChapaInitializePaymentRequestBody;
-	};
-	return result;
-}
+// async function verifyPayment({ tx_ref }: { tx_ref: string }) {
+// 	const response = await fetch(`https://api.chapa.co/v1/transaction/verify/${tx_ref}`, {
+// 		method: 'get',
+// 		headers: {
+// 			Authorization: `Bearer ${env.CHAPA_API_KEY}`
+// 		}
+// 	});
+// 	const result = (await response.json()) as {
+// 		message: string;
+// 		status: string;
+// 		data: ChapaInitializePaymentRequestBody;
+// 	};
+// 	return result;
+// }
 
 export async function shareFile({ fileID }: { fileID: string }) {
 	try {
 		const user = await getUser();
-		if (!user) throw new Error('you need to be singed in to share ur files');
+		if (!user?.id) throw new Error('you need to be singed in to share ur files');
 		const newShare = await db
 			.insert(sharedFilesTable)
 			.values({
 				id: crypto.randomUUID(),
-				userId: user.id,
+				userId: user?.id,
 				fileId: fileID
 			})
 			.returning()
@@ -731,7 +760,7 @@ export const clearCookies = async () => {
 export const deleteChannelDetail = async () => {
 	// try {
 	const user = await getUser();
-	if (!user) throw new Error('Failed to get user');
+	if (!user?.id) throw new Error('Failed to get user');
 	const updateTable = await db
 		.update(usersTable)
 		.set({
@@ -739,7 +768,7 @@ export const deleteChannelDetail = async () => {
 			accessHash: null,
 			channelTitle: null
 		})
-		.where(eq(usersTable.id, user.id));
+		.where(eq(usersTable.id, user?.id));
 	redirect('/connect-telegram');
 	// } catch (err) {
 	// console.error(err);

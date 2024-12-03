@@ -1,9 +1,10 @@
 'use client';
-import { clearCookies, deleteChannelDetail, deleteFile, shareFile } from '@/actions';
+import { deleteChannelDetail, deleteFile, shareFile } from '@/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getGlobalTGCloudContext } from '@/lib/context';
+import { getTgClient } from '@/lib/getTgClient';
 import { promiseToast } from '@/lib/notify';
 import { withTelegramConnection } from '@/lib/telegramMutex';
 import Message, { FileItem, FilesData, GetAllFilesReturnType, User } from '@/lib/types';
@@ -23,15 +24,15 @@ import { Play, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { RPCError } from 'telegram/errors';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
-import { use } from 'react';
 import Upload from './uploadWrapper';
+import { fileCacheDb } from '@/lib/dexie';
+import { MediaSize } from '@/lib/utils';
 
 import Swal from 'sweetalert2';
-import { Api, TelegramClient } from 'telegram';
+import { TelegramClient } from 'telegram';
 
 export function showSharableURL(url: string) {
 	Swal.fire({
@@ -66,23 +67,6 @@ export function showSharableURL(url: string) {
 	});
 }
 
-const checkSessionStatus = async (client: TelegramClient) => {
-	return withTelegramConnection(client, async () => {
-		try {
-			const isAuthorized = await client.getMe();
-			return isAuthorized;
-		} catch (error) {
-			if (error instanceof RPCError) {
-				if (error.errorMessage === 'AUTH_KEY_UNREGISTERED') {
-					console.error(error.errorMessage);
-				}
-			}
-			console.error('Error checking session status:', error);
-			return false;
-		}
-	});
-};
-
 function Files({
 	user,
 	files
@@ -93,91 +77,71 @@ function Files({
 	folders: NonNullable<GetAllFilesReturnType>['folders'] | undefined;
 	currentFolderId: string | null;
 }) {
-	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const sortBy = TGCloudGlobalContext?.sortBy;
-	const client = TGCloudGlobalContext?.telegramClient as TelegramClient;
-	const telegramSession = TGCloudGlobalContext?.telegramSession;
-	const [sessionChecked, setSessionChecked] = useState(false);
-	const [isValidSession, setIsValidSession] = useState(true);
+	const tGCloudGlobalContext = getGlobalTGCloudContext();
+	const sortBy = tGCloudGlobalContext?.sortBy;
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
-	const router = useRouter();
+	const [client, setTelegramClient] = useState<TelegramClient | null | 'CONNECTING'>(() => {
+		if (!files) return null;
+		if (typeof files == 'object' && !files.length) return null;
+		if (typeof files == 'object' && files.length) return 'CONNECTING';
+		return null;
+	});
 
-
-
-	
+	console.log('files', files);
 
 	useEffect(() => {
-		if (!telegramSession) {
-			return;
-		}
+		if (!files) return;
+		if (typeof files == 'object' && !files.length) return;
 		(async () => {
-			client?.addEventHandler((ev) => {
-				// console.log('evenet', ev);
-			});
+			try {
+				const telegramClient = await getTgClient({
+					setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
+				});
 
-			const isValid = await checkSessionStatus(client);
-			const connStatus = client?.connected ? 'connected' : 'disconnected';
-
-			setSessionChecked(true);
-			setIsValidSession(!!isValid);
-			const result = await withTelegramConnection(client as TelegramClient, () =>
-				canWeAccessTheChannel(client as TelegramClient, user)
-			);
-			setCanWeAccessTGChannel(!!result);
-			TGCloudGlobalContext.setShouldShowUploadModal(!!result);
-
-			// client.addEventHandler((event: { name: string }) => {
-			// 	alert(event.name);
-			// 	switch (event.name) {
-			// 		case 'ready':
-			// 			console.log('Connected successfully');
-			// 			break;
-			// 		case 'disconnected':
-			// 			console.log('Disconnected');
-			// 			break;
-			// 		case 'message':
-			// 			// console.log('Received message:', event.message);
-			// 			break;
-			// 	}
-			// });
+				setTelegramClient(telegramClient || null);
+				const result = await withTelegramConnection(telegramClient as TelegramClient, () =>
+					canWeAccessTheChannel(telegramClient as TelegramClient, user)
+				);
+				setCanWeAccessTGChannel(!!result);
+				tGCloudGlobalContext?.setShouldShowUploadModal(!!result);
+			} catch (err) {
+				console.log('error', err);
+			}
 		})();
-	}, [telegramSession]);
 
-	if (!sessionChecked) {
-		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-			</div>
-		);
-	}
+		return () => {
+			typeof client === 'object' && client?.disconnect();
+		};
+	}, []);
 
-	if (TGCloudGlobalContext?.isSwitchingFolder) {
-		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-			</div>
-		);
-	}
-
-
-	if (!isValidSession) {
+	if (tGCloudGlobalContext?.botRateLimit?.isRateLimited) {
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="text-center space-y-4">
-					<h2 className="text-xl font-semibold">Unable to Access Your Telegram Account</h2>
+					<h2 className="text-xl font-semibold">
+						Slow Down! Telegram Needs a Breather 😭 (A.K.A Rate Limit)
+					</h2>
 					<p className="text-muted-foreground">
-						We&apos;ve lost access to your Telegram account. This can happen if you logged out of
-						Telegram or revoked access. Please re-authorize TGCloud to continue using the service.
+						Oops! We&apos;ve sent too many requests to Telegram, and they&apos;ve asked us to pause
+						for a bit. Please come back in{' '}
+						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes, and we’ll be
+						good to go! If you don&apos;t want to wait, you can add a new bot token from the visible
+						profile menu, and we’ll use that instead.
 					</p>
-					<Button onClick={() => clearCookies()} variant="default">
-						Authorize TGCloud
-					</Button>
 				</div>
 			</div>
 		);
 	}
 
-	if (canWeAccessTGChannel !== 'INITIAL' && !canWeAccessTGChannel)
+	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING') {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+			</div>
+		);
+	}
+
+	if (canWeAccessTGChannel !== 'INITIAL' && canWeAccessTGChannel === false)
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="text-center space-y-4">
@@ -189,7 +153,12 @@ function Files({
 						<Button onClick={() => deleteChannelDetail()} variant="destructive">
 							Yes, I deleted it
 						</Button>
-						<Button onClick={() => router.push('/')} variant="outline">
+						<Button
+							onClick={() => {
+								window.location.reload();
+							}}
+							variant="outline"
+						>
 							No, I didn&apos;t
 						</Button>
 					</div>
@@ -207,7 +176,7 @@ function Files({
 		return [...files].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
 	})();
 
-	if (!sortedFiles?.length)
+	if (!sortedFiles?.length || !client)
 		return (
 			<>
 				<div className="flex flex-col items-center justify-center h-full">
@@ -227,7 +196,7 @@ function Files({
 	return (
 		<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 			{sortedFiles?.map((file) => (
-				<EachFile key={file.id} file={file as FileItem} user={user} />
+				<EachFile client={client} key={file.id} file={file as FileItem} user={user} />
 			))}
 		</div>
 	);
@@ -237,25 +206,9 @@ export default Files;
 
 const addBotToChannel = async (client: TelegramClient, user: User) => {
 	if (!user?.channelId || !user.accessHash) throw Error('Failed to create sharable url');
-
-	const adminRights = new Api.ChatAdminRights({
-		changeInfo: true,
-		postMessages: true,
-		editMessages: true,
-		deleteMessages: true,
-		banUsers: true,
-		inviteUsers: true,
-		pinMessages: true,
-		addAdmins: true,
-		manageCall: true,
-		anonymous: true,
-		manageTopics: true
-	});
 };
 
-function EachFile({ file, user }: { file: FileItem; user: User }) {
-	const TGCloudGlobalContext = getGlobalTGCloudContext();
-	const client = TGCloudGlobalContext?.telegramClient as TelegramClient;
+function EachFile({ file, user, client }: { file: FileItem; user: User; client: TelegramClient }) {
 	const [url, setURL] = useState<string>('/placeholder.svg');
 	const [thumbNailURL, setThumbnailURL] = useState('/placeholder.svg');
 	const [isFileNotFoundInTelegram, setFileNotFoundInTelegram] = useState(false);
@@ -267,7 +220,7 @@ function EachFile({ file, user }: { file: FileItem; user: User }) {
 		}
 
 		try {
-			const result = await withTelegramConnection(client, async () => {
+			const result = await withTelegramConnection(client, async (client: TelegramClient) => {
 				return await downloadMedia(
 					{
 						user: user as NonNullable<User>,
@@ -276,7 +229,6 @@ function EachFile({ file, user }: { file: FileItem; user: User }) {
 						setURL,
 						category: file.category as MediaCategory
 					},
-					TGCloudGlobalContext?.telegramSession,
 					client
 				);
 			});
@@ -320,7 +272,6 @@ function EachFile({ file, user }: { file: FileItem; user: User }) {
 		downlaodFile('small', file.category);
 		requestIdleCallback(async (e) => {
 			await downlaodFile('large', file.category);
-			console.log('this should finish now');
 		});
 
 		return () => {
@@ -329,8 +280,6 @@ function EachFile({ file, user }: { file: FileItem; user: User }) {
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [file.category]);
-
-	console.log('url', url);
 
 	const fileContextMenuActions = [
 		{
@@ -350,6 +299,20 @@ function EachFile({ file, user }: { file: FileItem; user: User }) {
 		{
 			actionName: 'delete',
 			onClick: async () => {
+				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${
+					'small' satisfies MediaSize
+				}-${file.category}`;
+				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${
+					'large' satisfies MediaSize
+				}-${file.category}`;
+
+				try {
+					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeySmall).delete();
+					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeyLarge).delete();
+				} catch (err) {
+					console.error(err);
+				}
+
 				const promies = () =>
 					withTelegramConnection(client, async () => {
 						await Promise.all([
