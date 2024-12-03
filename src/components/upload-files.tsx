@@ -9,6 +9,7 @@ import { useFormStatus } from 'react-dom';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, FileIcon, TrashIcon, UploadIcon, XIcon } from './Icons/icons';
 import { UploadProgressOverlay } from './uploadProgressOverlay';
+import { getTgClient } from '@/lib/getTgClient';
 
 interface DropedFile {
 	file: File;
@@ -45,11 +46,10 @@ export const UploadFiles = ({
 	};
 
 	const handleSubmit = async (formData: FormData) => {
-		if (!tgCloudContext?.telegramClient) return null;
-
+		if (tgCloudContext?.botRateLimit.isRateLimited) return null;
+		const client = await getTgClient({ setBotRateLimit: tgCloudContext?.setBotRateLimit });
 		await promiseToast({
-			cb: () =>
-				uploadFiles(formData, user, setUploadProgress, tgCloudContext?.telegramClient!, folderId),
+			cb: () => uploadFiles(formData, user, setUploadProgress, client, folderId),
 			errMsg: 'We apologize, but there was an error uploading your files',
 			successMsg: 'File Uploaded',
 			loadingMsg: 'please wait...',
@@ -60,14 +60,12 @@ export const UploadFiles = ({
 		router.refresh();
 	};
 
-	if (!tgCloudContext?.telegramClient) return null;
+	if (tgCloudContext?.botRateLimit.isRateLimited) return null;
 
 	return (
 		<>
 			{uploadProgress && (
-				<UploadProgressOverlay
-					progress={{ ...uploadProgress, total: dropedfiles.length }}
-				/>
+				<UploadProgressOverlay progress={{ ...uploadProgress, total: dropedfiles.length }} />
 			)}
 			<div className="grid gap-6 max-w-xl overflow-x-hidden mx-auto">
 				<form

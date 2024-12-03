@@ -79,22 +79,26 @@ function Files({
 }) {
 	const tGCloudGlobalContext = getGlobalTGCloudContext();
 	const sortBy = tGCloudGlobalContext?.sortBy;
-	const client = tGCloudGlobalContext?.telegramClient as TelegramClient;
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
-	const router = useRouter();
+	const [client, setTelegramClient] = useState<TelegramClient | null | 'CONNECTING'>(() => {
+		if (!files) return null;
+		if (typeof files == 'object' && !files.length) return null;
+		if (typeof files == 'object' && files.length) return 'CONNECTING';
+		return null;
+	});
+
+	console.log('files', files);
 
 	useEffect(() => {
-		if (!client) return;
+		if (!files) return;
+		if (typeof files == 'object' && !files.length) return;
 		(async () => {
-			const isDisconnected = client?.connected === false;
 			try {
-				const telegramClient = isDisconnected
-					? await getTgClient({
-							setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
-					  })
-					: client;
+				const telegramClient = await getTgClient({
+					setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
+				});
 
-				isDisconnected && tGCloudGlobalContext?.setTelegramClient(telegramClient || null);
+				setTelegramClient(telegramClient || null);
 				const result = await withTelegramConnection(telegramClient as TelegramClient, () =>
 					canWeAccessTheChannel(telegramClient as TelegramClient, user)
 				);
@@ -104,7 +108,11 @@ function Files({
 				console.log('error', err);
 			}
 		})();
-	}, [client?.connected]);
+
+		return () => {
+			typeof client === 'object' && client?.disconnect();
+		};
+	}, []);
 
 	if (tGCloudGlobalContext?.botRateLimit?.isRateLimited) {
 		return (
@@ -117,14 +125,15 @@ function Files({
 						Oops! We&apos;ve sent too many requests to Telegram, and they&apos;ve asked us to pause
 						for a bit. Please come back in{' '}
 						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes, and we’ll be
-						good to go!
+						good to go! If you don&apos;t want to wait, you can add a new bot token from the visible
+						profile menu, and we’ll use that instead.
 					</p>
 				</div>
 			</div>
 		);
 	}
 
-	if (tGCloudGlobalContext?.isSwitchingFolder || !client || !client.connected) {
+	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING') {
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -167,7 +176,7 @@ function Files({
 		return [...files].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
 	})();
 
-	if (!sortedFiles?.length)
+	if (!sortedFiles?.length || !client)
 		return (
 			<>
 				<div className="flex flex-col items-center justify-center h-full">

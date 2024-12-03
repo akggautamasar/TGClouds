@@ -187,25 +187,20 @@ export default function Component({ user }: Props) {
 												toast.error('Please enter your bot token');
 												return;
 											}
-
-											let client = tgCloudContext?.telegramClient;
-
 											try {
-												if (selectedBot === 'custom' && botToken) {
-													client = await getTgClient({
-														botToken: botToken as string
-													});
-												}
+												const client =
+													selectedBot === 'custom' && botToken
+														? await getTgClient({
+																botToken: botToken as string
+														  })
+														: await getTgClient();
+
 												const dialogs = await client?.getInputEntity(
 													String(channelId) as EntityLike
 												);
 												const id = (dialogs as unknown as { channelId: string })?.channelId;
 												const accessHash = (dialogs as unknown as { accessHash: string })
 													?.accessHash;
-
-												console.log('id', id);
-												console.log('accessHash', accessHash);
-												console.log('dialogs', dialogs);
 												const sentMessage = await client?.sendMessage(channelId as EntityLike, {
 													message:
 														' Yay! You have successfully connected your Telegram channel with our platform! '

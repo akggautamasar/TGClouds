@@ -40,8 +40,6 @@ export const TGCloudGlobalContext = React.createContext<
 			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
 			shouldShowUploadModal: boolean;
 			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
-			telegramClient: TelegramClient | null;
-			setTelegramClient: Dispatch<SetStateAction<TelegramClient | null>>;
 			isSwitchingFolder: boolean;
 			startPathSwitching: React.TransitionStartFunction;
 			botRateLimit: {
@@ -62,7 +60,6 @@ export const TGCloudGlobalContextWrapper = ({ children }: { children: React.Reac
 	const [sortBy, setSortBy] = useState<SortBy>('name');
 	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
 	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
-	const [client, setClient] = useState<TelegramClient | null>(null);
 	const [isSwitchingFolder, startPathSwitching] = useTransition();
 	const [botRateLimit, setBotRateLimit] = useState<{
 		isRateLimited: boolean;
@@ -71,25 +68,6 @@ export const TGCloudGlobalContextWrapper = ({ children }: { children: React.Reac
 		isRateLimited: false,
 		retryAfter: 0
 	});
-
-	useEffect(() => {
-		async function initClient() {
-			try {
-				const newClient = await getTgClient({ setBotRateLimit });
-				setClient(newClient || null);
-			} catch (error) {
-				console.error('Failed to initialize Telegram client:', error);
-			}
-		}
-
-		initClient();
-
-		return () => {
-			if (client) {
-				client.disconnect().catch(console.error);
-			}
-		};
-	}, []);
 
 	return (
 		<TGCloudGlobalContext.Provider
@@ -100,11 +78,9 @@ export const TGCloudGlobalContextWrapper = ({ children }: { children: React.Reac
 				setConnectionStatus,
 				shouldShowUploadModal,
 				setShouldShowUploadModal,
-				telegramClient: client,
 				isSwitchingFolder,
 				startPathSwitching,
 				botRateLimit,
-				setTelegramClient: setClient,
 				setBotRateLimit
 			}}
 		>

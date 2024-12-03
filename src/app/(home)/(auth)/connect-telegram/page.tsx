@@ -9,7 +9,7 @@ async function Page() {
 		redirect('/login');
 	}
 
-	if (user.accessHash && user.channelId) return redirect('/files');
+	if (user.accessHash && user.channelId && user?.botTokens?.length) return redirect('/files');
 	return (
 		<div>
 			<ConnectTelegram user={user as NonNullable<User>} />

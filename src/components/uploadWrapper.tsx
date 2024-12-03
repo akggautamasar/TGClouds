@@ -11,9 +11,7 @@ import { UploadFiles } from './upload-files';
 export default function DrawerDialogDemo({ user }: { user: User }) {
 	const [open, setOpen] = useState(false);
 	const isDesktop = useMediaQuery('(min-width: 768px)');
-	const TGCloudGlobalContext = getGlobalTGCloudContext();
 
-	// if (!TGCloudGlobalContext?.shouldShowUploadModal) return null;
 	if (isDesktop) {
 		return (
 			<Dialog open={open} onOpenChange={setOpen}>
