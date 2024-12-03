@@ -1,4 +1,8 @@
-// src/App.js
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import '../../patch-global-alert-polyfill';
+import './globals.css';
+
 import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({ subsets: ['latin'] });
