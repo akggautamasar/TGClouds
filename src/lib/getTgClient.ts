@@ -63,10 +63,6 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 						retryAfter: waitTime
 					});
 					const tokenId = user?.botTokens?.find((token) => token.token === userBotToken)?.id;
-					console.log('user', user.botTokens);
-					console.log('token', userBotToken);
-
-					console.log('tokenId', tokenId);
 
 					if (tokenId) {
 						await updateTokenRateLimit(tokenId, timeInMilliseconds);

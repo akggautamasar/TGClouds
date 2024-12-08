@@ -4,7 +4,7 @@ import { TelegramClient } from 'telegram';
 const telegramMutex = new Mutex();
 
 export async function withTelegramConnection<T>(
-	client: TelegramClient | undefined,
+	client: TelegramClient,
 	operation: (client: TelegramClient) => Promise<T>
 ): Promise<T> {
 	if (!client) {

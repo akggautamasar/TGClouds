@@ -14,8 +14,6 @@ import { ChevronsUpDown, HelpCircle, LogOut } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Dialog, DialogContent, DialogHeader, DialogTrigger } from './ui/dialog';
-import { useState } from 'react';
 import { AddNewBotTokenDialog } from './addNewBotToken';
 
 export default async function ProfileMenu() {
