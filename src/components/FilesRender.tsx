@@ -101,11 +101,7 @@ function Files({
 		if (typeof files == 'object' && files.length) return 'CONNECTING';
 		return null;
 	});
-
-	const [optmisticFiles, setOptmisticFiles] = useState<typeof files>(files);
-
 	const router = useRouter();
-
 	const [selectedFiles, setSelectedFiles] = useState<typeof files>([]);
 
 	useEffect(() => {
@@ -116,7 +112,6 @@ function Files({
 				const telegramClient = await getTgClient({
 					setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
 				});
-
 				setTelegramClient(telegramClient || null);
 				const result = await withTelegramConnection(telegramClient as TelegramClient, () =>
 					canWeAccessTheChannel(telegramClient as TelegramClient, user)
@@ -186,15 +181,15 @@ function Files({
 		);
 
 	const sortedFiles = (() => {
-		if (!optmisticFiles || !Array.isArray(optmisticFiles) || optmisticFiles.length === 0) return [];
+		if (!files || !Array.isArray(files) || files.length === 0) return [];
 
 		if (sortBy === 'name')
-			return [...optmisticFiles].sort((a, b) => a.fileName.localeCompare(b.fileName));
+			return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
 		if (sortBy === 'date')
-			return [...optmisticFiles].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+			return [...files].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 		if (sortBy === 'size')
-			return [...optmisticFiles].sort((a, b) => Number(a.size) - Number(b.size));
-		return [...optmisticFiles].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
+			return [...files].sort((a, b) => Number(a.size) - Number(b.size));
+		return [...files].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
 	})();
 
 	if (!sortedFiles?.length)
@@ -216,9 +211,6 @@ function Files({
 
 	async function batchDelete() {
 		if (!Array.isArray(selectedFiles)) return;
-		const filesToRemoveIds = selectedFiles.map((f) => f.id);
-		const filesRemaing = (optmisticFiles as any[])?.filter((f) => !filesToRemoveIds.includes(f.id));
-		// setOptmisticFiles(filesRemaing)
 		try {
 			await Promise.all(
 				selectedFiles.map(async (file) => {
