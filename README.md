@@ -1,6 +1,6 @@
 # TGCloud - Unlimited Cloud Storage on Telegram
 
-TGCloud is a cloud storage solution that provides **unlimited storage** by leveraging Telegram's API. Built with **Next.js**, **Drizzle ORM**, **PostgreSQL**, and **Clerk** for authentication, TGCloud offers a simple, secure, and free way to store and manage files.
+TGCloud is a cloud storage solution that provides **unlimited storage** by leveraging Telegram's API. Built with **Next.js**, **Drizzle ORM**, **PostgreSQL**, and **Better Auth** for authentication, TGCloud offers a simple, secure, and free way to store and manage files.
 
 ## 📖 Features
 
@@ -19,6 +19,4 @@ TGCloud is a cloud storage solution that provides **unlimited storage** by lever
 - Next.js
 - Drizzle ORM
 - PostgreSQL
-- Clerk
-
-
+- Better Auth

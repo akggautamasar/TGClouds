@@ -1,28 +1,37 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { User } from '@/lib/types';
-import { UserButton } from '@clerk/nextjs';
+import { GetAllFilesReturnType, User } from '@/lib/types';
 import { File, Menu } from 'lucide-react';
 import { cookies } from 'next/headers';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { ModeToggle } from './darkmodeToggle';
 import { CloudIcon, FileTextIcon, ImageIcon, Music2Icon, VideoIcon } from './Icons/icons';
 import Link from './Link';
 import Paginate from './pagination';
+import ProfileMenu from './profileMenu';
 import SearchItems from './searchItems';
 import SortBy from './SortBy';
 import Upload from './uploadWrapper';
-import ConnectionStatusIndicator from './conncStatusIndicator';
+import SpaceUsageIndicator from './storageSpaceIndicator';
+import StoragePage from './folderPath';
+import { getFolderHierarchy, getAllFolders } from '@/actions';
+import { unstable_cache } from 'next/cache';
+
+const allfolders = unstable_cache(getAllFolders, [], { revalidate: 3600, tags: ['get-folder'] });
 
 export async function Dashboard({
 	children,
 	user,
-	total
+	total,
+	folders,
+	currentFolderId
 }: {
 	children: React.ReactNode;
 	user: User;
 	total: number;
+	folders: NonNullable<GetAllFilesReturnType>['folders'] | undefined;
+	currentFolderId: string | null;
 }) {
 	const calculateRemainingDays = (subscriptionDate: string) => {
 		const currentDate = new Date();
@@ -32,14 +41,11 @@ export async function Dashboard({
 		return differenceInDays;
 	};
 
+	const foldersHierarchy = await getFolderHierarchy(user?.id as string);
+	const allFolders = await allfolders(user?.id as string);
+
 	const isSubscribedToPro = user?.isSubscribedToPro;
 	const subscriptionDate = user?.subscriptionDate;
-
-	let remainingDays = 0;
-	if (isSubscribedToPro && subscriptionDate) {
-		remainingDays = calculateRemainingDays(subscriptionDate);
-	}
-	const telegramSession = (await cookies()).get('telegramSession');
 
 	return (
 		<div className="grid min-h-screen relative w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -111,46 +117,18 @@ export async function Dashboard({
 											View in Telegram
 										</Link>
 									</Button>
-									<ConnectionStatusIndicator />
 								</CardContent>
 							</Card>
 						</div>
 					</div>
-					<div className="mt-auto p-2">
-						{/* {user?.isSubscribedToPro ? (
-							<Card>
-								<CardHeader>
-									<CardTitle>Pro Activated</CardTitle>
-								</CardHeader>
-								<CardContent>
-									{!isSubscribedToPro ? (
-										<Button size="sm" className="w-full">
-											Upgrade
-										</Button>
-									) : (
-										<div>
-											<p>{remainingDays} days remaining until your Pro subscription expires.</p>
-										</div>
-									)}
-								</CardContent>
-							</Card>
-						) : (
-							<Pricing user={user}>
-								<Card x-chunk="dashboard-02-chunk-0">
-									<CardHeader className="p-2 pt-0 md:p-4">
-										<CardTitle>Upgrade to Pro</CardTitle>
-										<CardDescription>
-											Unlock all features and get unlimited access to our support team.
-										</CardDescription>
-									</CardHeader>
-									<CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-										<Button size="sm" className="w-full">
-											Upgrade
-										</Button>
-									</CardContent>
-								</Card>
-							</Pricing>
-						)} */}
+					<div className="flex items-center justify-center mb-4">
+						<Upload user={user} />
+					</div>
+					<div className="flex items-center justify-center mb-4">
+						<SpaceUsageIndicator />
+					</div>
+					<div className="flex items-center justify-center mb-4">
+						<ProfileMenu />
 					</div>
 				</div>
 			</div>
@@ -224,46 +202,18 @@ export async function Dashboard({
 												View in Telegram
 											</Link>
 										</Button>
-										<ConnectionStatusIndicator />
+										{/* <ConnectionStatusIndicator /> */}
 									</CardContent>
 								</Card>
 							</div>
-
-							<div className="mt-auto">
-								{/* {user?.isSubscribedToPro ? (
-									<Card>
-										<CardHeader>
-											<CardTitle>Pro Activated</CardTitle>
-										</CardHeader>
-										<CardContent>
-											{!isSubscribedToPro ? (
-												<Button size="sm" className="w-full">
-													Upgrade
-												</Button>
-											) : (
-												<div>
-													<p>{remainingDays} days remaining until your Pro subscription expires.</p>
-												</div>
-											)}
-										</CardContent>
-									</Card>
-								) : (
-									<Pricing user={user}>
-										<Card>
-											<CardHeader>
-												<CardTitle>Upgrade to Pro</CardTitle>
-												<CardDescription>
-													Unlock all features and get unlimited access to our support team.
-												</CardDescription>
-											</CardHeader>
-											<CardContent>
-												<Button size="sm" className="w-full">
-													Upgrade
-												</Button>
-											</CardContent>
-										</Card>
-									</Pricing>
-								)} */}
+							<div className="flex items-center justify-center mb-4">
+								<Upload user={user} />
+							</div>
+							<div className="flex items-center justify-center mb-4">
+								<SpaceUsageIndicator />
+							</div>
+							<div className="flex items-center justify-center mb-4">
+								<ProfileMenu />
 							</div>
 						</SheetContent>
 					</Sheet>
@@ -272,15 +222,16 @@ export async function Dashboard({
 						<ModeToggle />
 					</div>
 					<SortBy />
-					<div className="h-8 gap-1 flex border-gray-400 items-center justify-center">
-						<Upload user={user} />
-					</div>
-					<div>
-						<UserButton />
-					</div>
 				</header>
 				<main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-					{children}
+					<StoragePage
+						allFolder={allFolders}
+						foldersHierarchy={foldersHierarchy}
+						userId={user?.id as string}
+						folders={folders ?? []}
+						currentFolderId={currentFolderId}
+					/>
+					<Suspense fallback={<div>loading</div>}>{children}</Suspense>
 					<Paginate totalItems={total} />
 				</main>
 			</div>

@@ -4,15 +4,12 @@ import '../../patch-global-alert-polyfill';
 import './globals.css';
 
 import { ThemeProvider } from '@/components/theme-provider';
-import { env } from '@/env';
-import { ClerkProvider } from '@clerk/nextjs';
 
 const inter = Inter({ subsets: ['latin'] });
 
-import { cookies } from 'next/headers';
 import { Toaster } from 'react-hot-toast';
 
-import Providers, { TGCloudGlobalContextWrapper, CSPostHogProvider } from '@/lib/context';
+import Providers, { CSPostHogProvider, TGCloudGlobalContextWrapper } from '@/lib/context';
 
 export const metadata: Metadata = {
 	metadataBase: new URL('https://yourtgcloud.vercel.app/'),
@@ -52,36 +49,20 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const telegramSession = (await cookies()).get('telegramSession');
 	return (
 		<html lang="en">
 			<link rel="icon" href="/favicon.ico" sizes="any" />
 			<CSPostHogProvider>
 				<body className={inter.className}>
 					<Providers>
-						<ClerkProvider
-							appearance={{
-								layout: {
-									privacyPageUrl: '/privacy',
-									termsPageUrl: '/terms'
-								}
-							}}
-							afterSignOutUrl={'/login'}
-							publishableKey={env.NEXT_PUBLIC_PUBLISHABLE_KEY}
-							signUpForceRedirectUrl={'/connect-telegram'}
-							signInForceRedirectUrl={'/connect-telegram'}
+						<ThemeProvider
+							attribute="class"
+							defaultTheme="system"
+							enableSystem
+							disableTransitionOnChange
 						>
-							<ThemeProvider
-								attribute="class"
-								defaultTheme="system"
-								enableSystem
-								disableTransitionOnChange
-							>
-								<TGCloudGlobalContextWrapper telegramSession={telegramSession?.value}>
-									{children}
-								</TGCloudGlobalContextWrapper>
-							</ThemeProvider>
-						</ClerkProvider>
+							<TGCloudGlobalContextWrapper>{children}</TGCloudGlobalContextWrapper>
+						</ThemeProvider>
 					</Providers>
 					<Toaster />
 				</body>

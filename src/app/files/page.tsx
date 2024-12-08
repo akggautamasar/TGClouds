@@ -1,4 +1,4 @@
-import { getAllFiles, requireUserAuthentication } from '@/actions';
+import { getAllFiles, getFolderContents, requireUserAuthentication } from '@/actions';
 import { Dashboard } from '@/components/dashboard';
 import Files from '@/components/FilesRender';
 import { LoadingItems } from '@/components/loading-files';
@@ -13,20 +13,21 @@ export const generateMetadata = async (): Promise<Metadata> => {
 
 export default async function Home(props: { searchParams: Promise<Record<string, string>> }) {
 	const searchParams = await props.searchParams;
-	// eslint-disable-next-line react-hooks/rules-of-hooks
 	const user = await requireUserAuthentication();
 
 	const searchItem = searchParams.search;
-
 	const page = parseInt(searchParams.page || '1');
+	const currentFolderId = searchParams.folderId || null;
 
-	//@ts-ignore
-	const [files, total] = await getAllFiles(searchItem, (page - 1) * 8);
+	const folderContents = await getFolderContents(currentFolderId, searchItem, (page - 1) * 8);
+	if (!folderContents) return null;
+
+	const { folders, files, totalFiles } = folderContents;
 
 	return (
-		<Dashboard total={total} user={user}>
+		<Dashboard currentFolderId={currentFolderId} folders={folders} total={totalFiles} user={user}>
 			<Suspense fallback={<LoadingItems />}>
-				<Files files={files} user={user} />
+				<Files files={files} folders={folders} user={user} currentFolderId={currentFolderId} />
 			</Suspense>
 		</Dashboard>
 	);

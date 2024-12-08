@@ -2,7 +2,7 @@
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import React, { Dispatch, SetStateAction, use, useState, useEffect } from 'react';
+import React, { Dispatch, SetStateAction, useState, useEffect, useTransition } from 'react';
 import { env } from '../env';
 import { TelegramClient } from 'telegram';
 import { getTgClient } from './getTgClient';
@@ -13,6 +13,7 @@ if (typeof window !== 'undefined') {
 		person_profiles: 'always'
 	});
 }
+
 export function CSPostHogProvider({ children }: { children: React.ReactNode }) {
 	return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
 }
@@ -35,43 +36,52 @@ export const TGCloudGlobalContext = React.createContext<
 	| {
 			sortBy: SortBy;
 			setSortBy: Dispatch<SetStateAction<SortBy>>;
-			telegramSession: string | undefined;
-			TGClient: TelegramClient;
 			connectionStatus: connectionState;
 			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
+			shouldShowUploadModal: boolean;
+			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
+			isSwitchingFolder: boolean;
+			startPathSwitching: React.TransitionStartFunction;
+			botRateLimit: {
+				isRateLimited: boolean;
+				retryAfter: number;
+			};
+			setBotRateLimit: React.Dispatch<
+				React.SetStateAction<{
+					isRateLimited: boolean;
+					retryAfter: number;
+				}>
+			>;
 	  }
 	| undefined
 >(undefined);
 
-export const TGCloudGlobalContextWrapper = ({
-	children,
-	telegramSession
-}: {
-	children: React.ReactNode;
-	telegramSession: string | undefined;
-}) => {
+export const TGCloudGlobalContextWrapper = ({ children }: { children: React.ReactNode }) => {
 	const [sortBy, setSortBy] = useState<SortBy>('name');
-	const client = getTgClient(telegramSession ?? '');
 	const [connectionStatus, setConnectionStatus] = useState<connectionState>('disconnected');
-
-	useEffect(() => {
-		const cleanup = () => {
-			if (client) {
-				client?.disconnect();
-			}
-		};
-		return cleanup;
-	}, [client]);
+	const [shouldShowUploadModal, setShouldShowUploadModal] = useState<boolean>(false);
+	const [isSwitchingFolder, startPathSwitching] = useTransition();
+	const [botRateLimit, setBotRateLimit] = useState<{
+		isRateLimited: boolean;
+		retryAfter: number;
+	}>({
+		isRateLimited: false,
+		retryAfter: 0
+	});
 
 	return (
 		<TGCloudGlobalContext.Provider
 			value={{
 				setSortBy,
 				sortBy,
-				telegramSession,
-				TGClient: client,
 				connectionStatus,
-				setConnectionStatus
+				setConnectionStatus,
+				shouldShowUploadModal,
+				setShouldShowUploadModal,
+				isSwitchingFolder,
+				startPathSwitching,
+				botRateLimit,
+				setBotRateLimit
 			}}
 		>
 			{children}
@@ -81,5 +91,5 @@ export const TGCloudGlobalContextWrapper = ({
 
 export const getGlobalTGCloudContext = () => {
 	// eslint-disable-next-line react-hooks/rules-of-hooks
-	return use(TGCloudGlobalContext);
+	return React.use(TGCloudGlobalContext);
 };
