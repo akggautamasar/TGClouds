@@ -186,7 +186,7 @@ export async function uploadFiles(
 
 export async function delelteItem(
 	user: User,
-	postId: number | string,
+	postId: number | string | (string | number)[],
 	client: TelegramClient | undefined
 ) {
 	if (!client) {
@@ -198,9 +198,15 @@ export async function delelteItem(
 		await client.connect();
 
 	try {
+
+
+
+		const channelId = user?.channelId!.startsWith('-100') ? user?.channelId! : `-100${user?.channelId!}`;
+		const entity = await client.getInputEntity(channelId);
+
 		const deleteMediaStatus = await client.deleteMessages(
-			getChannelEntity(user?.channelId!, user?.accessHash!),
-			[Number(postId)],
+			entity,
+			Array.isArray(postId) ? postId.map(Number) : [Number(postId)],
 			{
 				revoke: true
 			}
@@ -316,23 +322,49 @@ export const getMessage = async ({
 	return media;
 };
 
+
+export const getCacheKey = (channelId: string, messageId: number | string, category: MediaCategory) => {
+	const fileSmCacheKey = `${channelId}-${messageId}-${('small' satisfies MediaSize)}-${category}`;
+	const fileLgCacheKey = `${channelId}-${messageId}-${('large' satisfies MediaSize)}-${category}`;
+	return { fileSmCacheKey, fileLgCacheKey }
+}
+
+export const removeCachedFile = async (cacheKey: string) => {
+	await fileCacheDb.fileCache.where('cacheKey').equals(cacheKey).delete();
+}
+
+
+async function getCachedFile(cacheKey: string) {
+	return await fileCacheDb.fileCache.where('cacheKey').equals(cacheKey).first();
+}
+
 export const downloadMedia = async (
 	{ user, messageId, size, setURL, category, isShare }: DownloadMediaOptions,
-	client: TelegramClient
+	client: TelegramClient | "CONNECTING" | null,
 ): Promise<Blob | { fileExists: boolean } | null> => {
 	if (!user || !client || !user.channelId || !user.accessHash)
 		throw new Error('failed to get user');
 
-	const cacheKey = `${user?.channelId}-${messageId}-${size}-${category}`;
-	const cachedFile = await fileCacheDb.fileCache.where('cacheKey').equals(cacheKey).first();
-
-	if (cachedFile) {
-		console.log('file found in cache');
-		const blob = cachedFile.data;
+	const { fileLgCacheKey, fileSmCacheKey } = getCacheKey(user.channelId, messageId, category)
+	const fileLg = await getCachedFile(fileLgCacheKey)
+	if (fileLg) {
+		const blob = fileLg.data;
 		const url = URL.createObjectURL(blob);
 		setURL(url);
 		return blob
 	}
+
+
+	const fileSm = await getCachedFile(fileSmCacheKey)
+	if (fileSm) {
+		const blob = fileSm.data;
+		const url = URL.createObjectURL(blob);
+		setURL(url);
+	}
+
+	if (typeof client === 'string') return null
+
+
 
 	const media = await getMessage({ client, messageId, user });
 	if (!media) return { fileExists: false };
@@ -340,8 +372,7 @@ export const downloadMedia = async (
 	try {
 		if (category === 'video')
 			return await handleVideoDownload(client, media as Message['media'], setURL);
-
-		if (media) return await handleMediaDownload(client, media, size, cacheKey, setURL);
+		if (media) return await handleMediaDownload(client, media, size, (size === 'large' ? fileLgCacheKey : fileSmCacheKey), setURL);
 	} catch (err) {
 		console.error(err);
 	}

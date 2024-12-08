@@ -14,8 +14,7 @@
 		"migrate": "pnpm db:generate && pnpm db:migrate",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"typecheck": "tsc --project tsconfig.json",
-		"prepare": "husky install"
+		"typecheck": "tsc --project tsconfig.json"
 	},
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.17",
@@ -86,7 +85,6 @@
 		"drizzle-kit": "^0.22.8",
 		"eslint": "^8.57.1",
 		"eslint-config-next": "15.0.0",
-		"husky": "^9.1.7",
 		"lint-staged": "^15.2.10",
 		"postcss": "^8.4.47",
 		"tailwindcss": "^3.4.14",

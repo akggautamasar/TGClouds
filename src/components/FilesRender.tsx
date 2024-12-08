@@ -8,6 +8,8 @@ import { getTgClient } from '@/lib/getTgClient';
 import { promiseToast } from '@/lib/notify';
 import { withTelegramConnection } from '@/lib/telegramMutex';
 import Message, { FileItem, FilesData, GetAllFilesReturnType, User } from '@/lib/types';
+import { TrashIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
 	canWeAccessTheChannel,
 	delelteItem,
@@ -30,6 +32,19 @@ import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
 import { fileCacheDb } from '@/lib/dexie';
 import { MediaSize } from '@/lib/utils';
+import { getCacheKey, removeCachedFile } from '@/lib/utils';
+import toast from 'react-hot-toast';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 
 import Swal from 'sweetalert2';
 import { TelegramClient } from 'telegram';
@@ -87,7 +102,11 @@ function Files({
 		return null;
 	});
 
-	console.log('files', files);
+	const [optmisticFiles, setOptmisticFiles] = useState<typeof files>(files);
+
+	const router = useRouter();
+
+	const [selectedFiles, setSelectedFiles] = useState<typeof files>([]);
 
 	useEffect(() => {
 		if (!files) return;
@@ -133,7 +152,7 @@ function Files({
 		);
 	}
 
-	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING') {
+	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING' || !client) {
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -167,16 +186,18 @@ function Files({
 		);
 
 	const sortedFiles = (() => {
-		if (!files || !Array.isArray(files) || files.length === 0) return [];
+		if (!optmisticFiles || !Array.isArray(optmisticFiles) || optmisticFiles.length === 0) return [];
 
-		if (sortBy === 'name') return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
+		if (sortBy === 'name')
+			return [...optmisticFiles].sort((a, b) => a.fileName.localeCompare(b.fileName));
 		if (sortBy === 'date')
-			return [...files].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-		if (sortBy === 'size') return [...files].sort((a, b) => Number(a.size) - Number(b.size));
-		return [...files].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
+			return [...optmisticFiles].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+		if (sortBy === 'size')
+			return [...optmisticFiles].sort((a, b) => Number(a.size) - Number(b.size));
+		return [...optmisticFiles].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
 	})();
 
-	if (!sortedFiles?.length || !client)
+	if (!sortedFiles?.length)
 		return (
 			<>
 				<div className="flex flex-col items-center justify-center h-full">
@@ -193,12 +214,102 @@ function Files({
 			</>
 		);
 
+	async function batchDelete() {
+		if (!Array.isArray(selectedFiles)) return;
+		const filesToRemoveIds = selectedFiles.map((f) => f.id);
+		const filesRemaing = (optmisticFiles as any[])?.filter((f) => !filesToRemoveIds.includes(f.id));
+		// setOptmisticFiles(filesRemaing)
+		try {
+			await Promise.all(
+				selectedFiles.map(async (file) => {
+					const { fileSmCacheKey, fileLgCacheKey } = getCacheKey(
+						user?.channelId as string,
+						file.fileTelegramId as string,
+						file.category as MediaCategory
+					);
+					try {
+						await removeCachedFile(fileSmCacheKey);
+						await removeCachedFile(fileLgCacheKey);
+					} catch (err) {
+						console.error(err);
+					}
+
+					await deleteFile(file.id);
+				})
+			);
+			toast.success('you have successfully deleted the files');
+		} catch (err) {
+			toast.error('Failed to Delete the files');
+			console.error(err);
+		} finally {
+			router.refresh();
+		}
+	}
+
 	return (
-		<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{sortedFiles?.map((file) => (
-				<EachFile client={client} key={file.id} file={file as FileItem} user={user} />
-			))}
+		<div className="w-full h-full">
+			<div className="flex justify-end my-2">
+				{!!(selectedFiles as Array<FileItem>)?.length && (
+					<DeleteAllFiles deleteFn={async () => await batchDelete()}>
+						<Button className="py-2 px-4 self-end">
+							<TrashIcon width={24} height={24} color="red" />
+						</Button>
+					</DeleteAllFiles>
+				)}
+			</div>
+			<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				{sortedFiles?.map((file) => (
+					<div className="relative" key={file.id}>
+						<EachFile client={client} file={file as FileItem} user={user} />
+
+						<div className="absolute top-0 left-0">
+							<Input
+								onChange={(e) => {
+									const checked = e.target.checked;
+									if (checked) {
+										//@ts-ignore
+										setSelectedFiles((prev) => [...prev, file]);
+									} else {
+										//@ts-ignore
+										setSelectedFiles((prev) => prev.filter((f) => f.id !== file.id));
+									}
+								}}
+								id="checkbox"
+								type="checkbox"
+								className="peer"
+							/>
+						</div>
+					</div>
+				))}
+			</div>
 		</div>
+	);
+}
+
+function DeleteAllFiles({
+	children,
+	deleteFn
+}: {
+	children: React.ReactNode;
+	deleteFn: () => Promise<void>;
+}) {
+	return (
+		<AlertDialog>
+			<AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+					<AlertDialogDescription>
+						This action cannot be undone. This will permanently delete all files from your Telegram
+						channel.
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>Cancel</AlertDialogCancel>
+					<AlertDialogAction onClick={async () => await deleteFn()}>Continue</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }
 
@@ -218,9 +329,8 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 			console.error('Telegram client not initialized');
 			return;
 		}
-
 		try {
-			const result = await withTelegramConnection(client, async (client: TelegramClient) => {
+			const result = await withTelegramConnection(client, async (client) => {
 				return await downloadMedia(
 					{
 						user: user as NonNullable<User>,
@@ -252,6 +362,7 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
+					if (!client || typeof client === 'string') return;
 					const media = (await getMessage({
 						client,
 						messageId: file.fileTelegramId,
