@@ -37,7 +37,7 @@ export const UploadFiles = ({
 	const folderId = searchParams?.get('folderId') ?? null;
 
 	const handleDrop = (acceptedFiles: File[]) => {
-		console.log(acceptedFiles);
+
 		const files = acceptedFiles.map((file) => ({
 			file,
 			id: crypto.randomUUID()

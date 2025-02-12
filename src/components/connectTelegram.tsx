@@ -180,7 +180,7 @@ export default function Component({ user }: Props) {
 										action={async (formData) => {
 											const channelId = formData.get('channelId');
 											const botToken = formData.get('botToken');
-											console.log('channelid', channelId);
+
 											if (!channelId) return;
 
 											if (selectedBot === 'custom' && !botToken) {
@@ -217,7 +217,7 @@ export default function Component({ user }: Props) {
 													typeof window !== 'undefined' && window.location.replace('/files');
 												}
 											} catch (err) {
-												console.log('err', err);
+
 												toast.error('Failed to connect channel');
 											}
 										}}

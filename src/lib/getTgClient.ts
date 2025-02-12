@@ -14,8 +14,8 @@ export interface GetTgClientOptions {
 }
 const getBotTokenWithLeastAmountOfRemaingRateLimit = async (user: Awaited<ReturnType<typeof getUser>>) => {
 	const allTokens = user?.botTokens ?? [];
-	console.log('alltokens', allTokens);
-	console.log('users', user)
+
+
 
 	const isThereAnyBotWithoutRateLimit = allTokens.some((token) => !token.rateLimitedUntil);
 	if (isThereAnyBotWithoutRateLimit) {
@@ -32,7 +32,7 @@ const getBotTokenWithLeastAmountOfRemaingRateLimit = async (user: Awaited<Return
 };
 
 export async function getTgClient({ stringSession, botToken, setBotRateLimit }: GetTgClientOptions = {}) {
-	console.log('getTgClient called');
+
 	if (typeof window === 'undefined') return;
 	const user = await getUser();
 	if (!user) return;
@@ -40,14 +40,14 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 	const token = botToken ?? userBotToken ?? env.NEXT_PUBLIC_BOT_TOKEN
 
 	try {
-		console.log('about to create TelegramClient');
+
 		const client = new TelegramClient(
 			new StringSession(stringSession),
 			env.NEXT_PUBLIC_TELEGRAM_API_ID,
 			env.NEXT_PUBLIC_TELEGRAM_API_HASH,
 			{ connectionRetries: 5 }
 		);
-		console.log('about to start TelegramClient');
+
 		try {
 			await client.start({
 				botAuthToken: token
@@ -72,7 +72,7 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 						botAuthToken: token
 					});
 				}
-				console.log('session', client.session.save());
+
 			} else {
 				throw startError;
 			}

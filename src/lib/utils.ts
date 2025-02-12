@@ -200,22 +200,22 @@ export async function uploadFiles(
 				}
 			});
 
-			console.log('file', file);
-			console.log('toUpload', toUpload);
 
-			console.log('user.channelID', user?.channelId);
-			console.log('user.accessHash', user?.accessHash);
+
+
+
+
 
 			const me = await client.getMe();
 
-			console.log('me', me);
+
 
 			const channelId = user?.channelId!.startsWith('-100')
 				? user?.channelId!
 				: `-100${user?.channelId!}`;
 			const entity = await client.getInputEntity(channelId);
 
-			console.log('entity', entity);
+
 
 			const result = await client.sendFile(entity, {
 				file: toUpload,
@@ -232,7 +232,7 @@ export async function uploadFiles(
 				fileTelegramId: result.id,
 				folderId
 			});
-			console.log('File uploaded successfully:', uploadToDbResult);
+
 		}
 	} catch (err) {
 		if (err instanceof RPCError) {
@@ -476,7 +476,7 @@ export const handleMediaDownload = async (
 	const buffer = await client.downloadMedia(media as unknown as Api.TypeMessageMedia, {
 		progressCallback: (progress, total) => {
 			const percent = (Number(progress) / Number(total)) * 100;
-			console.log(percent);
+
 		},
 		thumb: size === 'small' ? 0 : undefined
 	});
@@ -501,7 +501,7 @@ export const downloadVideoThumbnail = async (
 	const thumbnail = media.document.thumbs;
 
 
-	console.log('thumbnail', thumbnail);
+
 
 	if (!thumbnail) return;
 
@@ -510,7 +510,7 @@ export const downloadVideoThumbnail = async (
 	});
 
 
-	console.log('buffer', buffer);
+
 	if (!buffer) return;
 
 	return buffer;

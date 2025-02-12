@@ -120,7 +120,7 @@ function Files({
 				setCanWeAccessTGChannel(!!result);
 				tGCloudGlobalContext?.setShouldShowUploadModal(!!result);
 			} catch (err) {
-				console.log('error', err);
+
 			}
 		})();
 
@@ -627,7 +627,7 @@ const VideoMediaView = ({
 
 
 
-	console.log('url', url);
+
 
 
 	return (
