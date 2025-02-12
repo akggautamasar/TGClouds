@@ -183,7 +183,6 @@ function Files({
 
 	const sortedFiles = (() => {
 		if (!files || !Array.isArray(files) || files.length === 0) return [];
-
 		if (sortBy === 'name') return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
 		if (sortBy === 'date')
 			return [...files].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -348,32 +347,36 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		}
 	};
 
+
+
 	const router = useRouter();
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
-					if (!client || typeof client === 'string') return;
-					const media = (await getMessage({
-						client,
-						messageId: file.fileTelegramId,
-						user: user as NonNullable<User>
-					})) as Message['media'];
-					const buffer = await downloadVideoThumbnail(user, client, media);
-					if (buffer) {
-						const blob = new Blob([buffer]);
-						const url = URL.createObjectURL(blob);
-						setThumbnailURL(url);
-						return;
-					}
-					const url = getBannerURL('No Thumbnail Available', isDarkMode());
+				if (!client || typeof client === 'string') return;
+
+				const media = (await getMessage({
+					client,
+					messageId: file.fileTelegramId,
+					user: user as NonNullable<User>
+				})) as Message['media'];
+
+				const buffer = await downloadVideoThumbnail(user, client, media);
+				if (buffer) {
+					const blob = new Blob([buffer]);
+					const url = URL.createObjectURL(blob);
 					setThumbnailURL(url);
-			  })()
+					return;
+				}
+				const url = getBannerURL('No Thumbnail Available', isDarkMode());
+				setThumbnailURL(url);
+			})()
 			: (() => {
-					downlaodFile('small', file.category);
-					requestIdleCallback(async (e) => {
-						await downlaodFile('large', file.category);
-					});
-			  })();
+				downlaodFile('small', file.category);
+				requestIdleCallback(async (e) => {
+					await downlaodFile('large', file.category);
+				});
+			})();
 
 		return () => {
 			URL.revokeObjectURL(url as string);
@@ -393,19 +396,16 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 				link.click();
 			},
 			Icon: CloudDownload,
-			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${
-				!url ? 'cursor-not-allowed opacity-50' : ''
-			}`
+			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${!url ? 'cursor-not-allowed opacity-50' : ''
+				}`
 		},
 		{
 			actionName: 'delete',
 			onClick: async () => {
-				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${
-					'small' satisfies MediaSize
-				}-${file.category}`;
-				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${
-					'large' satisfies MediaSize
-				}-${file.category}`;
+				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${'small' satisfies MediaSize
+					}-${file.category}`;
+				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${'large' satisfies MediaSize
+					}-${file.category}`;
 
 				try {
 					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeySmall).delete();
@@ -467,7 +467,6 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 				id={url}
 				className={`group relative  overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md `}
 			>
-				{/* <Link target="_blank" href={file.url} prefetch={false}> */}
 				<span className="sr-only">View file</span>
 				{file.category == 'image' ? (
 					<FileModalView
@@ -576,7 +575,7 @@ function getVideoCodec(mimeType: string) {
 			mimeCodec = 'video/x-matroska; codecs="avc1.64001f, mp4a.40.2"';
 			break;
 		default:
-			mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"'; 
+			mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"';
 	}
 	return mimeCodec;
 }
@@ -590,77 +589,58 @@ const VideoMediaView = ({
 	client: TelegramClient;
 	user: User;
 }) => {
-	const videoRef = useRef<HTMLVideoElement>(null);
-	const sourceBuffer = useRef<SourceBuffer | null>(null);
-	const queue = useRef<Uint8Array[]>([]);
+	let self = useRef<HTMLVideoElement>(null);
+	const [url, setURL] = useState<string>();
+	const playerRef = useRef<FluidPlayerInstance>(undefined);
 
 	useEffect(() => {
-		const mimeCodec = getVideoCodec(fileData.mimeType);
+		; (async () => {
+			const message = await getMessage({
+				client,
+				messageId: fileData.fileTelegramId,
+				user: user as NonNullable<User>
+			});
 
-		if (videoRef.current && MediaSource.isTypeSupported(mimeCodec)) {
-			const myMediaSource = new MediaSource();
+			await handleVideoDownload(
+				client,
+				message as Message['media'],
+				setURL,
+			);
+		})()
 
-			const url = URL.createObjectURL(myMediaSource);
-			videoRef.current.src = url;
-
-			myMediaSource.addEventListener('sourceopen', async () => {
-				sourceBuffer.current = myMediaSource.addSourceBuffer(mimeCodec);
-
-				sourceBuffer.current.onerror = (e) => {
-					console.error('SourceBuffer error:', e);
-				};
-
-				sourceBuffer.current.onupdateend = async () => {
-					if (myMediaSource.readyState === 'open') {
-						if (!sourceBuffer.current?.updating) {
-							const isPlaying = videoRef.current?.paused;
-							if (isPlaying) {
-								videoRef.current?.play();
-							}
-							if (queue.current.length <= 0) {
-								myMediaSource.endOfStream();
-							}
-							return;
-						}
-						const chunk = queue.current.shift();
-						if (chunk) {
-							sourceBuffer.current?.appendBuffer(chunk);
-						}
+		if (!playerRef.current) {
+			playerRef.current = fluidPlayer(self.current!, {
+				layoutControls: {
+					allowDownload: true,
+					miniPlayer: {
+						autoToggle: true,
+						enabled: true,
+						position: 'bottom right',
+						height: 200,
+						width: 300,
+						placeholderText: fileData.fileName
 					}
-				};
-
-				const message = await getMessage({
-					client,
-					messageId: fileData.fileTelegramId,
-					user: user as NonNullable<User>
-				});
-
-				await handleVideoDownload(
-					client,
-					message as Message['media'],
-					async (chunk: Uint8Array) => {
-						console.log(queue.current);
-
-						if (sourceBuffer.current?.updating) {
-							queue.current.push(chunk);
-							return;
-						}
-						try {
-							sourceBuffer?.current?.appendBuffer(chunk);
-						} catch (e) {
-							console.error('Error appending buffer:', e);
-						}
-					}
-				);
+				}
 			});
 		}
-	}, [client, fileData.fileTelegramId, user]);
+	}, []);
+
+
+
+	console.log('url', url);
+
 
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto">
 				<div className="relative aspect-video">
-					<video ref={videoRef} controls className="w-full h-full object-contain"></video>
+					<video
+						ref={self}
+						controls
+						autoPlay
+						className="w-full h-full object-contain"
+						src={url}
+					></video>
 				</div>
 				<div className="p-6 bg-background">
 					<h3 className="text-2xl font-semibold">{fileData.fileName}</h3>

@@ -168,10 +168,10 @@ export async function uploadFiles(
 	onProgress: Dispatch<
 		SetStateAction<
 			| {
-					itemName: string;
-					itemIndex: number;
-					progress: number;
-			  }
+				itemName: string;
+				itemIndex: number;
+				progress: number;
+			}
 			| undefined
 		>
 	>,
@@ -375,6 +375,7 @@ export const getMessage = async ({
 		})) as unknown as Message[]
 	)[0];
 
+
 	if (!result) return null;
 
 	const media = result.media as Message['media'] | MessageMediaPhoto;
@@ -430,7 +431,7 @@ export const downloadMedia = async (
 	try {
 		if (category === 'video')
 			return await handleVideoDownload(client, media as Message['media'], async (chunk) => {
-				console.log(chunk.byteLength);
+
 			});
 		if (media)
 			return await handleMediaDownload(
@@ -450,13 +451,16 @@ export const downloadMedia = async (
 export const handleVideoDownload = async (
 	client: TelegramClient,
 	media: Message['media'],
-	appendChunk: (chunk: Uint8Array) => Promise<void> | undefined
+	setURL: Dispatch<SetStateAction<string | undefined>>
 ) => {
 	for await (const buffer of client.iterDownload({
 		file: media as unknown as Api.TypeMessageMedia,
-		requestSize: 512 * 1024
+		requestSize: 3 * 1024 * 1024 // 3MB
 	})) {
-		await appendChunk(buffer);
+		const blob = new Blob([buffer as unknown as Buffer]);
+		const url = URL.createObjectURL(blob);
+		setURL(url);
+		break;
 	}
 
 	return null;
@@ -496,12 +500,17 @@ export const downloadVideoThumbnail = async (
 ) => {
 	const thumbnail = media.document.thumbs;
 
+
+	console.log('thumbnail', thumbnail);
+
 	if (!thumbnail) return;
 
 	const buffer = await client.downloadMedia(media as unknown as Api.TypeMessageMedia, {
 		thumb: 1
 	});
 
+
+	console.log('buffer', buffer);
 	if (!buffer) return;
 
 	return buffer;
