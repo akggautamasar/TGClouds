@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev:turbo": "dotenv -e .env.development -- next dev --turbo -p 3000",
 		"dev": "dotenv -e .env.development -- next dev",
+		"build:local":"dotenv -e .env.development -- next build", 
 		"build": "drizzle-kit push && next build",
 		"start": "next start",
 		"lint": "next lint",
@@ -17,7 +18,6 @@
 		"typecheck": "tsc --project tsconfig.json"
 	},
 	"dependencies": {
-		"@dqbd/tiktoken": "^1.0.18",
 		"@heroicons/react": "^2.2.0",
 		"@isaacs/ttlcache": "^1.4.1",
 		"@kinfe123/farm-ui": "^1.0.12",

@@ -18,6 +18,7 @@ import {
 	formatBytes,
 	getBannerURL,
 	getMessage,
+	handleVideoDownload,
 	isDarkMode,
 	MediaCategory
 } from '@/lib/utils';
@@ -138,9 +139,9 @@ function Files({
 					<p className="text-muted-foreground">
 						Oops! We&apos;ve sent too many requests to Telegram, and they&apos;ve asked us to pause
 						for a bit. Please come back in{' '}
-						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes, and we’ll be
-						good to go! If you don&apos;t want to wait, you can add a new bot token from the visible
-						profile menu, and we’ll use that instead.
+						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes, and we&apos;ll
+						be good to go! If you don&apos;t want to wait, you can add a new bot token from the
+						visible profile menu, and we&apos;ll use that instead.
 					</p>
 				</div>
 			</div>
@@ -183,12 +184,10 @@ function Files({
 	const sortedFiles = (() => {
 		if (!files || !Array.isArray(files) || files.length === 0) return [];
 
-		if (sortBy === 'name')
-			return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
+		if (sortBy === 'name') return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
 		if (sortBy === 'date')
 			return [...files].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-		if (sortBy === 'size')
-			return [...files].sort((a, b) => Number(a.size) - Number(b.size));
+		if (sortBy === 'size') return [...files].sort((a, b) => Number(a.size) - Number(b.size));
 		return [...files].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
 	})();
 
@@ -350,7 +349,6 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 	};
 
 	const router = useRouter();
-
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
@@ -370,12 +368,12 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 					const url = getBannerURL('No Thumbnail Available', isDarkMode());
 					setThumbnailURL(url);
 			  })()
-			: null;
-
-		downlaodFile('small', file.category);
-		requestIdleCallback(async (e) => {
-			await downlaodFile('large', file.category);
-		});
+			: (() => {
+					downlaodFile('small', file.category);
+					requestIdleCallback(async (e) => {
+						await downlaodFile('large', file.category);
+					});
+			  })();
 
 		return () => {
 			URL.revokeObjectURL(url as string);
@@ -494,7 +492,12 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 						<FileModalView
 							id={file.id}
 							ItemThatWillShowOnModal={() => (
-								<VideoMediaView fileData={{ ...file, category: 'video' }} url={url!} />
+								<VideoMediaView
+									key={file.id}
+									fileData={{ ...file, category: 'video' }}
+									client={client}
+									user={user}
+								/>
 							)}
 						>
 							<div className="w-full h-full relative">
@@ -556,45 +559,108 @@ function ImageRender({ url, fileName }: { url: string; fileName: string }) {
 	);
 }
 
-function VideoMediaView({
+function getVideoCodec(mimeType: string) {
+	let mimeCodec: string;
+
+	switch (mimeType) {
+		case 'video/webm':
+			mimeCodec = 'video/webm; codecs="vp9,opus"';
+			break;
+		case 'video/mp4':
+			mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"';
+			break;
+		case 'video/x-msvideo':
+			mimeCodec = 'video/avi; codecs="avc1.64001f, mp4a.40.2"';
+			break;
+		case 'video/x-matroska':
+			mimeCodec = 'video/x-matroska; codecs="avc1.64001f, mp4a.40.2"';
+			break;
+		default:
+			mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"'; 
+	}
+	return mimeCodec;
+}
+
+const VideoMediaView = ({
 	fileData,
-	url
+	client,
+	user
 }: {
 	fileData: Omit<FilesData[number], 'category'> & { category: 'video' };
-	url: string;
-}) {
-	let self = useRef<HTMLVideoElement>(null);
-	const playerRef = useRef<FluidPlayerInstance>(undefined);
+	client: TelegramClient;
+	user: User;
+}) => {
+	const videoRef = useRef<HTMLVideoElement>(null);
+	const sourceBuffer = useRef<SourceBuffer | null>(null);
+	const queue = useRef<Uint8Array[]>([]);
 
 	useEffect(() => {
-		if (!playerRef.current) {
-			playerRef.current = fluidPlayer(self.current!, {
-				layoutControls: {
-					allowDownload: true,
-					miniPlayer: {
-						autoToggle: true,
-						enabled: true,
-						position: 'bottom right',
-						height: 200,
-						width: 300,
-						placeholderText: fileData.fileName
+		const mimeCodec = getVideoCodec(fileData.mimeType);
+
+		if (videoRef.current && MediaSource.isTypeSupported(mimeCodec)) {
+			const myMediaSource = new MediaSource();
+
+			const url = URL.createObjectURL(myMediaSource);
+			videoRef.current.src = url;
+
+			myMediaSource.addEventListener('sourceopen', async () => {
+				sourceBuffer.current = myMediaSource.addSourceBuffer(mimeCodec);
+
+				sourceBuffer.current.onerror = (e) => {
+					console.error('SourceBuffer error:', e);
+				};
+
+				sourceBuffer.current.onupdateend = async () => {
+					if (myMediaSource.readyState === 'open') {
+						if (!sourceBuffer.current?.updating) {
+							const isPlaying = videoRef.current?.paused;
+							if (isPlaying) {
+								videoRef.current?.play();
+							}
+							if (queue.current.length <= 0) {
+								myMediaSource.endOfStream();
+							}
+							return;
+						}
+						const chunk = queue.current.shift();
+						if (chunk) {
+							sourceBuffer.current?.appendBuffer(chunk);
+						}
 					}
-				}
+				};
+
+				const message = await getMessage({
+					client,
+					messageId: fileData.fileTelegramId,
+					user: user as NonNullable<User>
+				});
+
+				await handleVideoDownload(
+					client,
+					message as Message['media'],
+					async (chunk: Uint8Array) => {
+						console.log(queue.current);
+
+						if (sourceBuffer.current?.updating) {
+							queue.current.push(chunk);
+							return;
+						}
+						try {
+							sourceBuffer?.current?.appendBuffer(chunk);
+						} catch (e) {
+							console.error('Error appending buffer:', e);
+						}
+					}
+				);
 			});
 		}
-	}, []);
+	}, [client, fileData.fileTelegramId, user]);
 
 	return (
 		<div className="flex flex-col h-full">
 			<div className="flex-1 overflow-y-auto">
 				<div className="relative aspect-video">
-					<video
-						ref={self}
-						controls
-						autoPlay
-						className="w-full h-full object-contain"
-						src={url}
-					></video>
+					<video ref={videoRef} controls className="w-full h-full object-contain"></video>
 				</div>
 				<div className="p-6 bg-background">
 					<h3 className="text-2xl font-semibold">{fileData.fileName}</h3>
@@ -616,7 +682,7 @@ function VideoMediaView({
 			</div>
 		</div>
 	);
-}
+};
 
 function ImagePreviewModal({
 	fileData,
