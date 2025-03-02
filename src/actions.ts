@@ -191,7 +191,7 @@ export async function getUser() {
 		});
 		return result;
 	} catch (err) {
-		console.log(err);
+
 		if (err instanceof Error) throw new Error(err.message);
 		throw new Error('There was an error while getting user');
 	}
@@ -739,7 +739,7 @@ export async function getSharedFiles(id: string) {
 			)
 			.where(and(eq(usersTable.id, sharedFilesTable.userId), eq(sharedFilesTable.id, id)));
 
-		console.log(result);
+
 
 		return result;
 	} catch (err) {

@@ -18,6 +18,7 @@ import {
 	formatBytes,
 	getBannerURL,
 	getMessage,
+	handleVideoDownload,
 	isDarkMode,
 	MediaCategory
 } from '@/lib/utils';
@@ -119,7 +120,7 @@ function Files({
 				setCanWeAccessTGChannel(!!result);
 				tGCloudGlobalContext?.setShouldShowUploadModal(!!result);
 			} catch (err) {
-				console.log('error', err);
+
 			}
 		})();
 
@@ -138,9 +139,9 @@ function Files({
 					<p className="text-muted-foreground">
 						Oops! We&apos;ve sent too many requests to Telegram, and they&apos;ve asked us to pause
 						for a bit. Please come back in{' '}
-						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes, and we’ll be
-						good to go! If you don&apos;t want to wait, you can add a new bot token from the visible
-						profile menu, and we’ll use that instead.
+						{Math.ceil(tGCloudGlobalContext.botRateLimit?.retryAfter / 60)} minutes, and we&apos;ll
+						be good to go! If you don&apos;t want to wait, you can add a new bot token from the
+						visible profile menu, and we&apos;ll use that instead.
 					</p>
 				</div>
 			</div>
@@ -182,13 +183,10 @@ function Files({
 
 	const sortedFiles = (() => {
 		if (!files || !Array.isArray(files) || files.length === 0) return [];
-
-		if (sortBy === 'name')
-			return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
+		if (sortBy === 'name') return [...files].sort((a, b) => a.fileName.localeCompare(b.fileName));
 		if (sortBy === 'date')
 			return [...files].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-		if (sortBy === 'size')
-			return [...files].sort((a, b) => Number(a.size) - Number(b.size));
+		if (sortBy === 'size') return [...files].sort((a, b) => Number(a.size) - Number(b.size));
 		return [...files].sort((a, b) => a.mimeType.localeCompare(b.mimeType));
 	})();
 
@@ -349,33 +347,36 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		}
 	};
 
-	const router = useRouter();
 
+
+	const router = useRouter();
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
-					if (!client || typeof client === 'string') return;
-					const media = (await getMessage({
-						client,
-						messageId: file.fileTelegramId,
-						user: user as NonNullable<User>
-					})) as Message['media'];
-					const buffer = await downloadVideoThumbnail(user, client, media);
-					if (buffer) {
-						const blob = new Blob([buffer]);
-						const url = URL.createObjectURL(blob);
-						setThumbnailURL(url);
-						return;
-					}
-					const url = getBannerURL('No Thumbnail Available', isDarkMode());
-					setThumbnailURL(url);
-			  })()
-			: null;
+				if (!client || typeof client === 'string') return;
 
-		downlaodFile('small', file.category);
-		requestIdleCallback(async (e) => {
-			await downlaodFile('large', file.category);
-		});
+				const media = (await getMessage({
+					client,
+					messageId: file.fileTelegramId,
+					user: user as NonNullable<User>
+				})) as Message['media'];
+
+				const buffer = await downloadVideoThumbnail(user, client, media);
+				if (buffer) {
+					const blob = new Blob([buffer]);
+					const url = URL.createObjectURL(blob);
+					setThumbnailURL(url);
+					return;
+				}
+				const url = getBannerURL('No Thumbnail Available', isDarkMode());
+				setThumbnailURL(url);
+			})()
+			: (() => {
+				downlaodFile('small', file.category);
+				requestIdleCallback(async (e) => {
+					await downlaodFile('large', file.category);
+				});
+			})();
 
 		return () => {
 			URL.revokeObjectURL(url as string);
@@ -395,19 +396,16 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 				link.click();
 			},
 			Icon: CloudDownload,
-			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${
-				!url ? 'cursor-not-allowed opacity-50' : ''
-			}`
+			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${!url ? 'cursor-not-allowed opacity-50' : ''
+				}`
 		},
 		{
 			actionName: 'delete',
 			onClick: async () => {
-				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${
-					'small' satisfies MediaSize
-				}-${file.category}`;
-				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${
-					'large' satisfies MediaSize
-				}-${file.category}`;
+				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${'small' satisfies MediaSize
+					}-${file.category}`;
+				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${'large' satisfies MediaSize
+					}-${file.category}`;
 
 				try {
 					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeySmall).delete();
@@ -469,7 +467,6 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 				id={url}
 				className={`group relative  overflow-hidden rounded-lg shadow-sm   transition-all hover:shadow-md `}
 			>
-				{/* <Link target="_blank" href={file.url} prefetch={false}> */}
 				<span className="sr-only">View file</span>
 				{file.category == 'image' ? (
 					<FileModalView
@@ -494,7 +491,12 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 						<FileModalView
 							id={file.id}
 							ItemThatWillShowOnModal={() => (
-								<VideoMediaView fileData={{ ...file, category: 'video' }} url={url!} />
+								<VideoMediaView
+									key={file.id}
+									fileData={{ ...file, category: 'video' }}
+									client={client}
+									user={user}
+								/>
 							)}
 						>
 							<div className="w-full h-full relative">
@@ -556,17 +558,56 @@ function ImageRender({ url, fileName }: { url: string; fileName: string }) {
 	);
 }
 
-function VideoMediaView({
+function getVideoCodec(mimeType: string) {
+	let mimeCodec: string;
+
+	switch (mimeType) {
+		case 'video/webm':
+			mimeCodec = 'video/webm; codecs="vp9,opus"';
+			break;
+		case 'video/mp4':
+			mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"';
+			break;
+		case 'video/x-msvideo':
+			mimeCodec = 'video/avi; codecs="avc1.64001f, mp4a.40.2"';
+			break;
+		case 'video/x-matroska':
+			mimeCodec = 'video/x-matroska; codecs="avc1.64001f, mp4a.40.2"';
+			break;
+		default:
+			mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"';
+	}
+	return mimeCodec;
+}
+
+const VideoMediaView = ({
 	fileData,
-	url
+	client,
+	user
 }: {
 	fileData: Omit<FilesData[number], 'category'> & { category: 'video' };
-	url: string;
-}) {
+	client: TelegramClient;
+	user: User;
+}) => {
 	let self = useRef<HTMLVideoElement>(null);
+	const [url, setURL] = useState<string>();
 	const playerRef = useRef<FluidPlayerInstance>(undefined);
 
 	useEffect(() => {
+		; (async () => {
+			const message = await getMessage({
+				client,
+				messageId: fileData.fileTelegramId,
+				user: user as NonNullable<User>
+			});
+
+			await handleVideoDownload(
+				client,
+				message as Message['media'],
+				setURL,
+			);
+		})()
+
 		if (!playerRef.current) {
 			playerRef.current = fluidPlayer(self.current!, {
 				layoutControls: {
@@ -583,6 +624,11 @@ function VideoMediaView({
 			});
 		}
 	}, []);
+
+
+
+
+
 
 	return (
 		<div className="flex flex-col h-full">
@@ -616,7 +662,7 @@ function VideoMediaView({
 			</div>
 		</div>
 	);
-}
+};
 
 function ImagePreviewModal({
 	fileData,

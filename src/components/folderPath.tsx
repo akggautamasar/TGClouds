@@ -78,7 +78,7 @@ export default function StoragePage({
 		}
 	};
 
-	console.log(allFolder);
+
 
 	return (
 		<div className="container mx-auto p-4">

@@ -3,7 +3,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useCreateQueryString } from '@/lib/utils';
 import { useMediaQuery, useIsClient } from '@uidotdev/usehooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ElementRef, useEffect, useRef, useState, type JSX } from 'react';
+import { ComponentRef, ElementRef, useEffect, useRef, useState, type JSX } from 'react';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
 export function FileModalView({
@@ -19,7 +19,7 @@ export function FileModalView({
 	const idInURL = searchParams.get('open');
 	const [open, setOpen] = useState(false);
 	const pathname = usePathname();
-	const dialogRef = useRef<ElementRef<typeof DialogTrigger> | null>(null); // Initialize useRef with proper type or null
+	const dialogRef = useRef<ComponentRef<typeof DialogTrigger> | null>(null);
 
 	const createQueryString = useCreateQueryString(searchParams);
 	const router = useRouter();
@@ -51,9 +51,7 @@ export function FileModalView({
 
 	return (
 		<Drawer open={open} onOpenChange={handleOpenChange}>
-			<DrawerTrigger>
-				{children} {/* Ensure children are passed correctly */}
-			</DrawerTrigger>
+			<DrawerTrigger>{children}</DrawerTrigger>
 			<DrawerContent className="max-h-[90dvh] h-full">
 				<ItemThatWillShowOnModal />
 			</DrawerContent>
