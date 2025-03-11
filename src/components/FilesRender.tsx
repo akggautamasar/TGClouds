@@ -29,12 +29,21 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
-import { FileModalView } from './fileModalView';
-import Upload from './uploadWrapper';
 import { fileCacheDb } from '@/lib/dexie';
 import { MediaSize } from '@/lib/utils';
 import { getCacheKey, removeCachedFile } from '@/lib/utils';
 import toast from 'react-hot-toast';
+
+import dynamic from 'next/dynamic';
+
+const Upload = dynamic(
+	() => import('./uploadWrapper'),
+	{ ssr: false }
+);
+
+
+const { FileModalView } = dynamic(() => import('./fileModalView'), { ssr: false });
+
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -102,6 +111,7 @@ function Files({
 		if (typeof files == 'object' && files.length) return 'CONNECTING';
 		return null;
 	});
+
 	const router = useRouter();
 	const [selectedFiles, setSelectedFiles] = useState<typeof files>([]);
 
@@ -120,7 +130,8 @@ function Files({
 				setCanWeAccessTGChannel(!!result);
 				tGCloudGlobalContext?.setShouldShowUploadModal(!!result);
 			} catch (err) {
-
+				console.error('err', err);
+				setCanWeAccessTGChannel(false);
 			}
 		})();
 
@@ -147,6 +158,9 @@ function Files({
 			</div>
 		);
 	}
+
+	console.log('tGCloudGlobalContext', tGCloudGlobalContext);
+	console.log('client', client);
 
 	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING' || !client) {
 		return (
@@ -346,8 +360,6 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 			setFileNotFoundInTelegram(true);
 		}
 	};
-
-
 
 	const router = useRouter();
 	useEffect(() => {
@@ -594,19 +606,15 @@ const VideoMediaView = ({
 	const playerRef = useRef<FluidPlayerInstance>(undefined);
 
 	useEffect(() => {
-		; (async () => {
+		(async () => {
 			const message = await getMessage({
 				client,
 				messageId: fileData.fileTelegramId,
 				user: user as NonNullable<User>
 			});
 
-			await handleVideoDownload(
-				client,
-				message as Message['media'],
-				setURL,
-			);
-		})()
+			await handleVideoDownload(client, message as Message['media'], setURL);
+		})();
 
 		if (!playerRef.current) {
 			playerRef.current = fluidPlayer(self.current!, {
@@ -624,11 +632,6 @@ const VideoMediaView = ({
 			});
 		}
 	}, []);
-
-
-
-
-
 
 	return (
 		<div className="flex flex-col h-full">

@@ -12,11 +12,13 @@ import Paginate from './pagination';
 import ProfileMenu from './profileMenu';
 import SearchItems from './searchItems';
 import SortBy from './SortBy';
-import Upload from './uploadWrapper';
 import SpaceUsageIndicator from './storageSpaceIndicator';
 import StoragePage from './folderPath';
 import { getFolderHierarchy, getAllFolders } from '@/actions';
 import { unstable_cache } from 'next/cache';
+import UploadFile from './uplo'
+
+
 
 const allfolders = unstable_cache(getAllFolders, [], { revalidate: 3600, tags: ['get-folder'] });
 
@@ -122,7 +124,7 @@ export async function Dashboard({
 						</div>
 					</div>
 					<div className="flex items-center justify-center mb-4">
-						<Upload user={user} />
+						<UploadFile user={user} />
 					</div>
 					<div className="flex items-center justify-center mb-4">
 						<SpaceUsageIndicator />
@@ -207,7 +209,7 @@ export async function Dashboard({
 								</Card>
 							</div>
 							<div className="flex items-center justify-center mb-4">
-								<Upload user={user} />
+								<UploadFile user={user} />
 							</div>
 							<div className="flex items-center justify-center mb-4">
 								<SpaceUsageIndicator />
