@@ -3,7 +3,7 @@ import { fileCacheDb } from '@/lib/dexie';
 import Message, { MessageMediaPhoto } from '@/lib/types';
 import { type ClassValue, clsx } from 'clsx';
 import { ReadonlyURLSearchParams } from 'next/navigation';
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { twMerge } from 'tailwind-merge';
 import { Api, TelegramClient } from 'telegram';
@@ -22,6 +22,35 @@ interface DownloadMediaOptions {
 	category: MediaCategory;
 	isShare?: boolean;
 }
+
+
+
+
+export function useMediaQuery(mediaQuery: string) {
+	const [matches, setMatches] = useState<boolean>(false);
+
+	useEffect(() => {
+
+		if (!window) return;
+
+		const mediaQueryList = window.matchMedia(mediaQuery);
+
+		const handleChange = (event: MediaQueryListEvent) => {
+			setMatches(event.matches);
+		};
+
+		handleChange(mediaQueryList);
+
+		mediaQueryList.addEventListener('change', handleChange);
+
+		return () => {
+			mediaQueryList.removeEventListener('change', handleChange);
+		};
+	}, [mediaQuery]);
+
+	return matches;
+}
+
 
 const TELEGRAM_ERRORS = {
 	BOT_PAYMENTS_DISABLED: {

@@ -16,12 +16,9 @@ import SpaceUsageIndicator from './storageSpaceIndicator';
 import StoragePage from './folderPath';
 import { getFolderHierarchy, getAllFolders } from '@/actions';
 import { unstable_cache } from 'next/cache';
-import UploadFile from './uplo'
-
-
+import UploadFile from './uploadWrapper';
 
 const allfolders = unstable_cache(getAllFolders, [], { revalidate: 3600, tags: ['get-folder'] });
-
 export async function Dashboard({
 	children,
 	user,

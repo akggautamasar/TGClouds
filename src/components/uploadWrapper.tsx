@@ -1,12 +1,11 @@
 'use client';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-import { getGlobalTGCloudContext } from '@/lib/context';
 import { User } from '@/lib/types';
-import { useMediaQuery } from '@uidotdev/usehooks';
 import { useState } from 'react';
 import { UploadIcon } from './Icons/icons';
 import { UploadFiles } from './upload-files';
+import { useMediaQuery } from '@/lib/utils';
 
 export default function DrawerDialogDemo({ user }: { user: User }) {
 	const [open, setOpen] = useState(false);

@@ -33,16 +33,8 @@ import { fileCacheDb } from '@/lib/dexie';
 import { MediaSize } from '@/lib/utils';
 import { getCacheKey, removeCachedFile } from '@/lib/utils';
 import toast from 'react-hot-toast';
-
-import dynamic from 'next/dynamic';
-
-const Upload = dynamic(
-	() => import('./uploadWrapper'),
-	{ ssr: false }
-);
-
-
-const { FileModalView } = dynamic(() => import('./fileModalView'), { ssr: false });
+import Upload from './uploadWrapper';
+import { FileModalView } from './fileModalView';
 
 import {
 	AlertDialog,
