@@ -3,13 +3,13 @@ import { deleteChannelDetail, deleteFile, shareFile } from '@/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { getGlobalTGCloudContext } from '@/lib/context';
+import { fileCacheDb } from '@/lib/dexie';
 import { getTgClient } from '@/lib/getTgClient';
 import { promiseToast } from '@/lib/notify';
 import { withTelegramConnection } from '@/lib/telegramMutex';
 import Message, { FileItem, FilesData, GetAllFilesReturnType, User } from '@/lib/types';
-import { TrashIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import {
 	canWeAccessTheChannel,
 	delelteItem,
@@ -17,24 +17,25 @@ import {
 	downloadVideoThumbnail,
 	formatBytes,
 	getBannerURL,
+	getCacheKey,
 	getMessage,
 	handleVideoDownload,
 	isDarkMode,
-	MediaCategory
+	MediaCategory,
+	MediaSize,
+	removeCachedFile
 } from '@/lib/utils';
 import fluidPlayer from 'fluid-player';
-import { Play, Share2 } from 'lucide-react';
+import { Play, Share2, TrashIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
 import { FileModalView } from './fileModalView';
 import Upload from './uploadWrapper';
-import { fileCacheDb } from '@/lib/dexie';
-import { MediaSize } from '@/lib/utils';
-import { getCacheKey, removeCachedFile } from '@/lib/utils';
-import toast from 'react-hot-toast';
+
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -96,31 +97,37 @@ function Files({
 	const tGCloudGlobalContext = getGlobalTGCloudContext();
 	const sortBy = tGCloudGlobalContext?.sortBy;
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
-	const [client, setTelegramClient] = useState<TelegramClient | null | 'CONNECTING'>(() => {
-		if (!files) return null;
-		if (typeof files == 'object' && !files.length) return null;
-		if (typeof files == 'object' && files.length) return 'CONNECTING';
-		return null;
-	});
+	const [client, setTelegramClient] = useState<TelegramClient | null>(null);
+
+	const [isConnecting, setIsConnecting] = useState(false);
+	const [isError, setIsError] = useState(false);
+
 	const router = useRouter();
 	const [selectedFiles, setSelectedFiles] = useState<typeof files>([]);
 
 	useEffect(() => {
-		if (!files) return;
-		if (typeof files == 'object' && !files.length) return;
 		(async () => {
 			try {
+				setIsConnecting(true);
 				const telegramClient = await getTgClient({
 					setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
 				});
-				setTelegramClient(telegramClient || null);
+				if (!telegramClient) {
+					setIsError(true);
+					return;
+				}
+
+				setTelegramClient(telegramClient);
 				const result = await withTelegramConnection(telegramClient as TelegramClient, () =>
 					canWeAccessTheChannel(telegramClient as TelegramClient, user)
 				);
 				setCanWeAccessTGChannel(!!result);
 				tGCloudGlobalContext?.setShouldShowUploadModal(!!result);
 			} catch (err) {
-
+				console.error('err', err);
+				setCanWeAccessTGChannel(false);
+			} finally {
+				setIsConnecting(false);
 			}
 		})();
 
@@ -148,7 +155,21 @@ function Files({
 		);
 	}
 
-	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING' || !client) {
+	if (isError) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="text-center space-y-4">
+					<h2 className="text-xl font-semibold">Error Connecting to Telegram</h2>
+					<p className="text-muted-foreground">
+						Please try again later. If the problem persists, please contact support.
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+
+	if (tGCloudGlobalContext?.isSwitchingFolder || isConnecting) {
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -250,7 +271,7 @@ function Files({
 			<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{sortedFiles?.map((file) => (
 					<div className="relative" key={file.id}>
-						<EachFile client={client} file={file as FileItem} user={user} />
+						<EachFile client={client as TelegramClient} file={file as FileItem} user={user} />
 
 						<div className="absolute top-0 left-0">
 							<Input
@@ -347,36 +368,34 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 		}
 	};
 
-
-
 	const router = useRouter();
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
-				if (!client || typeof client === 'string') return;
+					if (!client || typeof client === 'string') return;
 
-				const media = (await getMessage({
-					client,
-					messageId: file.fileTelegramId,
-					user: user as NonNullable<User>
-				})) as Message['media'];
+					const media = (await getMessage({
+						client,
+						messageId: file.fileTelegramId,
+						user: user as NonNullable<User>
+					})) as Message['media'];
 
-				const buffer = await downloadVideoThumbnail(user, client, media);
-				if (buffer) {
-					const blob = new Blob([buffer]);
-					const url = URL.createObjectURL(blob);
+					const buffer = await downloadVideoThumbnail(user, client, media);
+					if (buffer) {
+						const blob = new Blob([buffer]);
+						const url = URL.createObjectURL(blob);
+						setThumbnailURL(url);
+						return;
+					}
+					const url = getBannerURL('No Thumbnail Available', isDarkMode());
 					setThumbnailURL(url);
-					return;
-				}
-				const url = getBannerURL('No Thumbnail Available', isDarkMode());
-				setThumbnailURL(url);
-			})()
+				})()
 			: (() => {
-				downlaodFile('small', file.category);
-				requestIdleCallback(async (e) => {
-					await downlaodFile('large', file.category);
-				});
-			})();
+					downlaodFile('small', file.category);
+					requestIdleCallback(async (e) => {
+						await downlaodFile('large', file.category);
+					});
+				})();
 
 		return () => {
 			URL.revokeObjectURL(url as string);
@@ -396,16 +415,19 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 				link.click();
 			},
 			Icon: CloudDownload,
-			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${!url ? 'cursor-not-allowed opacity-50' : ''
-				}`
+			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${
+				!url ? 'cursor-not-allowed opacity-50' : ''
+			}`
 		},
 		{
 			actionName: 'delete',
 			onClick: async () => {
-				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${'small' satisfies MediaSize
-					}-${file.category}`;
-				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${'large' satisfies MediaSize
-					}-${file.category}`;
+				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${
+					'small' satisfies MediaSize
+				}-${file.category}`;
+				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${
+					'large' satisfies MediaSize
+				}-${file.category}`;
 
 				try {
 					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeySmall).delete();
@@ -594,19 +616,15 @@ const VideoMediaView = ({
 	const playerRef = useRef<FluidPlayerInstance>(undefined);
 
 	useEffect(() => {
-		; (async () => {
+		(async () => {
 			const message = await getMessage({
 				client,
 				messageId: fileData.fileTelegramId,
 				user: user as NonNullable<User>
 			});
 
-			await handleVideoDownload(
-				client,
-				message as Message['media'],
-				setURL,
-			);
-		})()
+			await handleVideoDownload(client, message as Message['media'], setURL);
+		})();
 
 		if (!playerRef.current) {
 			playerRef.current = fluidPlayer(self.current!, {
@@ -624,11 +642,6 @@ const VideoMediaView = ({
 			});
 		}
 	}, []);
-
-
-
-
-
 
 	return (
 		<div className="flex flex-col h-full">

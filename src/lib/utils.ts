@@ -3,7 +3,7 @@ import { fileCacheDb } from '@/lib/dexie';
 import Message, { MessageMediaPhoto } from '@/lib/types';
 import { type ClassValue, clsx } from 'clsx';
 import { ReadonlyURLSearchParams } from 'next/navigation';
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { twMerge } from 'tailwind-merge';
 import { Api, TelegramClient } from 'telegram';
@@ -22,6 +22,12 @@ interface DownloadMediaOptions {
 	category: MediaCategory;
 	isShare?: boolean;
 }
+
+
+
+
+
+
 
 const TELEGRAM_ERRORS = {
 	BOT_PAYMENTS_DISABLED: {
@@ -353,6 +359,7 @@ export const canWeAccessTheChannel = async (client: TelegramClient, user: User) 
 		const entity = await client.getInputEntity(channelId as EntityLike);
 		return !!entity;
 	} catch (err) {
+		console.log('err', err);
 		if (err instanceof RPCError) {
 			if (err.errorMessage == 'CHANNEL_INVALID') return false;
 		}
@@ -515,3 +522,5 @@ export const downloadVideoThumbnail = async (
 
 	return buffer;
 };
+
+
