@@ -97,12 +97,10 @@ function Files({
 	const tGCloudGlobalContext = getGlobalTGCloudContext();
 	const sortBy = tGCloudGlobalContext?.sortBy;
 	const [canWeAccessTGChannel, setCanWeAccessTGChannel] = useState<boolean | 'INITIAL'>('INITIAL');
-	const [client, setTelegramClient] = useState<TelegramClient | null | 'CONNECTING'>(() => {
-		if (!files) return null;
-		if (typeof files == 'object' && !files.length) return null;
-		if (typeof files == 'object' && files.length) return 'CONNECTING';
-		return null;
-	});
+	const [client, setTelegramClient] = useState<TelegramClient | null>(null);
+
+	const [isConnecting, setIsConnecting] = useState(false);
+	const [isError, setIsError] = useState(false);
 
 	const router = useRouter();
 	const [selectedFiles, setSelectedFiles] = useState<typeof files>([]);
@@ -110,10 +108,16 @@ function Files({
 	useEffect(() => {
 		(async () => {
 			try {
+				setIsConnecting(true);
 				const telegramClient = await getTgClient({
 					setBotRateLimit: tGCloudGlobalContext?.setBotRateLimit
 				});
-				setTelegramClient(telegramClient || null);
+				if (!telegramClient) {
+					setIsError(true);
+					return;
+				}
+
+				setTelegramClient(telegramClient);
 				const result = await withTelegramConnection(telegramClient as TelegramClient, () =>
 					canWeAccessTheChannel(telegramClient as TelegramClient, user)
 				);
@@ -122,6 +126,8 @@ function Files({
 			} catch (err) {
 				console.error('err', err);
 				setCanWeAccessTGChannel(false);
+			} finally {
+				setIsConnecting(false);
 			}
 		})();
 
@@ -149,9 +155,21 @@ function Files({
 		);
 	}
 
-	console.log('client', client);
+	if (isError) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<div className="text-center space-y-4">
+					<h2 className="text-xl font-semibold">Error Connecting to Telegram</h2>
+					<p className="text-muted-foreground">
+						Please try again later. If the problem persists, please contact support.
+					</p>
+				</div>
+			</div>
+		);
+	}
 
-	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING' || !client) {
+
+	if (tGCloudGlobalContext?.isSwitchingFolder || isConnecting) {
 		return (
 			<div className="flex items-center justify-center h-full">
 				<div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -253,7 +271,7 @@ function Files({
 			<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{sortedFiles?.map((file) => (
 					<div className="relative" key={file.id}>
-						<EachFile client={client} file={file as FileItem} user={user} />
+						<EachFile client={client as TelegramClient} file={file as FileItem} user={user} />
 
 						<div className="absolute top-0 left-0">
 							<Input

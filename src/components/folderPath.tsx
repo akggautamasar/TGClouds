@@ -5,7 +5,6 @@ import { getGlobalTGCloudContext } from '@/lib/context';
 import { Folder as FolderType } from '@/lib/types';
 import { useCreateQueryString } from '@/lib/utils';
 import { ChevronDown, ChevronUp, Folder } from 'lucide-react';
-import { revalidateTag } from 'next/cache';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useOptimistic, useState } from 'react';
 import FolderNavigationBar from './folder-navigation-bar';
@@ -71,7 +70,6 @@ export default function StoragePage({
 				} satisfies FolderType
 			]);
 			await createFolder(folderName, currentFolderId);
-			revalidateTag('get-folder');
 			router.refresh();
 		} catch (error) {
 			console.error('Error creating folder:', error);
