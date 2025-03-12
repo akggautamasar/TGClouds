@@ -5,8 +5,7 @@ import { User } from '@/lib/types';
 import { useState } from 'react';
 import { UploadIcon } from './Icons/icons';
 import { UploadFiles } from './upload-files';
-import { useMediaQuery } from '@/lib/utils';
-
+import { useMediaQuery } from './useMediaQuery';
 export default function DrawerDialogDemo({ user }: { user: User }) {
 	const [open, setOpen] = useState(false);
 	const isDesktop = useMediaQuery('(min-width: 768px)');

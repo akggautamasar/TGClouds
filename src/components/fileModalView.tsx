@@ -1,10 +1,11 @@
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { useCreateQueryString } from '@/lib/utils';
-import { useMediaQuery, useIsClient } from '@uidotdev/usehooks';
+import { useIsClient } from '@uidotdev/usehooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ComponentRef, ElementRef, useEffect, useRef, useState, type JSX } from 'react';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { useMediaQuery } from './useMediaQuery';
 
 export function FileModalView({
 	children,

@@ -3,13 +3,13 @@ import { deleteChannelDetail, deleteFile, shareFile } from '@/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { getGlobalTGCloudContext } from '@/lib/context';
+import { fileCacheDb } from '@/lib/dexie';
 import { getTgClient } from '@/lib/getTgClient';
 import { promiseToast } from '@/lib/notify';
 import { withTelegramConnection } from '@/lib/telegramMutex';
 import Message, { FileItem, FilesData, GetAllFilesReturnType, User } from '@/lib/types';
-import { TrashIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import {
 	canWeAccessTheChannel,
 	delelteItem,
@@ -17,24 +17,24 @@ import {
 	downloadVideoThumbnail,
 	formatBytes,
 	getBannerURL,
+	getCacheKey,
 	getMessage,
 	handleVideoDownload,
 	isDarkMode,
-	MediaCategory
+	MediaCategory,
+	MediaSize,
+	removeCachedFile
 } from '@/lib/utils';
 import fluidPlayer from 'fluid-player';
-import { Play, Share2 } from 'lucide-react';
+import { Play, Share2, TrashIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { CloudDownload, ImageIcon, Trash2Icon, VideoIcon } from './Icons/icons';
 import FileContextMenu from './fileContextMenu';
-import { fileCacheDb } from '@/lib/dexie';
-import { MediaSize } from '@/lib/utils';
-import { getCacheKey, removeCachedFile } from '@/lib/utils';
-import toast from 'react-hot-toast';
-import Upload from './uploadWrapper';
 import { FileModalView } from './fileModalView';
+import Upload from './uploadWrapper';
 
 import {
 	AlertDialog,
@@ -108,8 +108,6 @@ function Files({
 	const [selectedFiles, setSelectedFiles] = useState<typeof files>([]);
 
 	useEffect(() => {
-		if (!files) return;
-		if (typeof files == 'object' && !files.length) return;
 		(async () => {
 			try {
 				const telegramClient = await getTgClient({
@@ -151,7 +149,6 @@ function Files({
 		);
 	}
 
-	console.log('tGCloudGlobalContext', tGCloudGlobalContext);
 	console.log('client', client);
 
 	if (tGCloudGlobalContext?.isSwitchingFolder || client === 'CONNECTING' || !client) {
@@ -357,30 +354,30 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 	useEffect(() => {
 		file.category == 'video'
 			? (async () => {
-				if (!client || typeof client === 'string') return;
+					if (!client || typeof client === 'string') return;
 
-				const media = (await getMessage({
-					client,
-					messageId: file.fileTelegramId,
-					user: user as NonNullable<User>
-				})) as Message['media'];
+					const media = (await getMessage({
+						client,
+						messageId: file.fileTelegramId,
+						user: user as NonNullable<User>
+					})) as Message['media'];
 
-				const buffer = await downloadVideoThumbnail(user, client, media);
-				if (buffer) {
-					const blob = new Blob([buffer]);
-					const url = URL.createObjectURL(blob);
+					const buffer = await downloadVideoThumbnail(user, client, media);
+					if (buffer) {
+						const blob = new Blob([buffer]);
+						const url = URL.createObjectURL(blob);
+						setThumbnailURL(url);
+						return;
+					}
+					const url = getBannerURL('No Thumbnail Available', isDarkMode());
 					setThumbnailURL(url);
-					return;
-				}
-				const url = getBannerURL('No Thumbnail Available', isDarkMode());
-				setThumbnailURL(url);
-			})()
+				})()
 			: (() => {
-				downlaodFile('small', file.category);
-				requestIdleCallback(async (e) => {
-					await downlaodFile('large', file.category);
-				});
-			})();
+					downlaodFile('small', file.category);
+					requestIdleCallback(async (e) => {
+						await downlaodFile('large', file.category);
+					});
+				})();
 
 		return () => {
 			URL.revokeObjectURL(url as string);
@@ -400,16 +397,19 @@ function EachFile({ file, user, client }: { file: FileItem; user: User; client: 
 				link.click();
 			},
 			Icon: CloudDownload,
-			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${!url ? 'cursor-not-allowed opacity-50' : ''
-				}`
+			className: `flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted ${
+				!url ? 'cursor-not-allowed opacity-50' : ''
+			}`
 		},
 		{
 			actionName: 'delete',
 			onClick: async () => {
-				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${'small' satisfies MediaSize
-					}-${file.category}`;
-				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${'large' satisfies MediaSize
-					}-${file.category}`;
+				const cacheKeySmall = `${user?.channelId}-${file.fileTelegramId}-${
+					'small' satisfies MediaSize
+				}-${file.category}`;
+				const cacheKeyLarge = `${user?.channelId}-${file.fileTelegramId}-${
+					'large' satisfies MediaSize
+				}-${file.category}`;
 
 				try {
 					await fileCacheDb.fileCache.where('cacheKey').equals(cacheKeySmall).delete();

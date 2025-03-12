@@ -26,30 +26,7 @@ interface DownloadMediaOptions {
 
 
 
-export function useMediaQuery(mediaQuery: string) {
-	const [matches, setMatches] = useState<boolean>(false);
 
-	useEffect(() => {
-
-		if (!window) return;
-
-		const mediaQueryList = window.matchMedia(mediaQuery);
-
-		const handleChange = (event: MediaQueryListEvent) => {
-			setMatches(event.matches);
-		};
-
-		handleChange(mediaQueryList);
-
-		mediaQueryList.addEventListener('change', handleChange);
-
-		return () => {
-			mediaQueryList.removeEventListener('change', handleChange);
-		};
-	}, [mediaQuery]);
-
-	return matches;
-}
 
 
 const TELEGRAM_ERRORS = {
