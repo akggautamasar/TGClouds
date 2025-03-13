@@ -2,10 +2,8 @@
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
-import React, { Dispatch, SetStateAction, useState, useEffect, useTransition } from 'react';
+import React, { Dispatch, SetStateAction, useState, useTransition } from 'react';
 import { env } from '../env';
-import { TelegramClient } from 'telegram';
-import { getTgClient } from './getTgClient';
 
 if (typeof window !== 'undefined') {
 	posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
@@ -34,25 +32,25 @@ type connectionState = 'connected' | 'disconnected' | 'connecting' | 'reconnecti
 
 export const TGCloudGlobalContext = React.createContext<
 	| {
-			sortBy: SortBy;
-			setSortBy: Dispatch<SetStateAction<SortBy>>;
-			connectionStatus: connectionState;
-			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
-			shouldShowUploadModal: boolean;
-			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
-			isSwitchingFolder: boolean;
-			startPathSwitching: React.TransitionStartFunction;
-			botRateLimit: {
+		sortBy: SortBy;
+		setSortBy: Dispatch<SetStateAction<SortBy>>;
+		connectionStatus: connectionState;
+		setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
+		shouldShowUploadModal: boolean;
+		setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
+		isSwitchingFolder: boolean;
+		startPathSwitching: React.TransitionStartFunction;
+		botRateLimit: {
+			isRateLimited: boolean;
+			retryAfter: number;
+		};
+		setBotRateLimit: React.Dispatch<
+			React.SetStateAction<{
 				isRateLimited: boolean;
 				retryAfter: number;
-			};
-			setBotRateLimit: React.Dispatch<
-				React.SetStateAction<{
-					isRateLimited: boolean;
-					retryAfter: number;
-				}>
-			>;
-	  }
+			}>
+		>;
+	}
 	| undefined
 >(undefined);
 
