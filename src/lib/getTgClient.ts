@@ -40,7 +40,7 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 	const token = botToken ?? userBotToken ?? env.NEXT_PUBLIC_BOT_TOKEN
 
 	try {
-
+		localStorage.removeItem('GramJs:apiCache')
 		const client = new TelegramClient(
 			new StringSession(stringSession),
 			env.NEXT_PUBLIC_TELEGRAM_API_ID,

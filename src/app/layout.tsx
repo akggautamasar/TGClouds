@@ -4,11 +4,8 @@ import '../../patch-global-alert-polyfill';
 import './globals.css';
 
 import { ThemeProvider } from '@/components/theme-provider';
-
 const inter = Inter({ subsets: ['latin'] });
-
 import { Toaster } from 'react-hot-toast';
-
 import Providers, { CSPostHogProvider, TGCloudGlobalContextWrapper } from '@/lib/context';
 
 export const metadata: Metadata = {
@@ -51,7 +48,10 @@ export default async function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<link rel="icon" href="/favicon.ico" sizes="any" />
+			<head>
+				<link rel="icon" href="/favicon.ico" sizes="any" />
+			</head>
+
 			<CSPostHogProvider>
 				<body className={inter.className}>
 					<Providers>

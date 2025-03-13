@@ -175,8 +175,8 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17)
       telegram:
-        specifier: ^2.26.16
-        version: 2.26.16
+        specifier: ^2.26.22
+        version: 2.26.22
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
@@ -4961,8 +4961,8 @@ packages:
     resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
     engines: {node: '>=6'}
 
-  telegram@2.26.16:
-    resolution: {integrity: sha512-5tqL9HicCxRqEi+9JjXBteVDnoZ+1ggsBFxLQTO49aXwTI2d7To7xb2vOU/ahLwgKuE+Db9ra5xDJZ76Kk0NEA==}
+  telegram@2.26.22:
+    resolution: {integrity: sha512-EIj7Yrjiu0Yosa3FZ/7EyPg9s6UiTi/zDQrFmR/2Mg7pIUU+XjAit1n1u9OU9h2oRnRM5M+67/fxzQluZpaJJg==}
 
   terminal-block-fonts@1.0.2:
     resolution: {integrity: sha512-oFXETyQpWRGTSBgO+djw7tiUgqGOlULLdrPortFyRR36GP+WnexUPeYzh0DsrTXMaswuT6bz9ZFYmHHvsc6EOQ==}
@@ -10331,7 +10331,7 @@ snapshots:
 
   tapable@2.2.1: {}
 
-  telegram@2.26.16:
+  telegram@2.26.22:
     dependencies:
       '@cryptography/aes': 0.1.1
       async-mutex: 0.3.2

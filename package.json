@@ -72,7 +72,7 @@
 		"sweetalert2": "^11.17.2",
 		"tailwind-merge": "^2.6.0",
 		"tailwindcss-animate": "^1.0.7",
-		"telegram": "^2.26.16",
+		"telegram": "^2.26.22",
 		"tsx": "^4.19.3",
 		"use-debounce": "^10.0.4",
 		"vaul": "^0.9.9",
