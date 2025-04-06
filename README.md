@@ -20,3 +20,7 @@ TGCloud is a cloud storage solution that provides **unlimited storage** by lever
 - Drizzle ORM
 - PostgreSQL
 - Better Auth
+
+## 🤝 Code of Conduct
+
+We are committed to providing a welcoming and inclusive experience for everyone. We expect all participants in our community to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it to understand what behaviors will and will not be tolerated.
