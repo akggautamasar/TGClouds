@@ -11,7 +11,7 @@ export async function withTelegramConnection<T>(
 		throw new Error('Telegram client is not initialized');
 	}
 
-	const isConnected = client.connected ?? await client.connect();
+	const isConnected = client.connected ?? (await client.connect());
 	if (!isConnected) {
 		throw new Error('Telegram client is not connected');
 	}

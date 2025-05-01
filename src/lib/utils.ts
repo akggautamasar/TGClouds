@@ -23,12 +23,6 @@ interface DownloadMediaOptions {
 	isShare?: boolean;
 }
 
-
-
-
-
-
-
 const TELEGRAM_ERRORS = {
 	BOT_PAYMENTS_DISABLED: {
 		code: 400,
@@ -174,10 +168,10 @@ export async function uploadFiles(
 	onProgress: Dispatch<
 		SetStateAction<
 			| {
-				itemName: string;
-				itemIndex: number;
-				progress: number;
-			}
+					itemName: string;
+					itemIndex: number;
+					progress: number;
+			  }
 			| undefined
 		>
 	>,
@@ -206,22 +200,12 @@ export async function uploadFiles(
 				}
 			});
 
-
-
-
-
-
-
 			const me = await client.getMe();
-
-
 
 			const channelId = user?.channelId!.startsWith('-100')
 				? user?.channelId!
 				: `-100${user?.channelId!}`;
 			const entity = await client.getInputEntity(channelId);
-
-
 
 			const result = await client.sendFile(entity, {
 				file: toUpload,
@@ -238,7 +222,6 @@ export async function uploadFiles(
 				fileTelegramId: result.id,
 				folderId
 			});
-
 		}
 	} catch (err) {
 		if (err instanceof RPCError) {
@@ -381,7 +364,6 @@ export const getMessage = async ({
 		})) as unknown as Message[]
 	)[0];
 
-
 	if (!result) return null;
 
 	const media = result.media as Message['media'] | MessageMediaPhoto;
@@ -436,9 +418,7 @@ export const downloadMedia = async (
 
 	try {
 		if (category === 'video')
-			return await handleVideoDownload(client, media as Message['media'], async (chunk) => {
-
-			});
+			return await handleVideoDownload(client, media as Message['media'], async (chunk) => {});
 		if (media)
 			return await handleMediaDownload(
 				client,
@@ -482,7 +462,6 @@ export const handleMediaDownload = async (
 	const buffer = await client.downloadMedia(media as unknown as Api.TypeMessageMedia, {
 		progressCallback: (progress, total) => {
 			const percent = (Number(progress) / Number(total)) * 100;
-
 		},
 		thumb: size === 'small' ? 0 : undefined
 	});
@@ -506,20 +485,13 @@ export const downloadVideoThumbnail = async (
 ) => {
 	const thumbnail = media.document.thumbs;
 
-
-
-
 	if (!thumbnail) return;
 
 	const buffer = await client.downloadMedia(media as unknown as Api.TypeMessageMedia, {
 		thumb: 1
 	});
 
-
-
 	if (!buffer) return;
 
 	return buffer;
 };
-
-

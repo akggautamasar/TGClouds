@@ -192,7 +192,7 @@ export default function Component({ user }: Props) {
 													selectedBot === 'custom' && botToken
 														? await getTgClient({
 																botToken: botToken as string
-														  })
+															})
 														: await getTgClient();
 
 												const dialogs = await client?.getInputEntity(
@@ -217,7 +217,6 @@ export default function Component({ user }: Props) {
 													typeof window !== 'undefined' && window.location.replace('/files');
 												}
 											} catch (err) {
-
 												toast.error('Failed to connect channel');
 											}
 										}}

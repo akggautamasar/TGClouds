@@ -168,7 +168,6 @@ function Files({
 		);
 	}
 
-
 	if (tGCloudGlobalContext?.isSwitchingFolder || isConnecting) {
 		return (
 			<div className="flex items-center justify-center h-full">

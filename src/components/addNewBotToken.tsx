@@ -77,7 +77,6 @@ export function AddNewBotTokenDialog() {
 										typeof window !== 'undefined' && window.location.reload();
 									}
 								} catch (err) {
-
 									toast.error('There was an error occured, please try again');
 									setError(
 										'There was an error occurred, make sure you add the bot as admin to the channel and then try again. If you already did, please try again later.'

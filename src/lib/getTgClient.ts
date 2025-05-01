@@ -7,22 +7,30 @@ import { StringSession } from 'telegram/sessions';
 export interface GetTgClientOptions {
 	stringSession?: string;
 	botToken?: string;
-	setBotRateLimit?: React.Dispatch<React.SetStateAction<{
-		isRateLimited: boolean;
-		retryAfter: number;
-	}>>;
+	setBotRateLimit?: React.Dispatch<
+		React.SetStateAction<{
+			isRateLimited: boolean;
+			retryAfter: number;
+		}>
+	>;
 }
-const getBotTokenWithLeastAmountOfRemaingRateLimit = async (user: Awaited<ReturnType<typeof getUser>>) => {
+const getBotTokenWithLeastAmountOfRemaingRateLimit = async (
+	user: Awaited<ReturnType<typeof getUser>>
+) => {
 	const allTokens = user?.botTokens ?? [];
-
-
 
 	const isThereAnyBotWithoutRateLimit = allTokens.some((token) => !token.rateLimitedUntil);
 	if (isThereAnyBotWithoutRateLimit) {
 		return allTokens.find((token) => !token.rateLimitedUntil)?.token;
 	}
 	const now = new Date().getTime() / 1000;
-	const tokenWithLeastAmountOfRemainingRateLimit = (allTokens.filter((token) => token.rateLimitedUntil) as unknown as { rateLimitedUntil: Date, token: string, id: string }[]).sort((a, b) => {
+	const tokenWithLeastAmountOfRemainingRateLimit = (
+		allTokens.filter((token) => token.rateLimitedUntil) as unknown as {
+			rateLimitedUntil: Date;
+			token: string;
+			id: string;
+		}[]
+	).sort((a, b) => {
 		const remainingA = a.rateLimitedUntil?.getTime() / 1000 - now;
 		const remainingB = b.rateLimitedUntil?.getTime() / 1000 - now;
 		return remainingA - remainingB;
@@ -31,16 +39,19 @@ const getBotTokenWithLeastAmountOfRemaingRateLimit = async (user: Awaited<Return
 	return tokenWithLeastAmountOfRemainingRateLimit?.token;
 };
 
-export async function getTgClient({ stringSession, botToken, setBotRateLimit }: GetTgClientOptions = {}) {
-
+export async function getTgClient({
+	stringSession,
+	botToken,
+	setBotRateLimit
+}: GetTgClientOptions = {}) {
 	if (typeof window === 'undefined') return;
 	const user = await getUser();
 	if (!user) return;
 	const userBotToken = await getBotTokenWithLeastAmountOfRemaingRateLimit(user);
-	const token = botToken ?? userBotToken ?? env.NEXT_PUBLIC_BOT_TOKEN
+	const token = botToken ?? userBotToken ?? env.NEXT_PUBLIC_BOT_TOKEN;
 
 	try {
-		localStorage.removeItem('GramJs:apiCache')
+		localStorage.removeItem('GramJs:apiCache');
 		const client = new TelegramClient(
 			new StringSession(stringSession),
 			env.NEXT_PUBLIC_TELEGRAM_API_ID,
@@ -72,7 +83,6 @@ export async function getTgClient({ stringSession, botToken, setBotRateLimit }: 
 						botAuthToken: token
 					});
 				}
-
 			} else {
 				throw startError;
 			}
