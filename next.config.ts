@@ -1,4 +1,5 @@
 import { withSentryConfig } from '@sentry/nextjs';
+
 import { NextConfig } from 'next';
 const nextConfig: NextConfig = {
 	images: {
@@ -19,14 +20,6 @@ const nextConfig: NextConfig = {
 				port: ''
 			}
 		]
-	},
-
-	experimental: {
-		turbo: {
-			resolveAlias: {
-				'~fluid-player/src/css/fluidplayer.css': 'node_modules/fluid-player/src/css/fluidplayer.css'
-			}
-		}
 	},
 	webpack: (config, { isServer }) => {
 		if (isServer) {

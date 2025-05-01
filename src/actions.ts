@@ -67,11 +67,15 @@ export async function getFolderHierarchy(userId: string): Promise<FolderHierarch
 
 export async function updateTokenRateLimit(tokenId: string, millisec: number) {
 	try {
-		const retryAfter = new Date(Date.now() + millisec)
-		const updateResult = await db.update(botTokens).set({
-			rateLimitedUntil: retryAfter
-		}).where(eq(botTokens.id, tokenId)).returning()
-		return updateResult
+		const retryAfter = new Date(Date.now() + millisec);
+		const updateResult = await db
+			.update(botTokens)
+			.set({
+				rateLimitedUntil: retryAfter
+			})
+			.where(eq(botTokens.id, tokenId))
+			.returning();
+		return updateResult;
 	} catch (error) {
 		console.error('Error updating token rate limit:', error);
 	}
@@ -111,7 +115,7 @@ export async function saveTelegramCredentials({
 	accessHash: string;
 	channelId: string;
 	channelTitle: string;
-		botToken?: string;
+	botToken?: string;
 }) {
 	if (!session) {
 		throw new Error('Session is required ');
@@ -133,14 +137,13 @@ export async function saveTelegramCredentials({
 				userId: user?.id,
 				token: botToken
 			});
-
 		}
 		const result = await db
 			.update(usersTable)
 			.set({
 				accessHash: accessHash,
 				channelId: channelId,
-				channelTitle: channelTitle,
+				channelTitle: channelTitle
 			})
 			.where(eq(usersTable.id, user.id))
 			.returning();
@@ -157,7 +160,6 @@ export const saveUserName = async (username: string) => {
 		throw new Error('user needs to be logged in.');
 	}
 	try {
-
 		const result = await db
 			.update(usersTable)
 			.set({
@@ -186,12 +188,11 @@ export async function getUser() {
 				return eq(fields.id, user.id);
 			},
 			with: {
-				botTokens: true,
+				botTokens: true
 			}
 		});
 		return result;
 	} catch (err) {
-
 		if (err instanceof Error) throw new Error(err.message);
 		throw new Error('There was an error while getting user');
 	}
@@ -529,16 +530,16 @@ type PeymentResult = Awaited<ReturnType<typeof db.query.paymentsTable.findFirst>
 
 type UserPaymentSubscriptionResult =
 	| {
-		isDone: true;
-		data: PeymentResult;
-		status: 'success';
-	}
+			isDone: true;
+			data: PeymentResult;
+			status: 'success';
+	  }
 	| {
-		isDone: false;
-		status: 'failed';
-		message: string;
-		data?: PeymentResult;
-	};
+			isDone: false;
+			status: 'failed';
+			message: string;
+			data?: PeymentResult;
+	  };
 
 // export async function subscribeToPro({
 // 	tx_ref
@@ -738,8 +739,6 @@ export async function getSharedFiles(id: string) {
 				and(eq(usersTable.id, sharedFilesTable.userId), eq(sharedFilesTable.id, id))
 			)
 			.where(and(eq(usersTable.id, sharedFilesTable.userId), eq(sharedFilesTable.id, id)));
-
-
 
 		return result;
 	} catch (err) {

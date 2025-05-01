@@ -32,25 +32,25 @@ type connectionState = 'connected' | 'disconnected' | 'connecting' | 'reconnecti
 
 export const TGCloudGlobalContext = React.createContext<
 	| {
-		sortBy: SortBy;
-		setSortBy: Dispatch<SetStateAction<SortBy>>;
-		connectionStatus: connectionState;
-		setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
-		shouldShowUploadModal: boolean;
-		setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
-		isSwitchingFolder: boolean;
-		startPathSwitching: React.TransitionStartFunction;
-		botRateLimit: {
-			isRateLimited: boolean;
-			retryAfter: number;
-		};
-		setBotRateLimit: React.Dispatch<
-			React.SetStateAction<{
+			sortBy: SortBy;
+			setSortBy: Dispatch<SetStateAction<SortBy>>;
+			connectionStatus: connectionState;
+			setConnectionStatus: Dispatch<SetStateAction<connectionState>>;
+			shouldShowUploadModal: boolean;
+			setShouldShowUploadModal: Dispatch<SetStateAction<boolean>>;
+			isSwitchingFolder: boolean;
+			startPathSwitching: React.TransitionStartFunction;
+			botRateLimit: {
 				isRateLimited: boolean;
 				retryAfter: number;
-			}>
-		>;
-	}
+			};
+			setBotRateLimit: React.Dispatch<
+				React.SetStateAction<{
+					isRateLimited: boolean;
+					retryAfter: number;
+				}>
+			>;
+	  }
 	| undefined
 >(undefined);
 

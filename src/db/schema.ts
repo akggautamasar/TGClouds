@@ -9,7 +9,7 @@ import {
 	timestamp,
 	uniqueIndex
 } from 'drizzle-orm/pg-core';
-import { env } from '@/env'
+import { env } from '@/env';
 import { relations } from 'drizzle-orm';
 
 export const planEnum = pgEnum('plan', ['ANNUAL', 'MONTHLY']);
@@ -31,8 +31,12 @@ export const usersTable = pgTable(
 		plan: planEnum('plan'),
 		emailVerified: boolean('emailVerified'),
 		image: text('image'),
-		createdAt: timestamp('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
-		updatedAt: timestamp('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
+		createdAt: timestamp('createdAt', { mode: 'string' }).$defaultFn(() =>
+			new Date().toDateString()
+		),
+		updatedAt: timestamp('updatedAt', { mode: 'string' }).$defaultFn(() =>
+			new Date().toDateString()
+		)
 	},
 	(table) => ({
 		emailIdx: uniqueIndex('email_idx').on(table.email)
@@ -40,26 +44,25 @@ export const usersTable = pgTable(
 );
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
-	botTokens: many(botTokens),
+	botTokens: many(botTokens)
 }));
 
-export const botTokens = pgTable(
-	'botTokens',
-	{
-		id: text('id').primaryKey(),
-		token: text('token').notNull().default(env.NEXT_PUBLIC_BOT_TOKEN),
-		userId: text('userId').notNull().references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-		rateLimitedUntil: timestamp('rateLimitedUntil'),
-		createdAt: timestamp('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
-		updatedAt: timestamp('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
-	});
+export const botTokens = pgTable('botTokens', {
+	id: text('id').primaryKey(),
+	token: text('token').notNull().default(env.NEXT_PUBLIC_BOT_TOKEN),
+	userId: text('userId')
+		.notNull()
+		.references(() => usersTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+	rateLimitedUntil: timestamp('rateLimitedUntil'),
+	createdAt: timestamp('createdAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString()),
+	updatedAt: timestamp('updatedAt', { mode: 'string' }).$defaultFn(() => new Date().toDateString())
+});
 
 export const botTokenRelations = relations(botTokens, ({ one }) => ({
 	user: one(usersTable, {
 		fields: [botTokens.userId],
-		references: [usersTable.id,],
-
-	}),
+		references: [usersTable.id]
+	})
 }));
 
 export const session = pgTable(
