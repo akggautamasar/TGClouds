@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: 'TGCloud',
-		short_name: 'TGCloud',
+		name: 'QuantXCloud',
+		short_name: 'QuantXCloud',
 		description:
 			'Enjoy unlimited cloud storage integrated with Telegram. Effortlessly store and manage your files with no limits.',
 		start_url: '/',
