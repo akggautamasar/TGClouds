@@ -53,7 +53,7 @@ export async function Dashboard({
 					<div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
 						<Link href="/" className="flex items-center gap-2 font-semibold">
 							<CloudIcon className="h-6 w-6" />
-							<span>TG Cloud</span>
+							<span>QuantXcloud</span>
 						</Link>
 					</div>
 					<div className="flex-1">
@@ -144,7 +144,7 @@ export async function Dashboard({
 							<nav className="grid gap-2 text-lg font-medium">
 								<Link href="/files" className="flex items-center gap-2 text-lg font-semibold">
 									<CloudIcon className="h-6 w-6" />
-									<span>TG Cloud</span>
+									<span>QuantXcloud</span>
 								</Link>
 								<Link
 									href="/files"
