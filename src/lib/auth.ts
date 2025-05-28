@@ -12,7 +12,7 @@ const s = {
 } as const;
 
 export const auth = betterAuth({
-	appName: 'Better Auth Demo',
+	appName: 'quantxcloud',
 	database: drizzleAdapter(db, {
 		provider: 'pg',
 		schema: {
