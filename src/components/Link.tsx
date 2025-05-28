@@ -28,4 +28,4 @@ function CustomLInk({
 	);
 }
 
-export default CustomLInk;
+export default CustomLink;
