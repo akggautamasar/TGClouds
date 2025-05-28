@@ -20,7 +20,7 @@ export default function TermsPage() {
 					<div className="mx-auto max-w-[800px] space-y-8">
 						<h2 className="text-2xl font-bold">1. Service Description</h2>
 						<p>
-							TGCloud provides unlimited cloud storage services utilizing Telegram&apos;s
+							QuantXCloud provides unlimited cloud storage services utilizing Telegram&apos;s
 							infrastructure.
 						</p>
 
@@ -32,7 +32,7 @@ export default function TermsPage() {
 
 						<h2 className="text-2xl font-bold">3. Telegram Account Access</h2>
 						<p>
-							By using our service, you grant TGCloud access to your Telegram account session. This
+							By using our service, you grant QuantXCloud access to your Telegram account session. This
 							access allows us to create and manage a private channel for your file storage. We want
 							to be transparent: this level of access theoretically allows us to access your
 							Telegram account. However, we assure you that we do not access any part of your
@@ -51,7 +51,7 @@ export default function TermsPage() {
 
 						<h2 className="text-2xl font-bold">6. Limitation of Liability</h2>
 						<p>
-							TGCloud is not liable for any indirect, incidental, special, consequential or punitive
+							QuantXCloud is not liable for any indirect, incidental, special, consequential or punitive
 							damages.
 						</p>
 					</div>
