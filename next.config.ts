@@ -32,8 +32,8 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-	org: 'kumneger-cg',
-	project: 'tg-cloud',
+	org: 'quantxcloud',
+	project: 'quantxcloud',
 	silent: !process.env.CI,
 	widenClientFileUpload: true,
 	hideSourceMaps: true,
