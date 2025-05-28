@@ -53,12 +53,12 @@ export default function Component({ user }: Props) {
 										<RadioGroupItem value="default" id="default" />
 										<Label htmlFor="default">
 											<a
-												href="https://t.me/tgcloudet2024_bot?start=setup_tgcloud"
+												href="https://t.me/quantxcloudbot?start=setup_tgcloud"
 												target="_blank"
 												rel="noopener noreferrer"
 												className="text-blue-500 underline"
 											>
-												Use TGCloud Bot
+												Use QuantXcloud Bot
 											</a>
 											<span className="block text-sm text-gray-600">
 												Our default bot with standard features
@@ -79,7 +79,7 @@ export default function Component({ user }: Props) {
 
 								<div className="mt-4 space-y-2">
 									<p className="text-sm text-gray-600">
-										To use {selectedBot === 'custom' ? 'your own bot' : 'TGCloud Bot'}:
+										To use {selectedBot === 'custom' ? 'your own bot' : 'QuantXcloud Bot'}:
 										<ol className="list-decimal ml-5 mt-2">
 											{selectedBot === 'custom' && (
 												<li>
