@@ -234,7 +234,7 @@ export async function uploadFiles(
 	}
 }
 
-export async function delelteItem(
+export async function deleteItem(
 	user: User,
 	postId: number | string | (string | number)[],
 	client: TelegramClient | undefined
