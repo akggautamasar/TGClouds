@@ -9,14 +9,14 @@ import { Toaster } from 'react-hot-toast';
 import Providers, { CSPostHogProvider, TGCloudGlobalContextWrapper } from '@/lib/context';
 
 export const metadata: Metadata = {
-	metadataBase: new URL('https://yourtgcloud.vercel.app/'),
-	title: 'Unlimited Cloud Storage | TGCloud',
+	metadataBase: new URL('https://quantxcloud.vercel.app/'),
+	title: 'Unlimited Cloud Storage | QuantXCloud',
 
 	description:
 		'Enjoy unlimited cloud storage integrated with Telegram. Effortlessly store and manage your files with no limits.',
 	keywords: 'unlimited cloud storage, Telegram integration, file management, cloud storage app',
 	openGraph: {
-		title: 'Unlimited Cloud Storage | TGCloud',
+		title: 'Unlimited Cloud Storage | QuantXCloud',
 		description:
 			'Enjoy unlimited cloud storage integrated with Telegram. Effortlessly store and manage your files with no limits.',
 		images: [
