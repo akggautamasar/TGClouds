@@ -622,7 +622,7 @@ type UserPaymentSubscriptionResult =
 async function sendEmail(user: Partial<User>, expirationDate: string) {
 	const resend = new Resend(env.RESEND_API_KEY);
 	await resend.emails.send({
-		from: 'onboarding@resend.dev',
+		from: 'support@airmedisphere.in',
 		to: user?.email!,
 		subject: 'Pro Activated',
 		react: React.createElement(Email, {
