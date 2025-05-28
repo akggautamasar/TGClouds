@@ -44,7 +44,7 @@ const ProPlanActivatedEmail = ({
 						<Text className="text-lg text-gray-700 mt-4">
 							Best regards,
 							<br />
-							The Team
+							The QuantXcloud Team
 						</Text>
 					</Section>
 				</Container>
