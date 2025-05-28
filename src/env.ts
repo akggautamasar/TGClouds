@@ -7,8 +7,8 @@ export const env = createEnv({
 		RESEND_API_KEY: z.string(),
 		GOOGLE_CLIENT_SECRET: z.string(),
 		GITHUB_CLIENT_SECRET: z.string(),
-		supportMail: z.string().default('onboarding@resend.dev'),
-		supportRecipients: z.string().default('kumnegerwondimu01@gmail.com')
+		supportMail: z.string().default('support@airmedisphere.in'),
+		supportRecipients: z.string().default('worksbeyondworks@gmail.com')
 	},
 	client: {
 		NEXT_PUBLIC_TELEGRAM_API_ID: z.string().transform((v) => parseInt(v)),
