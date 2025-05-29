@@ -1,6 +1,7 @@
 {
 	"name": "tg-cloud",
 	"version": "0.1.0",
+	"packageManager": "pnpm@10.11.0",
 	"private": true,
 	"scripts": {
 		"dev:turbo": "dotenv -e .env.development -- next dev --turbo -p 3000",
